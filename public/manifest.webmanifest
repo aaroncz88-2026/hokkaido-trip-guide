@@ -1,0 +1,20 @@
+{
+  "name": "北海道亲子自驾攻略",
+  "short_name": "北海道攻略",
+  "description": "2026 年 8 月北海道亲子自驾口袋攻略",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f2ec",
+  "theme_color": "#2f6f68",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
