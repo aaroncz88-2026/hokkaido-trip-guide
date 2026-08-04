@@ -43,10 +43,10 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
   )
 }
 
-const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' }).format(
-    new Date(`${date}T00:00:00+08:00`),
-  )
+const formatDate = (date: string) => {
+  const [, month, day] = date.split('-').map(Number)
+  return `${month}月${day}日`
+}
 
 const getCountdown = () => {
   const today = new Date()
