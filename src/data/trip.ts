@@ -272,7 +272,7 @@ export const tripDays: DayPlan[] = dayMeta.map((meta) => ({
 export const tripBasics = {
   title: '北海道亲子自驾',
   dateRange: '2026.08.23 — 08.30',
-  party: '4 位成人 · 2 个孩子 · 1 位司机',
+  party: '瓜瓜一家 · 小骑士一家の避暑旅行',
   source: sheetData.source,
   sourceUpdatedAt: sheetData.updatedAt,
 }
