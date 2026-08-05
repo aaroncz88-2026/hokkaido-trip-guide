@@ -48,12 +48,25 @@
   overflow: hidden;
   border-radius: 4px 4px 32px 4px;
   color: #f6f1e8;
-  background: #284f4b;
+  background-color: #284f4b;
+  background-position: center;
+  background-size: cover;
   box-shadow: 0 18px 50px rgba(31, 55, 51, 0.18);
+}
+
+.hero-panel::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(14, 35, 33, 0.82) 0%, rgba(14, 35, 33, 0.48) 52%, rgba(14, 35, 33, 0.28) 100%),
+    linear-gradient(0deg, rgba(12, 29, 28, 0.52), transparent 58%);
+  content: '';
 }
 
 .hero-panel::after {
   position: absolute;
+  z-index: 1;
   right: -64px;
   bottom: -92px;
   width: 255px;
@@ -68,6 +81,7 @@
 
 .hero-panel__texture {
   position: absolute;
+  z-index: 1;
   inset: 0;
   opacity: 0.22;
   background-image:
@@ -78,7 +92,7 @@
 
 .hero-panel__content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   min-height: 265px;
   flex-direction: column;
@@ -105,10 +119,110 @@
   line-height: 0.8;
 }
 
+.countdown strong.countdown__memory-date {
+  max-width: 310px;
+  font-size: clamp(2rem, 8.5vw, 3rem);
+  letter-spacing: -0.045em;
+  line-height: 1.06;
+}
+
 .countdown p {
   margin: 13px 0 0;
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.9rem;
+}
+
+.hero-location {
+  display: block;
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.hero-panel--during::before {
+  background:
+    linear-gradient(90deg, rgba(18, 47, 44, 0.78) 0%, rgba(18, 47, 44, 0.4) 58%, rgba(18, 47, 44, 0.18) 100%),
+    linear-gradient(0deg, rgba(12, 29, 28, 0.56), transparent 60%);
+}
+
+.hero-panel--after::before {
+  background:
+    linear-gradient(90deg, rgba(31, 42, 38, 0.72) 0%, rgba(31, 42, 38, 0.28) 62%, rgba(31, 42, 38, 0.12) 100%),
+    linear-gradient(0deg, rgba(13, 24, 23, 0.62), transparent 62%);
+}
+
+.phase-content--hidden {
+  display: none;
+}
+
+.memory-teaser {
+  margin-top: 16px;
+  padding: 26px 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 3px 3px 24px 3px;
+  background: var(--paper);
+}
+
+.memory-teaser h2 {
+  max-width: 270px;
+  margin: 8px 0 10px;
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.18;
+}
+
+.memory-teaser > p {
+  max-width: 320px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+.memory-film {
+  display: grid;
+  grid-template-columns: repeat(4, 78px);
+  gap: 7px;
+  width: max-content;
+  margin: 22px 0;
+  transform: rotate(-2deg) translateX(-5px);
+}
+
+.memory-film i {
+  display: block;
+  aspect-ratio: 0.82;
+  padding: 5px 5px 15px;
+  background: #eee7dc;
+  box-shadow: 0 6px 14px rgba(52, 43, 34, 0.1);
+}
+
+.memory-film i::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), transparent),
+    #4f7771;
+  content: '';
+}
+
+.memory-film i:nth-child(2)::after { background-color: #b5a37e; }
+.memory-film i:nth-child(3)::after { background-color: #718697; }
+.memory-film i:nth-child(4)::after { background-color: #88715e; }
+
+.memory-teaser button {
+  min-height: 44px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--brand);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .route-line {
@@ -856,6 +970,51 @@
   border-radius: 3px 3px 26px 3px;
   color: #f7f2e9;
   background: #2e514d;
+}
+
+.preview-card {
+  margin-bottom: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 3px 3px 20px 3px;
+  background: var(--paper);
+}
+
+.preview-card h2 {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.preview-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.phase-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.phase-buttons button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: #f8f5ef;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.phase-buttons button.active {
+  border-color: var(--brand);
+  color: #fff;
+  background: var(--brand);
 }
 
 .about-card .eyebrow {

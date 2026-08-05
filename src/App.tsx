@@ -11,6 +11,13 @@ import {
 import './App.css'
 
 type View = 'home' | 'days' | 'guide' | 'more'
+type PreviewPhase = 'auto' | 'before' | 'during' | 'after'
+type JourneyState = {
+  phase: Exclude<PreviewPhase, 'auto'>
+  value: string
+  label: string
+  day: number | null
+}
 type SearchResult = {
   key: string
   kicker: string
@@ -48,17 +55,40 @@ const formatDate = (date: string) => {
   return `${month}月${day}日`
 }
 
-const getCountdown = () => {
+const getJourneyState = (preview: PreviewPhase): JourneyState => {
+  if (preview === 'before') return { phase: 'before', value: '18', label: '天后出发', day: null }
+  if (preview === 'during') return { phase: 'during', value: 'DAY 1', label: '旅行第 1 天 · 抵达北海道', day: 1 }
+  if (preview === 'after') {
+    return {
+      phase: 'after',
+      value: '2026.08.23 — 08.30',
+      label: '两家人的北海道旅行 · 珍藏回忆',
+      day: null,
+    }
+  }
+
   const today = new Date()
   const start = new Date('2026-08-23T00:00:00+08:00')
   const end = new Date('2026-08-30T23:59:59+08:00')
-  if (today > end) return { value: '旅程已完成', label: '北海道的回忆一直都在' }
+  if (today > end) {
+    return {
+      phase: 'after',
+      value: '2026.08.23 — 08.30',
+      label: '两家人的北海道旅行 · 珍藏回忆',
+      day: null,
+    }
+  }
   if (today >= start) {
     const day = Math.min(8, Math.floor((today.getTime() - start.getTime()) / 86_400_000) + 1)
-    return { value: `DAY ${day}`, label: '今天按时间轴出发' }
+    return {
+      phase: 'during',
+      value: `DAY ${day}`,
+      label: `旅行第 ${day} 天 · ${tripDays[day - 1].title}`,
+      day,
+    }
   }
   const days = Math.ceil((start.getTime() - today.getTime()) / 86_400_000)
-  return { value: `${days}`, label: '天后出发' }
+  return { phase: 'before', value: `${days}`, label: '天后出发', day: null }
 }
 
 function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
@@ -132,6 +162,7 @@ function TimelineCard({
 function App() {
   const [view, setView] = useState<View>('home')
   const [selectedDay, setSelectedDay] = useState(1)
+  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>('auto')
   const [showRest, setShowRest] = useState(false)
   const [search, setSearch] = useState('')
   const [completed, setCompleted] = useState<Record<string, boolean>>(() => {
@@ -158,7 +189,7 @@ function App() {
   }, [checklist])
 
   const currentDay = tripDays.find((day) => day.day === selectedDay) ?? tripDays[0]
-  const countdown = getCountdown()
+  const journey = getJourneyState(previewPhase)
   const visibleTimeline = currentDay.timeline.filter((item) => showRest || !item.isRest)
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
@@ -228,7 +259,11 @@ function App() {
     <header className="app-header">
       <div>
         <span className="eyebrow">2026 HOKKAIDO</span>
-        <h1>{view === 'home' ? '夏日北行' : view === 'days' ? `DAY ${selectedDay}` : view === 'guide' ? '旅行手册' : '关于攻略'}</h1>
+        <h1>
+          {view === 'home'
+            ? journey.phase === 'after' ? '北行珍藏' : journey.phase === 'during' ? '正在北行' : '夏日北行'
+            : view === 'days' ? `DAY ${selectedDay}` : view === 'guide' ? '旅行手册' : '关于攻略'}
+        </h1>
       </div>
       <span className="offline-pill"><Icon name="wifi" size={15} /> 可离线</span>
     </header>
@@ -238,21 +273,40 @@ function App() {
     <>
       {renderHeader()}
       <main>
-        <section className="hero-panel">
+        <section
+          className={`hero-panel hero-panel--${journey.phase}`}
+          style={{ backgroundImage: `url(${import.meta.env.BASE_URL}biei-blue-pond-cover.png)` }}
+        >
           <div className="hero-panel__texture" />
           <div className="hero-panel__content">
-            <span>{tripBasics.party}</span>
+            <span>{journey.phase === 'after' ? 'TWO FAMILIES · ONE JOURNEY' : tripBasics.party}</span>
             <div className="countdown">
-              <strong>{countdown.value}</strong>
-              <p>{countdown.label}</p>
+              <strong className={journey.phase === 'after' ? 'countdown__memory-date' : ''}>{journey.value}</strong>
+              <p>{journey.label}</p>
             </div>
             <div className="route-line">
-              <span>上海</span><i /><span>北海道</span>
+              <span>{journey.phase === 'after' ? '两家人的北海道旅行' : '上海'}</span>
+              <i />
+              <span>{journey.phase === 'after' ? '珍藏回忆' : '北海道'}</span>
             </div>
+            <small className="hero-location">美瑛 · 白金青池</small>
           </div>
         </section>
 
-        <section className="section">
+        {journey.phase === 'after' && (
+          <section className="memory-teaser">
+            <span className="eyebrow">TRAVEL MEMORIES</span>
+            <h2>旅行结束，故事才刚刚开始</h2>
+            <p>旅途中上传的照片会按日期与地点整理，自动生成可播放的两家人北海道纪念册。</p>
+            <div className="memory-film" aria-hidden="true">
+              <i /><i /><i /><i />
+            </div>
+            <button onClick={() => setView('more')}>查看阶段预览与资料</button>
+          </section>
+        )}
+
+        <div className={journey.phase === 'after' ? 'phase-content--hidden' : ''}>
+          <section className="section">
           <div className="section-heading">
             <div><span className="eyebrow">QUICK FIND</span><h2>现场搜一下</h2></div>
           </div>
@@ -275,9 +329,9 @@ function App() {
               ))}
             </div>
           )}
-        </section>
+          </section>
 
-        <section className="section">
+          <section className="section">
           <div className="section-heading">
             <div><span className="eyebrow">8 DAYS</span><h2>每日路线</h2></div>
             <button className="text-button" onClick={() => setView('days')}>展开全部</button>
@@ -285,9 +339,9 @@ function App() {
           <div className="day-scroller">
             {tripDays.map((day) => <DayCard day={day} key={day.day} onOpen={() => openDay(day.day)} />)}
           </div>
-        </section>
+          </section>
 
-        <section className="section">
+          <section className="section">
           <div className="section-heading">
             <div><span className="eyebrow">AT A GLANCE</span><h2>出发前</h2></div>
           </div>
@@ -299,7 +353,8 @@ function App() {
               <Icon name="info" /><span><strong>预算与应急</strong><small>离线速查</small></span>
             </button>
           </div>
-        </section>
+          </section>
+        </div>
       </main>
     </>
   )
@@ -428,6 +483,33 @@ function App() {
     <>
       {renderHeader()}
       <main>
+        <section className="preview-card">
+          <div>
+            <span className="eyebrow">TIME MACHINE</span>
+            <h2>预览旅行的三个阶段</h2>
+            <p>这里只改变预览，不会影响真实日期。</p>
+          </div>
+          <div className="phase-buttons">
+            {([
+              ['auto', '自动'],
+              ['before', '旅行前'],
+              ['during', '旅行第1天'],
+              ['after', '旅行结束'],
+            ] as const).map(([phase, label]) => (
+              <button
+                className={previewPhase === phase ? 'active' : ''}
+                key={phase}
+                onClick={() => {
+                  setPreviewPhase(phase)
+                  setView('home')
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
         <section className="about-card">
           <span className="eyebrow">SOURCE OF TRUTH</span>
           <h2>{tripBasics.title}</h2>
@@ -474,6 +556,7 @@ function App() {
             className={view === id ? 'active' : ''}
             key={id}
             onClick={() => {
+              if (id === 'days' && journey.day) setSelectedDay(journey.day)
               setView(id)
               setSearch('')
               window.scrollTo({ top: 0, behavior: 'smooth' })
