@@ -275,7 +275,7 @@ function App() {
       <main>
         <section
           className={`hero-panel hero-panel--${journey.phase}`}
-          style={{ backgroundImage: `url(${import.meta.env.BASE_URL}biei-blue-pond-cover.png)` }}
+          style={{ backgroundImage: `url(${import.meta.env.BASE_URL}furano-lavender-cover.png)` }}
         >
           <div className="hero-panel__texture" />
           <div className="hero-panel__content">
@@ -289,7 +289,7 @@ function App() {
               <i />
               <span>{journey.phase === 'after' ? '珍藏回忆' : '北海道'}</span>
             </div>
-            <small className="hero-location">美瑛 · 白金青池</small>
+            <small className="hero-location">富良野 · 薰衣草花田</small>
           </div>
         </section>
 
