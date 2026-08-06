@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import {
   guideSections,
   mapsUrl,
+  packingTemplates,
   sourceLink,
   tripBasics,
   tripDays,
@@ -24,6 +25,39 @@ type SearchResult = {
   title: string
   dayNumber: number
   target: 'days' | 'guide'
+}
+type PackingItem = {
+  id: string
+  text: string
+  checked: boolean
+}
+type PackingList = {
+  id: string
+  title: string
+  templateId?: string
+  items: PackingItem[]
+}
+
+const createId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+
+const createDefaultPackingLists = (): PackingList[] => {
+  let legacyChecklist: Record<string, boolean> = {}
+  try {
+    legacyChecklist = JSON.parse(localStorage.getItem('hokkaido-checklist') ?? '{}')
+  } catch {
+    legacyChecklist = {}
+  }
+
+  return packingTemplates.map((list) => ({
+    id: list.id,
+    title: list.title,
+    templateId: list.id,
+    items: list.items.map((text, index) => ({
+      id: `${list.id}-${index}`,
+      text,
+      checked: Boolean(legacyChecklist[text]),
+    })),
+  }))
 }
 
 const iconPaths: Record<string, string> = {
@@ -172,25 +206,44 @@ function App() {
       return {}
     }
   })
-  const [checklist, setChecklist] = useState<Record<string, boolean>>(() => {
+  const [packingLists, setPackingLists] = useState<PackingList[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('hokkaido-checklist') ?? '{}')
+      const saved = JSON.parse(localStorage.getItem('hokkaido-packing-lists-v2') ?? 'null')
+      return Array.isArray(saved) ? saved : createDefaultPackingLists()
     } catch {
-      return {}
+      return createDefaultPackingLists()
     }
   })
+  const [packingOwner, setPackingOwner] = useState(() => localStorage.getItem('hokkaido-packing-owner') ?? '')
+  const [showPacked, setShowPacked] = useState(() => localStorage.getItem('hokkaido-show-packed') !== 'false')
+  const [newListName, setNewListName] = useState('')
+  const [newItemText, setNewItemText] = useState<Record<string, string>>({})
+  const [templateToAdd, setTemplateToAdd] = useState('')
 
   useEffect(() => {
     localStorage.setItem('hokkaido-completed', JSON.stringify(completed))
   }, [completed])
 
   useEffect(() => {
-    localStorage.setItem('hokkaido-checklist', JSON.stringify(checklist))
-  }, [checklist])
+    localStorage.setItem('hokkaido-packing-lists-v2', JSON.stringify(packingLists))
+  }, [packingLists])
+
+  useEffect(() => {
+    localStorage.setItem('hokkaido-packing-owner', packingOwner)
+  }, [packingOwner])
+
+  useEffect(() => {
+    localStorage.setItem('hokkaido-show-packed', String(showPacked))
+  }, [showPacked])
 
   const currentDay = tripDays.find((day) => day.day === selectedDay) ?? tripDays[0]
   const journey = getJourneyState(previewPhase)
   const visibleTimeline = currentDay.timeline.filter((item) => showRest || !item.isRest)
+  const totalPackingItems = packingLists.reduce((total, list) => total + list.items.length, 0)
+  const packedItems = packingLists.reduce(
+    (total, list) => total + list.items.filter((item) => item.checked).length,
+    0,
+  )
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -224,28 +277,29 @@ function App() {
           target: 'days' as const,
         })),
     )
-    const guideMatches: SearchResult[] = guideSections.flatMap((section): SearchResult[] =>
-      'items' in section
-        ? section.items
-            .filter((item) => `${item.title} ${item.detail}`.toLowerCase().includes(keyword))
-            .map((item) => ({
-              key: `${section.id}-${item.title}`,
-              kicker: section.title,
-              title: item.title,
-              dayNumber: 0,
-              target: 'guide' as const,
-            }))
-        : section.checklist
-            .filter((item) => item.toLowerCase().includes(keyword))
-            .map((item) => ({
-              key: `${section.id}-${item}`,
-              kicker: section.title,
-              title: item,
-              dayNumber: 0,
-              target: 'guide' as const,
-            })),
+    const guideMatches: SearchResult[] = guideSections.flatMap((section) =>
+      section.items
+        .filter((item) => `${item.title} ${item.detail}`.toLowerCase().includes(keyword))
+        .map((item) => ({
+          key: `${section.id}-${item.title}`,
+          kicker: section.title,
+          title: item.title,
+          dayNumber: 0,
+          target: 'guide' as const,
+        })),
     )
-    return [...dayMatches, ...timelineMatches, ...guideMatches].slice(0, 20)
+    const packingMatches: SearchResult[] = packingTemplates.flatMap((section) =>
+      section.items
+        .filter((item) => item.toLowerCase().includes(keyword))
+        .map((item) => ({
+          key: `${section.id}-${item}`,
+          kicker: section.title,
+          title: item,
+          dayNumber: 0,
+          target: 'guide' as const,
+        })),
+    )
+    return [...dayMatches, ...timelineMatches, ...guideMatches, ...packingMatches].slice(0, 20)
   }, [search])
 
   const openDay = (day: number) => {
@@ -253,6 +307,76 @@ function App() {
     setView('days')
     setSearch('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const togglePackingItem = (listId: string, itemId: string) => {
+    setPackingLists((lists) =>
+      lists.map((list) =>
+        list.id === listId
+          ? {
+              ...list,
+              items: list.items.map((item) =>
+                item.id === itemId ? { ...item, checked: !item.checked } : item,
+              ),
+            }
+          : list,
+      ),
+    )
+  }
+
+  const deletePackingItem = (listId: string, itemId: string) => {
+    setPackingLists((lists) =>
+      lists.map((list) =>
+        list.id === listId ? { ...list, items: list.items.filter((item) => item.id !== itemId) } : list,
+      ),
+    )
+  }
+
+  const deletePackingList = (listId: string, title: string) => {
+    if (!window.confirm(`确定删除“${title}”整组清单吗？`)) return
+    setPackingLists((lists) => lists.filter((list) => list.id !== listId))
+  }
+
+  const addPackingItem = (event: FormEvent, listId: string) => {
+    event.preventDefault()
+    const text = newItemText[listId]?.trim()
+    if (!text) return
+    setPackingLists((lists) =>
+      lists.map((list) =>
+        list.id === listId
+          ? { ...list, items: [...list.items, { id: createId('item'), text, checked: false }] }
+          : list,
+      ),
+    )
+    setNewItemText((values) => ({ ...values, [listId]: '' }))
+  }
+
+  const addPackingList = (event: FormEvent) => {
+    event.preventDefault()
+    const title = newListName.trim()
+    if (!title) return
+    setPackingLists((lists) => [...lists, { id: createId('list'), title, items: [] }])
+    setNewListName('')
+  }
+
+  const addPackingTemplate = (event: FormEvent) => {
+    event.preventDefault()
+    const template = packingTemplates.find((item) => item.id === templateToAdd)
+    if (!template) return
+    setPackingLists((lists) => [
+      ...lists,
+      {
+        id: createId(template.id),
+        title: template.title,
+        templateId: template.id,
+        items: template.items.map((text, index) => ({
+          id: createId(`${template.id}-${index}`),
+          text,
+          checked: false,
+        })),
+      },
+    ])
+    setTemplateToAdd('')
   }
 
   const renderHeader = () => (
@@ -439,40 +563,144 @@ function App() {
     <>
       {renderHeader()}
       <main>
+        <section className="packing-manager">
+          <div className="packing-manager__heading">
+            <div>
+              <span className="eyebrow">PERSONAL PACKING</span>
+              <h2>{packingOwner.trim() ? `${packingOwner.trim()}的旅行清单` : '我的旅行清单'}</h2>
+              <p>仅保存在这台设备，不会看到其他人的勾选记录。</p>
+            </div>
+            <strong>{packedItems}/{totalPackingItems}</strong>
+          </div>
+
+          <div className="packing-preferences">
+            <label className="owner-field">
+              <span>清单属于</span>
+              <input
+                maxLength={16}
+                onChange={(event) => setPackingOwner(event.target.value)}
+                placeholder="输入你的名字"
+                value={packingOwner}
+              />
+            </label>
+            <label className="show-packed-toggle">
+              <input
+                checked={showPacked}
+                onChange={(event) => setShowPacked(event.target.checked)}
+                type="checkbox"
+              />
+              <span>{showPacked && <Icon name="check" size={14} />}</span>
+              显示已打勾项目
+            </label>
+          </div>
+
+          <div className="packing-groups">
+            {packingLists.map((list) => {
+              const checkedCount = list.items.filter((item) => item.checked).length
+              const visibleItems = showPacked ? list.items : list.items.filter((item) => !item.checked)
+              return (
+                <article className="packing-group" key={list.id}>
+                  <header>
+                    <h3>{list.title}</h3>
+                    <div>
+                      <strong>{checkedCount}/{list.items.length}</strong>
+                      <button
+                        aria-label={`删除${list.title}整组清单`}
+                        className="packing-delete-list"
+                        onClick={() => deletePackingList(list.id, list.title)}
+                        type="button"
+                      >
+                        删除整组
+                      </button>
+                    </div>
+                  </header>
+                  <div className="checklist">
+                    {visibleItems.map((item) => (
+                      <div className="packing-item-row" key={item.id}>
+                        <label className={item.checked ? 'checked' : ''}>
+                          <input
+                            checked={item.checked}
+                            onChange={() => togglePackingItem(list.id, item.id)}
+                            type="checkbox"
+                          />
+                          <span>{item.checked && <Icon name="check" size={15} />}</span>
+                          {item.text}
+                        </label>
+                        <button
+                          aria-label={`删除${item.text}`}
+                          onClick={() => deletePackingItem(list.id, item.id)}
+                          type="button"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {visibleItems.length === 0 && (
+                      <p className="packing-empty">
+                        {list.items.length === 0 ? '还没有项目，从下面添加一个吧。' : '这一类已经全部准备完成。'}
+                      </p>
+                    )}
+                  </div>
+                  <form className="packing-add-item" onSubmit={(event) => addPackingItem(event, list.id)}>
+                    <input
+                      onChange={(event) => setNewItemText((values) => ({ ...values, [list.id]: event.target.value }))}
+                      placeholder="添加一个项目"
+                      value={newItemText[list.id] ?? ''}
+                    />
+                    <button type="submit">添加</button>
+                  </form>
+                </article>
+              )
+            })}
+          </div>
+
+          <form className="packing-add-template" onSubmit={addPackingTemplate}>
+            <select onChange={(event) => setTemplateToAdd(event.target.value)} value={templateToAdd}>
+              <option value="">
+                {packingTemplates.every((template) =>
+                  packingLists.some((list) => list.templateId === template.id || list.id === template.id),
+                )
+                  ? '在线文档大类均已加入'
+                  : '选择在线文档大类'}
+              </option>
+              {packingTemplates
+                .filter((template) =>
+                  !packingLists.some((list) => list.templateId === template.id || list.id === template.id),
+                )
+                .map((template) => <option key={template.id} value={template.id}>{template.title}</option>)}
+            </select>
+            <button disabled={!templateToAdd} type="submit">添加整组</button>
+          </form>
+
+          <form className="packing-add-list" onSubmit={addPackingList}>
+            <input
+              maxLength={30}
+              onChange={(event) => setNewListName(event.target.value)}
+              placeholder="例如：摄影装备"
+              value={newListName}
+            />
+            <button type="submit">＋ DIY 新清单</button>
+          </form>
+        </section>
+
         <section className="guide-intro">
           <span className="eyebrow">POCKET GUIDE</span>
           <h2>把重要信息放进口袋</h2>
-          <p>网络不好时也能打开；勾选状态只保存在你的设备。</p>
+          <p>网络不好时也能打开；预约、预算和应急信息可离线速查。</p>
         </section>
         {guideSections.map((section) => (
           <section className="section guide-section" key={section.id}>
             <div className="section-heading">
               <div><h2>{section.title}</h2><p>{section.intro}</p></div>
             </div>
-            {'checklist' in section ? (
-              <div className="checklist">
-                {section.checklist.map((item) => (
-                  <label className={checklist[item] ? 'checked' : ''} key={item}>
-                    <input
-                      checked={Boolean(checklist[item])}
-                      onChange={() => setChecklist((value) => ({ ...value, [item]: !value[item] }))}
-                      type="checkbox"
-                    />
-                    <span>{checklist[item] && <Icon name="check" size={15} />}</span>
-                    {item}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <div className="info-list">
-                {section.items.map((item) => (
-                  <article key={item.title}>
-                    <div><strong>{item.title}</strong><span>{item.badge}</span></div>
-                    <p>{item.detail}</p>
-                  </article>
-                ))}
-              </div>
-            )}
+            <div className="info-list">
+              {section.items.map((item) => (
+                <article key={item.title}>
+                  <div><strong>{item.title}</strong><span>{item.badge}</span></div>
+                  <p>{item.detail}</p>
+                </article>
+              ))}
+            </div>
           </section>
         ))}
       </main>
