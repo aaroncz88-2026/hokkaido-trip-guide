@@ -24,7 +24,7 @@ type SearchResult = {
   kicker: string
   title: string
   dayNumber: number
-  target: 'days' | 'guide'
+  target: 'days' | 'guide' | 'more'
 }
 type PackingItem = {
   id: string
@@ -219,6 +219,7 @@ function App() {
   const [newListName, setNewListName] = useState('')
   const [newItemText, setNewItemText] = useState<Record<string, string>>({})
   const [templateToAdd, setTemplateToAdd] = useState('')
+  const [activePackingListId, setActivePackingListId] = useState('')
 
   useEffect(() => {
     localStorage.setItem('hokkaido-completed', JSON.stringify(completed))
@@ -244,6 +245,8 @@ function App() {
     (total, list) => total + list.items.filter((item) => item.checked).length,
     0,
   )
+  const activePackingList =
+    packingLists.find((list) => list.id === activePackingListId) ?? packingLists[0]
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -285,7 +288,7 @@ function App() {
           kicker: section.title,
           title: item.title,
           dayNumber: 0,
-          target: 'guide' as const,
+          target: 'more' as const,
         })),
     )
     const packingMatches: SearchResult[] = packingTemplates.flatMap((section) =>
@@ -335,6 +338,7 @@ function App() {
   const deletePackingList = (listId: string, title: string) => {
     if (!window.confirm(`确定删除“${title}”整组清单吗？`)) return
     setPackingLists((lists) => lists.filter((list) => list.id !== listId))
+    if (activePackingListId === listId) setActivePackingListId('')
   }
 
   const addPackingItem = (event: FormEvent, listId: string) => {
@@ -355,7 +359,9 @@ function App() {
     event.preventDefault()
     const title = newListName.trim()
     if (!title) return
-    setPackingLists((lists) => [...lists, { id: createId('list'), title, items: [] }])
+    const id = createId('list')
+    setPackingLists((lists) => [...lists, { id, title, items: [] }])
+    setActivePackingListId(id)
     setNewListName('')
   }
 
@@ -363,10 +369,11 @@ function App() {
     event.preventDefault()
     const template = packingTemplates.find((item) => item.id === templateToAdd)
     if (!template) return
+    const id = createId(template.id)
     setPackingLists((lists) => [
       ...lists,
       {
-        id: createId(template.id),
+        id,
         title: template.title,
         templateId: template.id,
         items: template.items.map((text, index) => ({
@@ -376,17 +383,22 @@ function App() {
         })),
       },
     ])
+    setActivePackingListId(id)
     setTemplateToAdd('')
   }
 
   const renderHeader = () => (
-    <header className="app-header">
+    <header className={`app-header ${view === 'guide' ? 'app-header--packing' : ''}`}>
       <div>
         <span className="eyebrow">2026 HOKKAIDO</span>
         <h1>
           {view === 'home'
             ? journey.phase === 'after' ? '北行珍藏' : journey.phase === 'during' ? '正在北行' : '夏日北行'
-            : view === 'days' ? `DAY ${selectedDay}` : view === 'guide' ? '旅行手册' : '关于攻略'}
+            : view === 'days'
+              ? `DAY ${selectedDay}`
+              : view === 'guide'
+                ? `${packingOwner.trim() || '我的'}的旅行清单`
+                : '更多'}
         </h1>
       </div>
       <span className="offline-pill"><Icon name="wifi" size={15} /> 可离线</span>
@@ -444,7 +456,7 @@ function App() {
               {searchResults.map((result) => (
                 <button
                   key={result.key}
-                  onClick={() => result.target === 'days' ? openDay(result.dayNumber) : setView('guide')}
+                  onClick={() => result.target === 'days' ? openDay(result.dayNumber) : setView(result.target)}
                 >
                   <span>{result.kicker}</span>
                   <strong>{result.title}</strong>
@@ -473,7 +485,7 @@ function App() {
             <button onClick={() => setView('guide')}>
               <Icon name="suitcase" /><span><strong>行李清单</strong><small>可勾选保存</small></span>
             </button>
-            <button onClick={() => setView('guide')}>
+            <button onClick={() => setView('more')}>
               <Icon name="info" /><span><strong>预算与应急</strong><small>离线速查</small></span>
             </button>
           </div>
@@ -564,13 +576,15 @@ function App() {
       {renderHeader()}
       <main>
         <section className="packing-manager">
-          <div className="packing-manager__heading">
-            <div>
-              <span className="eyebrow">PERSONAL PACKING</span>
-              <h2>{packingOwner.trim() ? `${packingOwner.trim()}的旅行清单` : '我的旅行清单'}</h2>
-              <p>仅保存在这台设备，不会看到其他人的勾选记录。</p>
+          <div className="packing-sticky-summary">
+            <div className="packing-manager__heading">
+              <div>
+                <span className="eyebrow">PERSONAL PACKING</span>
+                <h2>{packingOwner.trim() ? `${packingOwner.trim()}的旅行清单` : '我的旅行清单'}</h2>
+              </div>
+              <strong>{packedItems}/{totalPackingItems}</strong>
             </div>
-            <strong>{packedItems}/{totalPackingItems}</strong>
+            <p>清单只保存在这台设备，不会混入其他人的记录。</p>
           </div>
 
           <div className="packing-preferences">
@@ -594,65 +608,94 @@ function App() {
             </label>
           </div>
 
-          <div className="packing-groups">
-            {packingLists.map((list) => {
-              const checkedCount = list.items.filter((item) => item.checked).length
-              const visibleItems = showPacked ? list.items : list.items.filter((item) => !item.checked)
-              return (
-                <article className="packing-group" key={list.id}>
-                  <header>
-                    <h3>{list.title}</h3>
-                    <div>
-                      <strong>{checkedCount}/{list.items.length}</strong>
+          {packingLists.length > 0 && (
+            <nav className="packing-tabs" aria-label="行李清单大类">
+              {packingLists.map((list) => {
+                const checkedCount = list.items.filter((item) => item.checked).length
+                const isActive = list.id === activePackingList?.id
+                return (
+                  <button
+                    aria-current={isActive ? 'page' : undefined}
+                    className={isActive ? 'active' : ''}
+                    key={list.id}
+                    onClick={() => setActivePackingListId(list.id)}
+                    type="button"
+                  >
+                    <span>{list.title}</span>
+                    <small>{checkedCount}/{list.items.length}</small>
+                  </button>
+                )
+              })}
+            </nav>
+          )}
+
+          {activePackingList ? (() => {
+            const checkedCount = activePackingList.items.filter((item) => item.checked).length
+            const visibleItems = showPacked
+              ? activePackingList.items
+              : activePackingList.items.filter((item) => !item.checked)
+            return (
+              <article className="packing-group" key={activePackingList.id}>
+                <header>
+                  <h3>{activePackingList.title}</h3>
+                  <div>
+                    <strong>{checkedCount}/{activePackingList.items.length}</strong>
+                    <button
+                      aria-label={`删除${activePackingList.title}整组清单`}
+                      className="packing-delete-list"
+                      onClick={() => deletePackingList(activePackingList.id, activePackingList.title)}
+                      type="button"
+                    >
+                      删除整组
+                    </button>
+                  </div>
+                </header>
+                <div className="checklist">
+                  {visibleItems.map((item) => (
+                    <div className="packing-item-row" key={item.id}>
+                      <label className={item.checked ? 'checked' : ''}>
+                        <input
+                          checked={item.checked}
+                          onChange={() => togglePackingItem(activePackingList.id, item.id)}
+                          type="checkbox"
+                        />
+                        <span>{item.checked && <Icon name="check" size={15} />}</span>
+                        {item.text}
+                      </label>
                       <button
-                        aria-label={`删除${list.title}整组清单`}
-                        className="packing-delete-list"
-                        onClick={() => deletePackingList(list.id, list.title)}
+                        aria-label={`删除${item.text}`}
+                        onClick={() => deletePackingItem(activePackingList.id, item.id)}
                         type="button"
                       >
-                        删除整组
+                        ×
                       </button>
                     </div>
-                  </header>
-                  <div className="checklist">
-                    {visibleItems.map((item) => (
-                      <div className="packing-item-row" key={item.id}>
-                        <label className={item.checked ? 'checked' : ''}>
-                          <input
-                            checked={item.checked}
-                            onChange={() => togglePackingItem(list.id, item.id)}
-                            type="checkbox"
-                          />
-                          <span>{item.checked && <Icon name="check" size={15} />}</span>
-                          {item.text}
-                        </label>
-                        <button
-                          aria-label={`删除${item.text}`}
-                          onClick={() => deletePackingItem(list.id, item.id)}
-                          type="button"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                    {visibleItems.length === 0 && (
-                      <p className="packing-empty">
-                        {list.items.length === 0 ? '还没有项目，从下面添加一个吧。' : '这一类已经全部准备完成。'}
-                      </p>
-                    )}
-                  </div>
-                  <form className="packing-add-item" onSubmit={(event) => addPackingItem(event, list.id)}>
-                    <input
-                      onChange={(event) => setNewItemText((values) => ({ ...values, [list.id]: event.target.value }))}
-                      placeholder="添加一个项目"
-                      value={newItemText[list.id] ?? ''}
-                    />
-                    <button type="submit">添加</button>
-                  </form>
-                </article>
-              )
-            })}
-          </div>
+                  ))}
+                  {visibleItems.length === 0 && (
+                    <p className="packing-empty">
+                      {activePackingList.items.length === 0
+                        ? '还没有项目，从下面添加一个吧。'
+                        : '这一类已经全部准备完成。'}
+                    </p>
+                  )}
+                </div>
+                <form
+                  className="packing-add-item"
+                  onSubmit={(event) => addPackingItem(event, activePackingList.id)}
+                >
+                  <input
+                    onChange={(event) =>
+                      setNewItemText((values) => ({ ...values, [activePackingList.id]: event.target.value }))}
+                    placeholder="添加一个项目"
+                    value={newItemText[activePackingList.id] ?? ''}
+                  />
+                  <button type="submit">添加</button>
+                </form>
+              </article>
+            )
+          })() : (
+            <p className="packing-no-lists">还没有清单，请从在线文档大类添加，或 DIY 一个新清单。</p>
+          )}
 
           <form className="packing-add-template" onSubmit={addPackingTemplate}>
             <select onChange={(event) => setTemplateToAdd(event.target.value)} value={templateToAdd}>
@@ -682,27 +725,6 @@ function App() {
             <button type="submit">＋ DIY 新清单</button>
           </form>
         </section>
-
-        <section className="guide-intro">
-          <span className="eyebrow">POCKET GUIDE</span>
-          <h2>把重要信息放进口袋</h2>
-          <p>网络不好时也能打开；预约、预算和应急信息可离线速查。</p>
-        </section>
-        {guideSections.map((section) => (
-          <section className="section guide-section" key={section.id}>
-            <div className="section-heading">
-              <div><h2>{section.title}</h2><p>{section.intro}</p></div>
-            </div>
-            <div className="info-list">
-              {section.items.map((item) => (
-                <article key={item.title}>
-                  <div><strong>{item.title}</strong><span>{item.badge}</span></div>
-                  <p>{item.detail}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-        ))}
       </main>
     </>
   )
@@ -711,6 +733,29 @@ function App() {
     <>
       {renderHeader()}
       <main>
+        <section className="more-handbook">
+          <span className="eyebrow">POCKET GUIDE</span>
+          <h2>旅行手册</h2>
+          <p>预约、预算与应急信息集中在这里，网络不好时也能离线速查。</p>
+          <div className="more-handbook__sections">
+            {guideSections.map((section) => (
+              <details key={section.id}>
+                <summary>
+                  <span><strong>{section.title}</strong><small>{section.intro}</small></span>
+                  <Icon name="arrow" size={17} />
+                </summary>
+                <div className="info-list">
+                  {section.items.map((item) => (
+                    <article key={item.title}>
+                      <div><strong>{item.title}</strong><span>{item.badge}</span></div>
+                      <p>{item.detail}</p>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
         <section className="preview-card">
           <div>
             <span className="eyebrow">TIME MACHINE</span>
@@ -776,7 +821,7 @@ function App() {
         {([
           ['home', '首页', 'home'],
           ['days', '行程', 'calendar'],
-          ['guide', '手册', 'guide'],
+          ['guide', '清单', 'guide'],
           ['more', '更多', 'more'],
         ] as const).map(([id, label, icon]) => (
           <button
