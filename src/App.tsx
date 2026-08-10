@@ -214,10 +214,14 @@ function TimelineCard({
   item,
   checked,
   onToggle,
+  fillChecks,
+  onToggleFill,
 }: {
   item: TimelineItem
   checked: boolean
   onToggle: () => void
+  fillChecks: Record<string, boolean>
+  onToggleFill: (key: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const hasDetails = Boolean(
@@ -262,6 +266,26 @@ function TimelineCard({
                 <span>资料</span>
                 <strong>{material.title}</strong>
                 <p>{material.body}</p>
+                {material.steps && material.steps.length > 0 && (
+                  <div className="fill-guide">
+                    {material.steps.map((step) => {
+                      const key = `${item.id}:${step.id}`
+                      return (
+                        <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
+                          <input
+                            checked={Boolean(fillChecks[key])}
+                            type="checkbox"
+                            onChange={() => onToggleFill(key)}
+                          />
+                          <span>
+                            <strong>{step.field}</strong>
+                            <small>{step.how}</small>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ))}
             {item.dad && <div><span>爸爸</span><p>{item.dad}</p></div>}
@@ -289,6 +313,13 @@ function App() {
   const [clockTick, setClockTick] = useState(0)
   const [simDraft, setSimDraft] = useState(() => toDatetimeLocalValue(getAppNow(readSimOffset())))
   const [simMessage, setSimMessage] = useState('')
+  const [fillChecks, setFillChecks] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hokkaido-fill-checks') ?? '{}')
+    } catch {
+      return {}
+    }
+  })
   const [showRest, setShowRest] = useState(false)
   const [search, setSearch] = useState('')
   const [completed, setCompleted] = useState<Record<string, boolean>>(() => {
@@ -331,6 +362,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('hokkaido-show-packed', String(showPacked))
   }, [showPacked])
+
+  useEffect(() => {
+    localStorage.setItem('hokkaido-fill-checks', JSON.stringify(fillChecks))
+  }, [fillChecks])
 
   useEffect(() => {
     if (!('speechSynthesis' in window)) return
@@ -596,28 +631,64 @@ function App() {
             <h2>{currentActivity.item.title}</h2>
             <p>{currentActivity.item.detail}</p>
 
-            {(currentActivity.item.dad || currentActivity.item.mom || currentActivity.item.kids) && (
-              <div className="now-card__tasks">
-                <span className="eyebrow">现在做什么</span>
-                {currentActivity.item.dad && (
-                  <div><em>爸爸</em><p>{currentActivity.item.dad}</p></div>
-                )}
-                {currentActivity.item.mom && (
-                  <div><em>妈妈</em><p>{currentActivity.item.mom}</p></div>
-                )}
-                {currentActivity.item.kids && (
-                  <div><em>孩子</em><p>{currentActivity.item.kids}</p></div>
-                )}
-              </div>
-            )}
+            <div className="now-card__tasks">
+              <span className="eyebrow">家庭分工 · 全部展开</span>
+              {currentActivity.item.dad ? (
+                <div><em>爸爸</em><p>{currentActivity.item.dad}</p></div>
+              ) : (
+                <div><em>爸爸</em><p>本时段无额外任务</p></div>
+              )}
+              {currentActivity.item.mom ? (
+                <div><em>妈妈</em><p>{currentActivity.item.mom}</p></div>
+              ) : (
+                <div><em>妈妈</em><p>本时段无额外任务</p></div>
+              )}
+              {currentActivity.item.kids ? (
+                <div><em>孩子</em><p>{currentActivity.item.kids}</p></div>
+              ) : (
+                <div><em>孩子</em><p>本时段无额外任务</p></div>
+              )}
+            </div>
 
             {currentActivity.item.materials.map((material) => (
               <article className="now-card__material" key={material.title}>
-                <span className="eyebrow">资料</span>
+                <span className="eyebrow">填写攻略 · 可勾选</span>
                 <strong>{material.title}</strong>
                 <p>{material.body}</p>
+                {material.steps && material.steps.length > 0 && (
+                  <div className="fill-guide">
+                    {material.steps.map((step) => {
+                      const key = `${currentActivity.item.id}:${step.id}`
+                      return (
+                        <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
+                          <input
+                            checked={Boolean(fillChecks[key])}
+                            type="checkbox"
+                            onChange={() =>
+                              setFillChecks((values) => ({ ...values, [key]: !values[key] }))
+                            }
+                          />
+                          <span>
+                            <strong>{step.field}</strong>
+                            <small>{step.how}</small>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
               </article>
             ))}
+
+            {(currentActivity.item.costJpy || currentActivity.item.costCny) && (
+              <div className="now-card__cost">
+                <span className="eyebrow">费用</span>
+                <p>
+                  {currentActivity.item.costJpy && `¥${currentActivity.item.costJpy}`}
+                  {currentActivity.item.costCny && ` · 约 ¥${currentActivity.item.costCny} CNY`}
+                </p>
+              </div>
+            )}
 
             {currentActivity.item.links.length > 0 && (
               <div className="now-card__links">
@@ -637,7 +708,7 @@ function App() {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
               >
-                查看今日行程
+                查看今日长线行程
               </button>
               {currentActivity.navigation && (
                 <a href={mapsUrl(currentActivity.navigation.query)} rel="noreferrer" target="_blank">
@@ -843,9 +914,11 @@ function App() {
             {visibleTimeline.map((item) => (
               <TimelineCard
                 checked={Boolean(completed[item.id])}
+                fillChecks={fillChecks}
                 item={item}
                 key={item.id}
                 onToggle={() => setCompleted((value) => ({ ...value, [item.id]: !value[item.id] }))}
+                onToggleFill={(key) => setFillChecks((values) => ({ ...values, [key]: !values[key] }))}
               />
             ))}
           </div>

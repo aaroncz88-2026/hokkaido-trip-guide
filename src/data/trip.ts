@@ -5,9 +5,16 @@ export type SourceCell = {
   url: string | null
 }
 
+export type FillGuideStep = {
+  id: string
+  field: string
+  how: string
+}
+
 export type TimelineMaterial = {
   title: string
   body: string
+  steps?: FillGuideStep[]
 }
 
 export type TimelineItem = {
@@ -267,30 +274,40 @@ const getTitle = (value: string) => {
 }
 
 const entryCardGuide: TimelineMaterial = {
-  title: '入境填写攻略',
-  body: [
-    '机上优先完成入境准备，落地后直奔查验通道。',
-    '',
-    '一、出发前 / 机上必做',
-    '1. 打开 Visit Japan Web，按家庭成员逐人登记（护照信息、航班、住宿）。',
-    '2. 每人生成入境与海关二维码，截图并下载离线备份；家长手机各留一份。',
-    '3. 核对住宿英文地址、电话，与租车/酒店订单一致。',
-    '',
-    '二、机上填写顺序（爸爸主责）',
-    '1. 先完成 Visit Japan Web，再检查纸质备用入境卡（如机组发放）。',
-    '2. 职业、访日目的选观光；停留天数按返程日填写。',
-    '3. 携带品如实申报；普通游客通常无申报物，不确定就问同行家长后再填。',
-    '4. 孩子由家长代填，名字与护照完全一致。',
-    '',
-    '三、落地新千岁过关',
-    '1. 下飞机后先取齐护照、二维码截图，再排队；不要先去逛。',
-    '2. 出示护照 + Visit Japan Web 二维码；按指示人脸/指纹核验。',
-    '3. 过关后取行李，再去租车柜台。',
-    '',
-    '四、现场口令',
-    '観光です。Visit Japan Web は登録済みです。',
-    '（我们是观光，Visit Japan Web 已登记。）',
-  ].join('\n'),
+  title: '入境卡填写对照',
+  body: '机上按下面字段逐项填写。全部可离线对照，不依赖外链。孩子由家长代填，姓名必须与护照完全一致。',
+  steps: [
+    { id: 'name', field: '姓名 Name', how: '按护照英文大写抄写，字母、空格、顺序都不能改。' },
+    { id: 'nationality', field: '国籍 Nationality', how: '填 CHINA / 中国。' },
+    { id: 'birthday', field: '生年月日 Date of birth', how: '按护照日期填写（年 / 月 / 日）。' },
+    { id: 'sex', field: '性别 Sex', how: '按护照标注填写。' },
+    { id: 'passport', field: '护照号码 Passport No.', how: '完整抄写护照号码，写完再核对一遍。' },
+    {
+      id: 'occupation',
+      field: '职业 Occupation',
+      how: '大人可填 COMPANY EMPLOYEE / HOUSEWIFE / SELF-EMPLOYED；孩子填 CHILD 或 STUDENT。',
+    },
+    { id: 'purpose', field: '访日目的 Purpose', how: '填 TOURISM（观光）。' },
+    { id: 'flight', field: '航班号 Flight No.', how: '填当日入境航班号。' },
+    { id: 'from', field: '从何地来 Last embarkation', how: '填 CHINA 或出发城市。' },
+    {
+      id: 'address',
+      field: '在日住址 Address in Japan',
+      how: '填今晚住宿英文地址（翠葉 Rusutsu / 订单英文地址），两家保持一致。',
+    },
+    { id: 'days', field: '预定停留 Length of stay', how: '按返程日计算，本次到 8 月 30 日。' },
+    { id: 'sign', field: '签名 Signature', how: '本人签名；孩子由家长代签。' },
+    {
+      id: 'customs',
+      field: '海关申报 Customs',
+      how: '普通游客一般无可申报物；有大额现金、肉制品、动植物才勾申报。不确定先问同行家长。',
+    },
+    {
+      id: 'backup',
+      field: '完成后核对',
+      how: '每人一份填完；手机再留护照页与住宿英文地址截图，落地过关直接用。',
+    },
+  ],
 }
 
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
@@ -311,7 +328,23 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     '8:00~12:00': [entryCardGuide],
-    '12:00~13:00': [entryCardGuide],
+  },
+}
+
+const linkCorrections: Record<number, Record<string, { label: string; url: string }[]>> = {
+  1: {
+    // 首页当前行动只保留离线填写对照，不展示失效外链
+    '8:00~12:00': [],
+  },
+}
+
+const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 'dad' | 'mom' | 'kids'>>>> = {
+  1: {
+    '8:00~12:00': {
+      dad: '【入境卡填写】按下方对照表，帮全家人逐项填写并勾选完成',
+      mom: '【飞机简餐】照顾孩子用餐，护照与住宿英文地址备好给爸爸抄写',
+      kids: '【飞机简餐】坐好吃饭休息，需要时把护照交给爸爸妈妈',
+    },
   },
 }
 
@@ -337,16 +370,17 @@ const buildTimeline = () => {
 
     const context = [detail, getText(row, 3), getText(row, 4), getText(row, 5)].join(' ')
     const tags = [...detail.matchAll(/【([^】]+)】/g)].map((match) => match[1])
+    const roleFix = roleCorrections[currentDay]?.[time]
     const item: TimelineItem = {
       id: `day-${currentDay}-row-${rowIndex}`,
       time,
       title: getTitle(detail),
       detail,
       tags,
-      dad: getText(row, 3),
-      mom: getText(row, 4),
-      kids: getText(row, 5),
-      links: getLinks(row, context),
+      dad: roleFix?.dad ?? getText(row, 3),
+      mom: roleFix?.mom ?? getText(row, 4),
+      kids: roleFix?.kids ?? getText(row, 5),
+      links: linkCorrections[currentDay]?.[time] ?? getLinks(row, context),
       materials: materialCorrections[currentDay]?.[time] ?? getMaterials(row),
       costJpy: getText(row, 8),
       costCny: toCny(getText(row, 8)),

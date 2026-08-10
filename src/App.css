@@ -1861,6 +1861,65 @@
   line-height: 1.55;
 }
 
+.now-card__cost {
+  margin-top: 12px;
+}
+
+.now-card__cost p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.fill-guide {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fill-guide__step {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid #d9ebe7;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.fill-guide__step.done {
+  opacity: 0.62;
+  background: #eef6f4;
+}
+
+.fill-guide__step input {
+  margin-top: 3px;
+  accent-color: var(--brand);
+}
+
+.fill-guide__step span {
+  display: grid;
+  gap: 3px;
+}
+
+.fill-guide__step strong {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.fill-guide__step small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.timeline-material .fill-guide {
+  grid-column: 1 / -1;
+}
+
 .now-card__links {
   display: flex;
   flex-wrap: wrap;
