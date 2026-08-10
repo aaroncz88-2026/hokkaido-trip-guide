@@ -595,6 +595,40 @@ function App() {
             </div>
             <h2>{currentActivity.item.title}</h2>
             <p>{currentActivity.item.detail}</p>
+
+            {(currentActivity.item.dad || currentActivity.item.mom || currentActivity.item.kids) && (
+              <div className="now-card__tasks">
+                <span className="eyebrow">现在做什么</span>
+                {currentActivity.item.dad && (
+                  <div><em>爸爸</em><p>{currentActivity.item.dad}</p></div>
+                )}
+                {currentActivity.item.mom && (
+                  <div><em>妈妈</em><p>{currentActivity.item.mom}</p></div>
+                )}
+                {currentActivity.item.kids && (
+                  <div><em>孩子</em><p>{currentActivity.item.kids}</p></div>
+                )}
+              </div>
+            )}
+
+            {currentActivity.item.materials.map((material) => (
+              <article className="now-card__material" key={material.title}>
+                <span className="eyebrow">资料</span>
+                <strong>{material.title}</strong>
+                <p>{material.body}</p>
+              </article>
+            ))}
+
+            {currentActivity.item.links.length > 0 && (
+              <div className="now-card__links">
+                {currentActivity.item.links.map((link) => (
+                  <a href={link.url} key={link.url} rel="noreferrer" target="_blank">
+                    <Icon name="external" size={15} /> {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
+
             <div className="now-card__actions">
               <button
                 onClick={() => {
