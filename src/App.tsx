@@ -9,6 +9,7 @@ import {
   type DayPlan,
   type TimelineItem,
 } from './data/trip'
+import { japaneseLessons } from './data/japanese'
 import './App.css'
 
 type View = 'home' | 'days' | 'guide' | 'more'
@@ -74,6 +75,7 @@ const iconPaths: Record<string, string> = {
   suitcase: 'M9 6V4h6v2M4 7h16v13H4V7Zm0 5h16M9 12v2m6-2v2',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-11v6m0-10h.01',
   wifi: 'M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01',
+  volume: 'M11 5 6 9H3v6h3l5 4V5Zm4.5 4a4 4 0 0 1 0 6m2.5-9a8 8 0 0 1 0 12',
 }
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -123,6 +125,20 @@ const getJourneyState = (preview: PreviewPhase): JourneyState => {
   }
   const days = Math.ceil((start.getTime() - today.getTime()) / 86_400_000)
   return { phase: 'before', value: `${days}`, label: '天后出发', day: null }
+}
+
+const speakJapanese = (text: string) => {
+  if (!('speechSynthesis' in window)) return
+  const speech = new SpeechSynthesisUtterance(text)
+  speech.lang = 'ja-JP'
+  speech.rate = 0.78
+  speech.pitch = 1
+  const japaneseVoice = window.speechSynthesis
+    .getVoices()
+    .find((voice) => voice.lang.toLowerCase().startsWith('ja'))
+  if (japaneseVoice) speech.voice = japaneseVoice
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(speech)
 }
 
 function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
@@ -220,6 +236,8 @@ function App() {
   const [newItemText, setNewItemText] = useState<Record<string, string>>({})
   const [templateToAdd, setTemplateToAdd] = useState('')
   const [activePackingListId, setActivePackingListId] = useState('')
+  const [japaneseLessonIndex, setJapaneseLessonIndex] = useState(0)
+  const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     localStorage.setItem('hokkaido-completed', JSON.stringify(completed))
@@ -247,6 +265,7 @@ function App() {
   )
   const activePackingList =
     packingLists.find((list) => list.id === activePackingListId) ?? packingLists[0]
+  const japaneseLesson = japaneseLessons[japaneseLessonIndex]
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -442,6 +461,65 @@ function App() {
         )}
 
         <div className={journey.phase === 'after' ? 'phase-content--hidden' : ''}>
+          <section className="section japanese-lesson">
+            <div className="section-heading">
+              <div><span className="eyebrow">TRAVEL JAPANESE</span><h2>出发前学几句</h2></div>
+              <button
+                className="text-button"
+                onClick={() => {
+                  setJapaneseLessonIndex((index) => (index + 1) % japaneseLessons.length)
+                  setRevealedPhrases({})
+                }}
+              >
+                换一组 <Icon name="arrow" size={15} />
+              </button>
+            </div>
+            <div className="japanese-lesson__intro">
+              <strong>{japaneseLesson.title}</strong>
+              <span>{japaneseLesson.subtitle}</span>
+            </div>
+            <div className="japanese-phrases">
+              {japaneseLesson.phrases.map((phrase, index) => {
+                const key = `${japaneseLesson.id}-${index}`
+                const revealed = Boolean(revealedPhrases[key])
+                return (
+                  <button
+                    aria-expanded={revealed}
+                    className={revealed ? 'revealed' : ''}
+                    key={key}
+                    onClick={() => {
+                      setRevealedPhrases((values) => ({ ...values, [key]: true }))
+                      speakJapanese(phrase.japanese)
+                    }}
+                  >
+                    <span className="japanese-phrase__chinese">{phrase.chinese}</span>
+                    <small>{revealed ? '点击再听一次' : '点击查看日语并听发音'}</small>
+                    {revealed && (
+                      <span className="japanese-phrase__answer">
+                        <strong lang="ja">{phrase.japanese}</strong>
+                        <em>{phrase.romaji}</em>
+                      </span>
+                    )}
+                    <span className="japanese-phrase__audio"><Icon name="volume" size={17} /></span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="lesson-dots" aria-label="日语课程进度">
+              {japaneseLessons.map((lesson, index) => (
+                <button
+                  aria-label={`切换到${lesson.title}`}
+                  className={index === japaneseLessonIndex ? 'active' : ''}
+                  key={lesson.id}
+                  onClick={() => {
+                    setJapaneseLessonIndex(index)
+                    setRevealedPhrases({})
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+
           <section className="section">
           <div className="section-heading">
             <div><span className="eyebrow">QUICK FIND</span><h2>现场搜一下</h2></div>

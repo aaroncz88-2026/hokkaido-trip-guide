@@ -291,6 +291,127 @@
   font-weight: 750;
 }
 
+.japanese-lesson {
+  padding-top: 28px;
+}
+
+.japanese-lesson__intro {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 14px 15px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #765b78, #9a7296);
+}
+
+.japanese-lesson__intro strong {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.japanese-lesson__intro span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.66rem;
+}
+
+.japanese-phrases {
+  display: grid;
+  gap: 7px;
+}
+
+.japanese-phrases > button {
+  display: grid;
+  position: relative;
+  min-height: 58px;
+  gap: 4px;
+  padding: 12px 46px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.japanese-phrase__audio {
+  display: flex;
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #9b8d9e;
+  background: #f1ecef;
+  transform: translateY(-50%);
+}
+
+.japanese-phrases > button.revealed {
+  border-color: #c9b2c9;
+  background: #f6eff6;
+}
+
+.japanese-phrases > button.revealed .japanese-phrase__audio {
+  color: #fff;
+  background: #876887;
+}
+
+.japanese-phrase__chinese {
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.japanese-phrases > button > small {
+  color: var(--muted);
+  font-size: 0.58rem;
+}
+
+.japanese-phrase__answer {
+  display: grid;
+  gap: 4px;
+  margin-top: 7px;
+  padding-top: 9px;
+  border-top: 1px dashed #d8c9d8;
+}
+
+.japanese-phrase__answer strong {
+  color: #694f6c;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.japanese-phrase__answer em {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-style: normal;
+}
+
+.lesson-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.lesson-dots button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d2c9c0;
+  transition: width 160ms ease, background 160ms ease;
+}
+
+.lesson-dots button.active {
+  width: 22px;
+  background: #876887;
+}
+
 .chevron {
   display: inline-flex;
   transform: rotate(90deg);
