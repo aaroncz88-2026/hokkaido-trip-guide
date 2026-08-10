@@ -332,7 +332,20 @@
   color: var(--ink);
   background: var(--paper);
   text-align: left;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 120ms ease,
+    box-shadow 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.japanese-phrases > button:active {
+  transform: scale(0.985);
+  border-color: #c9b2c9;
+  background: #f3e9f3;
+  box-shadow: inset 0 0 0 1px rgba(135, 104, 135, 0.12);
 }
 
 .japanese-phrase__audio {
@@ -348,6 +361,7 @@
   color: #9b8d9e;
   background: #f1ecef;
   transform: translateY(-50%);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .japanese-phrases > button.revealed {
@@ -355,9 +369,30 @@
   background: #f6eff6;
 }
 
-.japanese-phrases > button.revealed .japanese-phrase__audio {
+.japanese-phrases > button.speaking {
+  border-color: #876887;
+  background: #f2e7f2;
+  box-shadow: 0 8px 20px rgba(135, 104, 135, 0.14);
+}
+
+.japanese-phrases > button.revealed .japanese-phrase__audio,
+.japanese-phrases > button.speaking .japanese-phrase__audio {
   color: #fff;
   background: #876887;
+}
+
+.japanese-phrase__audio.pulse {
+  animation: japanese-speak-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes japanese-speak-pulse {
+  0%,
+  100% {
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.12);
+  }
 }
 
 .japanese-phrase__chinese {

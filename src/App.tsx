@@ -127,18 +127,78 @@ const getJourneyState = (preview: PreviewPhase): JourneyState => {
   return { phase: 'before', value: `${days}`, label: '天后出发', day: null }
 }
 
-const speakJapanese = (text: string) => {
-  if (!('speechSynthesis' in window)) return
+let japaneseAudio: HTMLAudioElement | null = null
+
+const pickFemaleJapaneseVoice = () => {
+  const voices = window.speechSynthesis?.getVoices() ?? []
+  const japanese = voices.filter((voice) => voice.lang.toLowerCase().startsWith('ja'))
+  return (
+    japanese.find((voice) => /kyoko|nanami|haruka|sayaka|female|女/i.test(`${voice.name} ${voice.voiceURI}`)) ||
+    japanese.find((voice) => !/otoya|ichiro|male|男/i.test(`${voice.name} ${voice.voiceURI}`)) ||
+    japanese[0] ||
+    null
+  )
+}
+
+const speakWithSystemVoice = (text: string) => {
+  if (!('speechSynthesis' in window)) return false
   const speech = new SpeechSynthesisUtterance(text)
   speech.lang = 'ja-JP'
-  speech.rate = 0.78
-  speech.pitch = 1
-  const japaneseVoice = window.speechSynthesis
-    .getVoices()
-    .find((voice) => voice.lang.toLowerCase().startsWith('ja'))
-  if (japaneseVoice) speech.voice = japaneseVoice
+  speech.rate = 0.82
+  speech.pitch = 1.08
+  const femaleVoice = pickFemaleJapaneseVoice()
+  if (femaleVoice) speech.voice = femaleVoice
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(speech)
+  return true
+}
+
+const speakJapanese = (text: string, onStart?: () => void, onEnd?: () => void) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(12)
+    } catch {
+      // ignore unsupported vibration
+    }
+  }
+
+  if (japaneseAudio) {
+    japaneseAudio.pause()
+    japaneseAudio = null
+  }
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+
+  const sources = [
+    `https://dict.youdao.com/dictvoice?le=jap&audio=${encodeURIComponent(text)}`,
+    `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=ja&q=${encodeURIComponent(text)}`,
+  ]
+
+  const tryPlay = (index: number) => {
+    if (index >= sources.length) {
+      const started = speakWithSystemVoice(text)
+      if (started) onStart?.()
+      window.setTimeout(() => onEnd?.(), Math.min(4200, 900 + text.length * 180))
+      return
+    }
+
+    const audio = new Audio(sources[index])
+    japaneseAudio = audio
+    audio.onplay = () => onStart?.()
+    audio.onended = () => {
+      if (japaneseAudio === audio) japaneseAudio = null
+      onEnd?.()
+    }
+    audio.onerror = () => {
+      if (japaneseAudio === audio) japaneseAudio = null
+      tryPlay(index + 1)
+    }
+    void audio.play().catch(() => {
+      if (japaneseAudio === audio) japaneseAudio = null
+      tryPlay(index + 1)
+    })
+  }
+
+  tryPlay(0)
 }
 
 function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
@@ -238,6 +298,7 @@ function App() {
   const [activePackingListId, setActivePackingListId] = useState('')
   const [japaneseLessonIndex, setJapaneseLessonIndex] = useState(0)
   const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
+  const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
 
   useEffect(() => {
     localStorage.setItem('hokkaido-completed', JSON.stringify(completed))
@@ -254,6 +315,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('hokkaido-show-packed', String(showPacked))
   }, [showPacked])
+
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return
+    window.speechSynthesis.getVoices()
+    const refreshVoices = () => window.speechSynthesis.getVoices()
+    window.speechSynthesis.addEventListener('voiceschanged', refreshVoices)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', refreshVoices)
+  }, [])
 
   const currentDay = tripDays.find((day) => day.day === selectedDay) ?? tripDays[0]
   const journey = getJourneyState(previewPhase)
@@ -482,25 +551,36 @@ function App() {
               {japaneseLesson.phrases.map((phrase, index) => {
                 const key = `${japaneseLesson.id}-${index}`
                 const revealed = Boolean(revealedPhrases[key])
+                const speaking = speakingPhraseKey === key
                 return (
                   <button
                     aria-expanded={revealed}
-                    className={revealed ? 'revealed' : ''}
+                    className={`${revealed ? 'revealed' : ''} ${speaking ? 'speaking' : ''}`.trim()}
                     key={key}
                     onClick={() => {
                       setRevealedPhrases((values) => ({ ...values, [key]: true }))
-                      speakJapanese(phrase.japanese)
+                      setSpeakingPhraseKey(key)
+                      speakJapanese(
+                        phrase.japanese,
+                        () => setSpeakingPhraseKey(key),
+                        () => setSpeakingPhraseKey((current) => (current === key ? null : current)),
+                      )
                     }}
+                    type="button"
                   >
                     <span className="japanese-phrase__chinese">{phrase.chinese}</span>
-                    <small>{revealed ? '点击再听一次' : '点击查看日语并听发音'}</small>
+                    <small>
+                      {speaking ? '正在播放女声…' : revealed ? '点击再听女声' : '点击查看日语并听女声'}
+                    </small>
                     {revealed && (
                       <span className="japanese-phrase__answer">
                         <strong lang="ja">{phrase.japanese}</strong>
                         <em>{phrase.romaji}</em>
                       </span>
                     )}
-                    <span className="japanese-phrase__audio"><Icon name="volume" size={17} /></span>
+                    <span className={`japanese-phrase__audio ${speaking ? 'pulse' : ''}`}>
+                      <Icon name="volume" size={17} />
+                    </span>
                   </button>
                 )
               })}

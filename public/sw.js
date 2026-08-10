@@ -1,4 +1,4 @@
-const CACHE = 'hokkaido-guide-v2'
+const CACHE = 'hokkaido-guide-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
