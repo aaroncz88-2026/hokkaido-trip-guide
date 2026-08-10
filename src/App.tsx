@@ -576,8 +576,109 @@ function App() {
     if (!day) return
     const [year, month, date] = day.date.split('-').map(Number)
     const preset = new Date(year, month - 1, date, 9, 0, 0, 0)
-    setSimDraft(toDatetimeLocalValue(preset))
-    setSimMessage(`已填入 DAY ${dayNumber} · 09:00，点「运行模拟」生效`)
+    applySimulatedTime(preset, `已模拟 DAY ${dayNumber} · 09:00`)
+    setView('home')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const toggleFillStep = (key: string) => {
+    setFillChecks((values) => ({ ...values, [key]: !values[key] }))
+  }
+
+  const renderNowCard = () => {
+    if (!currentActivity) {
+      return (
+        <section className="now-card now-card--empty">
+          <span className="eyebrow">NOW · DAY {journey.day}</span>
+          <h2>当前时段暂无具体安排</h2>
+          <p>可以切换到行程页查看全天时间轴，或在「更多」里调整模拟时间。</p>
+        </section>
+      )
+    }
+
+    const item = currentActivity.item
+    return (
+      <section className="now-card">
+        <div className="now-card__head">
+          <span className="eyebrow">当前行动 · DAY {currentActivity.day.day}</span>
+          <strong>{item.time}</strong>
+        </div>
+        <h2>{item.title}</h2>
+        <p>{item.detail}</p>
+
+        <div className="now-card__tasks">
+          <span className="eyebrow">家庭分工</span>
+          <div><em>爸爸</em><p>{item.dad || '本时段无额外任务'}</p></div>
+          <div><em>妈妈</em><p>{item.mom || '本时段无额外任务'}</p></div>
+          <div><em>孩子</em><p>{item.kids || '本时段无额外任务'}</p></div>
+        </div>
+
+        {item.materials.map((material) => (
+          <article className="now-card__material" key={material.title}>
+            <span className="eyebrow">填写攻略 · 可勾选</span>
+            <strong>{material.title}</strong>
+            <p>{material.body}</p>
+            {material.steps && material.steps.length > 0 && (
+              <div className="fill-guide">
+                {material.steps.map((step) => {
+                  const key = `${item.id}:${step.id}`
+                  return (
+                    <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
+                      <input
+                        checked={Boolean(fillChecks[key])}
+                        type="checkbox"
+                        onChange={() => toggleFillStep(key)}
+                      />
+                      <span>
+                        <strong>{step.field}</strong>
+                        <small>{step.how}</small>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </article>
+        ))}
+
+        {(item.costJpy || item.costCny) && (
+          <div className="now-card__cost">
+            <span className="eyebrow">费用</span>
+            <p>
+              {item.costJpy && `¥${item.costJpy}`}
+              {item.costCny && ` · 约 ¥${item.costCny} CNY`}
+            </p>
+          </div>
+        )}
+
+        {item.links.length > 0 && (
+          <div className="now-card__links">
+            {item.links.map((link) => (
+              <a href={link.url} key={link.url} rel="noreferrer" target="_blank">
+                <Icon name="external" size={15} /> {link.label}
+              </a>
+            ))}
+          </div>
+        )}
+
+        <div className="now-card__actions">
+          <button
+            onClick={() => {
+              setSelectedDay(currentActivity.day.day)
+              setView('days')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          >
+            查看今日长线行程
+          </button>
+          {currentActivity.navigation && (
+            <a href={mapsUrl(currentActivity.navigation.query)} rel="noreferrer" target="_blank">
+              <Icon name="map" size={15} /> 导航去{currentActivity.navigation.label}
+            </a>
+          )}
+        </div>
+      </section>
+    )
   }
 
   const renderHeader = () => (
@@ -602,119 +703,45 @@ function App() {
     <>
       {renderHeader()}
       <main>
-        <section
-          className={`hero-panel hero-panel--${journey.phase}`}
-          style={{ backgroundImage: `url(${import.meta.env.BASE_URL}furano-lavender-cover.png)` }}
-        >
-          <div className="hero-panel__texture" />
-          <div className="hero-panel__content">
-            <span>{journey.phase === 'after' ? 'TWO FAMILIES · ONE JOURNEY' : tripBasics.party}</span>
-            <div className="countdown">
-              <strong className={journey.phase === 'after' ? 'countdown__memory-date' : ''}>{journey.value}</strong>
-              <p>{journey.label}</p>
-            </div>
-            <div className="route-line">
-              <span>{journey.phase === 'after' ? '两家人的北海道旅行' : '上海'}</span>
-              <i />
-              <span>{journey.phase === 'after' ? '珍藏回忆' : '北海道'}</span>
-            </div>
-            <small className="hero-location">富良野 · 薰衣草花田</small>
-          </div>
-        </section>
-
-        {journey.phase === 'during' && currentActivity && (
-          <section className="now-card">
-            <div className="now-card__head">
-              <span className="eyebrow">NOW · DAY {currentActivity.day.day}</span>
-              <strong>{currentActivity.item.time}</strong>
-            </div>
-            <h2>{currentActivity.item.title}</h2>
-            <p>{currentActivity.item.detail}</p>
-
-            <div className="now-card__tasks">
-              <span className="eyebrow">家庭分工 · 全部展开</span>
-              {currentActivity.item.dad ? (
-                <div><em>爸爸</em><p>{currentActivity.item.dad}</p></div>
-              ) : (
-                <div><em>爸爸</em><p>本时段无额外任务</p></div>
-              )}
-              {currentActivity.item.mom ? (
-                <div><em>妈妈</em><p>{currentActivity.item.mom}</p></div>
-              ) : (
-                <div><em>妈妈</em><p>本时段无额外任务</p></div>
-              )}
-              {currentActivity.item.kids ? (
-                <div><em>孩子</em><p>{currentActivity.item.kids}</p></div>
-              ) : (
-                <div><em>孩子</em><p>本时段无额外任务</p></div>
-              )}
-            </div>
-
-            {currentActivity.item.materials.map((material) => (
-              <article className="now-card__material" key={material.title}>
-                <span className="eyebrow">填写攻略 · 可勾选</span>
-                <strong>{material.title}</strong>
-                <p>{material.body}</p>
-                {material.steps && material.steps.length > 0 && (
-                  <div className="fill-guide">
-                    {material.steps.map((step) => {
-                      const key = `${currentActivity.item.id}:${step.id}`
-                      return (
-                        <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
-                          <input
-                            checked={Boolean(fillChecks[key])}
-                            type="checkbox"
-                            onChange={() =>
-                              setFillChecks((values) => ({ ...values, [key]: !values[key] }))
-                            }
-                          />
-                          <span>
-                            <strong>{step.field}</strong>
-                            <small>{step.how}</small>
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              </article>
-            ))}
-
-            {(currentActivity.item.costJpy || currentActivity.item.costCny) && (
-              <div className="now-card__cost">
-                <span className="eyebrow">费用</span>
-                <p>
-                  {currentActivity.item.costJpy && `¥${currentActivity.item.costJpy}`}
-                  {currentActivity.item.costCny && ` · 约 ¥${currentActivity.item.costCny} CNY`}
-                </p>
+        {journey.phase === 'during' ? (
+          <>
+            <section className="live-status">
+              <div>
+                <span className="eyebrow">正在北行</span>
+                <strong>{journey.value}</strong>
+                <p>{journey.label}</p>
               </div>
-            )}
-
-            {currentActivity.item.links.length > 0 && (
-              <div className="now-card__links">
-                {currentActivity.item.links.map((link) => (
-                  <a href={link.url} key={link.url} rel="noreferrer" target="_blank">
-                    <Icon name="external" size={15} /> {link.label}
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <div className="now-card__actions">
               <button
+                type="button"
                 onClick={() => {
-                  setSelectedDay(currentActivity.day.day)
+                  setSelectedDay(journey.day ?? selectedDay)
                   setView('days')
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
               >
-                查看今日长线行程
+                全天行程
               </button>
-              {currentActivity.navigation && (
-                <a href={mapsUrl(currentActivity.navigation.query)} rel="noreferrer" target="_blank">
-                  <Icon name="map" size={15} /> 导航去{currentActivity.navigation.label}
-                </a>
-              )}
+            </section>
+            {renderNowCard()}
+          </>
+        ) : (
+          <section
+            className={`hero-panel hero-panel--${journey.phase}`}
+            style={{ backgroundImage: `url(${import.meta.env.BASE_URL}furano-lavender-cover.png)` }}
+          >
+            <div className="hero-panel__texture" />
+            <div className="hero-panel__content">
+              <span>{journey.phase === 'after' ? 'TWO FAMILIES · ONE JOURNEY' : tripBasics.party}</span>
+              <div className="countdown">
+                <strong className={journey.phase === 'after' ? 'countdown__memory-date' : ''}>{journey.value}</strong>
+                <p>{journey.label}</p>
+              </div>
+              <div className="route-line">
+                <span>{journey.phase === 'after' ? '两家人的北海道旅行' : '上海'}</span>
+                <i />
+                <span>{journey.phase === 'after' ? '珍藏回忆' : '北海道'}</span>
+              </div>
+              <small className="hero-location">富良野 · 薰衣草花田</small>
             </div>
           </section>
         )}
@@ -731,7 +758,7 @@ function App() {
           </section>
         )}
 
-        <div className={journey.phase === 'after' ? 'phase-content--hidden' : ''}>
+        <div className={journey.phase === 'after' || journey.phase === 'during' ? 'phase-content--hidden' : ''}>
           <section className="section japanese-lesson">
             <div className="section-heading">
               <div><span className="eyebrow">TRAVEL JAPANESE</span><h2>出发前学几句</h2></div>
@@ -1122,7 +1149,7 @@ function App() {
           <div>
             <span className="eyebrow">DEBUG · TIME MACHINE</span>
             <h2>模拟旅行时间</h2>
-            <p>选好日期和时间后运行模拟，首页会按该时刻显示阶段与当前事项。可随时回到真实时间。</p>
+            <p>选好日期和时间后点「运行模拟」，或直接点 D1–D8 立即进入当天 09:00。模拟时间会保存在本机，重启后仍有效。</p>
           </div>
 
           <div className="debug-time-status">

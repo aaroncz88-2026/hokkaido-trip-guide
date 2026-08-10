@@ -13,7 +13,7 @@ export type CurrentActivity = {
 
 export const readSimOffset = (): number | null => {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY)
     if (raw == null || raw === '') return null
     const value = Number(raw)
     return Number.isFinite(value) ? value : null
@@ -24,8 +24,9 @@ export const readSimOffset = (): number | null => {
 
 export const writeSimOffset = (offsetMs: number | null) => {
   try {
-    if (offsetMs == null) sessionStorage.removeItem(STORAGE_KEY)
-    else sessionStorage.setItem(STORAGE_KEY, String(offsetMs))
+    sessionStorage.removeItem(STORAGE_KEY)
+    if (offsetMs == null) localStorage.removeItem(STORAGE_KEY)
+    else localStorage.setItem(STORAGE_KEY, String(offsetMs))
   } catch {
     // ignore private-mode / quota failures
   }
