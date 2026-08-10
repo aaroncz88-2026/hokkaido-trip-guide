@@ -5,6 +5,11 @@ export type SourceCell = {
   url: string | null
 }
 
+export type TimelineMaterial = {
+  title: string
+  body: string
+}
+
 export type TimelineItem = {
   id: string
   time: string
@@ -15,6 +20,7 @@ export type TimelineItem = {
   mom: string
   kids: string
   links: { label: string; url: string }[]
+  materials: TimelineMaterial[]
   costJpy: string
   costCny: string
   isRest: boolean
@@ -191,18 +197,100 @@ const dayMeta: DayMeta[] = [
 
 const getText = (row: Array<SourceCell | null>, index: number) => row[index]?.text.trim() ?? ''
 
-const getLinks = (row: Array<SourceCell | null>) =>
+const isMostlyUrl = (text: string) => {
+  const cleaned = text.trim()
+  if (!cleaned) return false
+  if (/^https?:\/\/\S+$/i.test(cleaned)) return true
+  const withoutUrls = cleaned.replace(/https?:\/\/\S+/gi, '').trim()
+  return withoutUrls.length < 8
+}
+
+const guessLinkLabel = (cell: SourceCell, index: number, context: string) => {
+  const leftover = cell.text.replace(/https?:\/\/\S+/gi, '').trim()
+  if (leftover) return leftover
+  if (/入境|过关|Visit Japan|入境卡/i.test(context)) return '入境填写参考'
+  if (/船|cruise|龙宫/i.test(context)) return '船票 / 游船资料'
+  if (/rusutsu|留寿都|游乐/i.test(context)) return '留寿都游乐资料'
+  if (/lake.?hill|牧场/i.test(context)) return '牧场资料'
+  if (/洞爷|烟花|laketoya/i.test(context)) return '洞爷湖资料'
+  if (/定山溪|jozankei|河童/i.test(context)) return '定山溪活动资料'
+  if (/gaja|烤肉|预约/i.test(context)) return '餐厅预约'
+  return `资料 ${index + 1}`
+}
+
+const getLinks = (row: Array<SourceCell | null>, context: string) =>
   row
     .slice(6, 8)
     .filter((cell): cell is SourceCell => Boolean(cell?.url))
     .map((cell, index) => ({
-      label: cell.text.replace(/^https?:\/\/\S+/i, '').trim() || `资料 ${index + 1}`,
+      label: guessLinkLabel(cell, index, context),
       url: cell.url!,
     }))
+
+const titleFromMaterialBody = (body: string, index: number) => {
+  const firstLine = body.split(/\n/).map((line) => line.trim()).find(Boolean) ?? ''
+  if (/攻略|清单|注意|填写|步骤/.test(firstLine) && firstLine.length <= 28) return firstLine
+  if (firstLine.startsWith('【') && firstLine.length <= 24) {
+    return firstLine.replace(/【|】/g, '').split(/[·+／/]/)[0].trim() || `现场资料 ${index + 1}`
+  }
+  return `现场资料 ${index + 1}`
+}
+
+const getMaterials = (row: Array<SourceCell | null>): TimelineMaterial[] =>
+  row
+    .slice(6, 8)
+    .filter((cell): cell is SourceCell => {
+      if (!cell) return false
+      const text = cell.text.trim()
+      if (!text || text === '停车点：') return false
+      if (cell.url && isMostlyUrl(text)) return false
+      if (cell.url) {
+        const leftover = text.replace(/https?:\/\/\S+/gi, '').trim()
+        return leftover.length >= 12
+      }
+      return text.length >= 8 && !/^https?:\/\/\S+$/i.test(text)
+    })
+    .map((cell, index) => {
+      const body = cell.url
+        ? cell.text.replace(/https?:\/\/\S+/gi, '').replace(/\n{3,}/g, '\n\n').trim()
+        : cell.text.trim()
+      return {
+        title: titleFromMaterialBody(body, index),
+        body,
+      }
+    })
+    .filter((material) => material.body.length >= 8)
 
 const getTitle = (value: string) => {
   const cleaned = value.replace(/【([^】]+)】/g, '$1').replace(/\s+/g, ' ').trim()
   return cleaned.split(/[（(]/)[0].trim() || '行程安排'
+}
+
+const entryCardGuide: TimelineMaterial = {
+  title: '入境填写攻略',
+  body: [
+    '机上优先完成入境准备，落地后直奔查验通道。',
+    '',
+    '一、出发前 / 机上必做',
+    '1. 打开 Visit Japan Web，按家庭成员逐人登记（护照信息、航班、住宿）。',
+    '2. 每人生成入境与海关二维码，截图并下载离线备份；家长手机各留一份。',
+    '3. 核对住宿英文地址、电话，与租车/酒店订单一致。',
+    '',
+    '二、机上填写顺序（爸爸主责）',
+    '1. 先完成 Visit Japan Web，再检查纸质备用入境卡（如机组发放）。',
+    '2. 职业、访日目的选观光；停留天数按返程日填写。',
+    '3. 携带品如实申报；普通游客通常无申报物，不确定就问同行家长后再填。',
+    '4. 孩子由家长代填，名字与护照完全一致。',
+    '',
+    '三、落地新千岁过关',
+    '1. 下飞机后先取齐护照、二维码截图，再排队；不要先去逛。',
+    '2. 出示护照 + Visit Japan Web 二维码；按指示人脸/指纹核验。',
+    '3. 过关后取行李，再去租车柜台。',
+    '',
+    '四、现场口令',
+    '観光です。Visit Japan Web は登録済みです。',
+    '（我们是观光，Visit Japan Web 已登记。）',
+  ].join('\n'),
 }
 
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
@@ -217,6 +305,13 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '18:00~19:00': '【大地のテラス晚餐】需提前确认开放并预约18:00',
     '19:00~20:00': '【晚餐】【返回札幌】',
     '20:00~21:00': '【狸小路】【采购】MEGA唐吉诃德购买DAY8早餐',
+  },
+}
+
+const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
+  1: {
+    '8:00~12:00': [entryCardGuide],
+    '12:00~13:00': [entryCardGuide],
   },
 }
 
@@ -240,6 +335,7 @@ const buildTimeline = () => {
     const detail = finalTimelineCorrections[currentDay]?.[time] ?? rawDetail
     if (!time || !detail) return
 
+    const context = [detail, getText(row, 3), getText(row, 4), getText(row, 5)].join(' ')
     const tags = [...detail.matchAll(/【([^】]+)】/g)].map((match) => match[1])
     const item: TimelineItem = {
       id: `day-${currentDay}-row-${rowIndex}`,
@@ -250,7 +346,8 @@ const buildTimeline = () => {
       dad: getText(row, 3),
       mom: getText(row, 4),
       kids: getText(row, 5),
-      links: getLinks(row),
+      links: getLinks(row, context),
+      materials: materialCorrections[currentDay]?.[time] ?? getMaterials(row),
       costJpy: getText(row, 8),
       costCny: toCny(getText(row, 8)),
       isRest: /睡觉|洗漱|整理/.test(detail) && !/出发|景点|游乐/.test(detail),

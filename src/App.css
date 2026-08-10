@@ -1023,6 +1023,23 @@
   font-weight: 700;
 }
 
+.material-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.material-preview span {
+  padding: 4px 8px;
+  border: 1px solid #d9ebe7;
+  border-radius: 999px;
+  color: var(--brand);
+  background: #eef6f4;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
 .timeline-details {
   display: grid;
   gap: 9px;
@@ -1058,6 +1075,29 @@
   text-decoration: none;
   font-size: 0.66rem;
   font-weight: 700;
+}
+
+.timeline-material {
+  grid-template-columns: 38px 1fr !important;
+  padding: 12px;
+  border: 1px solid #d9ebe7;
+  border-radius: 12px;
+  background: #f4faf8;
+}
+
+.timeline-material strong {
+  margin: 0;
+  color: var(--brand);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.timeline-material p {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 0.72rem;
+  line-height: 1.55;
 }
 
 .reminder-card {

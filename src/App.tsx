@@ -220,7 +220,9 @@ function TimelineCard({
   onToggle: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const hasDetails = Boolean(item.dad || item.mom || item.kids || item.links.length || item.costJpy)
+  const hasDetails = Boolean(
+    item.dad || item.mom || item.kids || item.links.length || item.materials.length || item.costJpy,
+  )
 
   return (
     <article className={`timeline-card ${checked ? 'timeline-card--done' : ''}`}>
@@ -240,14 +242,28 @@ function TimelineCard({
           </div>
         )}
         {item.detail !== `【${item.tags[0]}】` && <p>{item.detail}</p>}
+        {item.materials.length > 0 && (
+          <div className="material-preview">
+            {item.materials.map((material) => (
+              <span key={material.title}>含{material.title}</span>
+            ))}
+          </div>
+        )}
         {hasDetails && (
           <button className="text-button" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? '收起细节' : '分工与资料'}
+            {expanded ? '收起细节' : item.materials.length ? '查看填写攻略与分工' : '分工与资料'}
             <span className={expanded ? 'chevron chevron--up' : 'chevron'}><Icon name="arrow" size={15} /></span>
           </button>
         )}
         {expanded && (
           <div className="timeline-details">
+            {item.materials.map((material) => (
+              <div className="timeline-material" key={material.title}>
+                <span>资料</span>
+                <strong>{material.title}</strong>
+                <p>{material.body}</p>
+              </div>
+            ))}
             {item.dad && <div><span>爸爸</span><p>{item.dad}</p></div>}
             {item.mom && <div><span>妈妈</span><p>{item.mom}</p></div>}
             {item.kids && <div><span>孩子</span><p>{item.kids}</p></div>}
