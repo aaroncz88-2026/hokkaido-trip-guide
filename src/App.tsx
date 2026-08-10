@@ -10,12 +10,23 @@ import {
   type TimelineItem,
 } from './data/trip'
 import { japaneseLessons } from './data/japanese'
+import {
+  formatSimClock,
+  getAppNow,
+  getCurrentActivity,
+  parseDatetimeLocalValue,
+  readSimOffset,
+  toDatetimeLocalValue,
+  TRIP_END,
+  TRIP_START,
+  writeSimOffset,
+} from './lib/clock'
 import './App.css'
 
 type View = 'home' | 'days' | 'guide' | 'more'
-type PreviewPhase = 'auto' | 'before' | 'during' | 'after'
+type JourneyPhase = 'before' | 'during' | 'after'
 type JourneyState = {
-  phase: Exclude<PreviewPhase, 'auto'>
+  phase: JourneyPhase
   value: string
   label: string
   day: number | null
@@ -91,10 +102,8 @@ const formatDate = (date: string) => {
   return `${month}月${day}日`
 }
 
-const getJourneyState = (preview: PreviewPhase): JourneyState => {
-  if (preview === 'before') return { phase: 'before', value: '18', label: '天后出发', day: null }
-  if (preview === 'during') return { phase: 'during', value: 'DAY 1', label: '旅行第 1 天 · 抵达北海道', day: 1 }
-  if (preview === 'after') {
+const getJourneyState = (now: Date): JourneyState => {
+  if (now > TRIP_END) {
     return {
       phase: 'after',
       value: '2026.08.23 — 08.30',
@@ -102,20 +111,8 @@ const getJourneyState = (preview: PreviewPhase): JourneyState => {
       day: null,
     }
   }
-
-  const today = new Date()
-  const start = new Date('2026-08-23T00:00:00+08:00')
-  const end = new Date('2026-08-30T23:59:59+08:00')
-  if (today > end) {
-    return {
-      phase: 'after',
-      value: '2026.08.23 — 08.30',
-      label: '两家人的北海道旅行 · 珍藏回忆',
-      day: null,
-    }
-  }
-  if (today >= start) {
-    const day = Math.min(8, Math.floor((today.getTime() - start.getTime()) / 86_400_000) + 1)
+  if (now >= TRIP_START) {
+    const day = Math.min(8, Math.floor((now.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
     return {
       phase: 'during',
       value: `DAY ${day}`,
@@ -123,7 +120,7 @@ const getJourneyState = (preview: PreviewPhase): JourneyState => {
       day,
     }
   }
-  const days = Math.ceil((start.getTime() - today.getTime()) / 86_400_000)
+  const days = Math.ceil((TRIP_START.getTime() - now.getTime()) / 86_400_000)
   return { phase: 'before', value: `${days}`, label: '天后出发', day: null }
 }
 
@@ -272,7 +269,10 @@ function TimelineCard({
 function App() {
   const [view, setView] = useState<View>('home')
   const [selectedDay, setSelectedDay] = useState(1)
-  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>('auto')
+  const [simOffsetMs, setSimOffsetMs] = useState<number | null>(() => readSimOffset())
+  const [clockTick, setClockTick] = useState(0)
+  const [simDraft, setSimDraft] = useState(() => toDatetimeLocalValue(getAppNow(readSimOffset())))
+  const [simMessage, setSimMessage] = useState('')
   const [showRest, setShowRest] = useState(false)
   const [search, setSearch] = useState('')
   const [completed, setCompleted] = useState<Record<string, boolean>>(() => {
@@ -324,8 +324,19 @@ function App() {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', refreshVoices)
   }, [])
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockTick((tick) => tick + 1), 15_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const now = useMemo(() => {
+    void clockTick
+    return getAppNow(simOffsetMs)
+  }, [simOffsetMs, clockTick])
+  const isSimulating = simOffsetMs != null
   const currentDay = tripDays.find((day) => day.day === selectedDay) ?? tripDays[0]
-  const journey = getJourneyState(previewPhase)
+  const journey = getJourneyState(now)
+  const currentActivity = useMemo(() => getCurrentActivity(now), [now])
   const visibleTimeline = currentDay.timeline.filter((item) => showRest || !item.isRest)
   const totalPackingItems = packingLists.reduce((total, list) => total + list.items.length, 0)
   const packedItems = packingLists.reduce(
@@ -475,6 +486,49 @@ function App() {
     setTemplateToAdd('')
   }
 
+  const applySimulatedTime = (target: Date, message?: string) => {
+    const offset = target.getTime() - Date.now()
+    writeSimOffset(offset)
+    setSimOffsetMs(offset)
+    setSimDraft(toDatetimeLocalValue(target))
+    setClockTick((tick) => tick + 1)
+    setSimMessage(message ?? `已切换到 ${formatSimClock(target)}`)
+    if (target >= TRIP_START && target <= TRIP_END) {
+      const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
+      setSelectedDay(day)
+    }
+  }
+
+  const runSimulation = (event?: FormEvent) => {
+    event?.preventDefault()
+    const target = parseDatetimeLocalValue(simDraft)
+    if (!target) {
+      setSimMessage('请选择有效的日期和时间')
+      return
+    }
+    applySimulatedTime(target)
+    setView('home')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const returnToRealTime = () => {
+    writeSimOffset(null)
+    setSimOffsetMs(null)
+    const realNow = new Date()
+    setSimDraft(toDatetimeLocalValue(realNow))
+    setClockTick((tick) => tick + 1)
+    setSimMessage('已回到真实当前时间')
+  }
+
+  const fillDayPreset = (dayNumber: number) => {
+    const day = tripDays.find((item) => item.day === dayNumber)
+    if (!day) return
+    const [year, month, date] = day.date.split('-').map(Number)
+    const preset = new Date(year, month - 1, date, 9, 0, 0, 0)
+    setSimDraft(toDatetimeLocalValue(preset))
+    setSimMessage(`已填入 DAY ${dayNumber} · 09:00，点「运行模拟」生效`)
+  }
+
   const renderHeader = () => (
     <header className={`app-header ${view === 'guide' ? 'app-header--packing' : ''}`}>
       <div>
@@ -516,6 +570,33 @@ function App() {
             <small className="hero-location">富良野 · 薰衣草花田</small>
           </div>
         </section>
+
+        {journey.phase === 'during' && currentActivity && (
+          <section className="now-card">
+            <div className="now-card__head">
+              <span className="eyebrow">NOW · DAY {currentActivity.day.day}</span>
+              <strong>{currentActivity.item.time}</strong>
+            </div>
+            <h2>{currentActivity.item.title}</h2>
+            <p>{currentActivity.item.detail}</p>
+            <div className="now-card__actions">
+              <button
+                onClick={() => {
+                  setSelectedDay(currentActivity.day.day)
+                  setView('days')
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                查看今日行程
+              </button>
+              {currentActivity.navigation && (
+                <a href={mapsUrl(currentActivity.navigation.query)} rel="noreferrer" target="_blank">
+                  <Icon name="map" size={15} /> 导航去{currentActivity.navigation.label}
+                </a>
+              )}
+            </div>
+          </section>
+        )}
 
         {journey.phase === 'after' && (
           <section className="memory-teaser">
@@ -914,32 +995,54 @@ function App() {
             ))}
           </div>
         </section>
-        <section className="preview-card">
+        <section className="preview-card debug-time-card">
           <div>
-            <span className="eyebrow">TIME MACHINE</span>
-            <h2>预览旅行的三个阶段</h2>
-            <p>这里只改变预览，不会影响真实日期。</p>
+            <span className="eyebrow">DEBUG · TIME MACHINE</span>
+            <h2>模拟旅行时间</h2>
+            <p>选好日期和时间后运行模拟，首页会按该时刻显示阶段与当前事项。可随时回到真实时间。</p>
           </div>
-          <div className="phase-buttons">
-            {([
-              ['auto', '自动'],
-              ['before', '旅行前'],
-              ['during', '旅行第1天'],
-              ['after', '旅行结束'],
-            ] as const).map(([phase, label]) => (
-              <button
-                className={previewPhase === phase ? 'active' : ''}
-                key={phase}
-                onClick={() => {
-                  setPreviewPhase(phase)
-                  setView('home')
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
+
+          <div className="debug-time-status">
+            <span>{isSimulating ? '模拟中' : '真实时间'}</span>
+            <strong>{formatSimClock(now)}</strong>
+          </div>
+
+          <form className="debug-time-form" onSubmit={runSimulation}>
+            <label>
+              <span>日期与时间</span>
+              <input
+                type="datetime-local"
+                value={simDraft}
+                min="2026-08-20T00:00"
+                max="2026-09-02T23:59"
+                onChange={(event) => {
+                  setSimDraft(event.target.value)
+                  setSimMessage('')
                 }}
-              >
-                {label}
+              />
+            </label>
+            <div className="debug-day-chips" aria-label="快速填入行程日">
+              {tripDays.map((day) => (
+                <button
+                  key={day.day}
+                  type="button"
+                  onClick={() => fillDayPreset(day.day)}
+                >
+                  D{day.day}
+                </button>
+              ))}
+            </div>
+            <div className="debug-time-actions">
+              <button className="debug-run" type="submit">
+                运行模拟
               </button>
-            ))}
-          </div>
+              <button className="debug-reset" type="button" onClick={returnToRealTime}>
+                回到当前
+              </button>
+            </div>
+          </form>
+
+          {simMessage && <p className="debug-time-message">{simMessage}</p>}
         </section>
         <section className="about-card">
           <span className="eyebrow">SOURCE OF TRUTH</span>
@@ -970,7 +1073,19 @@ function App() {
   )
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSimulating ? 'app-shell--simulating' : ''}`}>
+      {isSimulating && (
+        <div className="sim-banner" role="status">
+          <div>
+            <span>模拟时间</span>
+            <strong>{formatSimClock(now)}</strong>
+          </div>
+          <div className="sim-banner__actions">
+            <button type="button" onClick={() => setView('more')}>调整</button>
+            <button type="button" onClick={returnToRealTime}>回到当前</button>
+          </div>
+        </div>
+      )}
       {view === 'home' && renderHome()}
       {view === 'days' && renderDays()}
       {view === 'guide' && renderGuide()}
