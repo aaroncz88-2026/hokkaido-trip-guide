@@ -1,39 +1,30 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import {
+  getFirestore,
+  initializeFirestore,
+  type Firestore,
+} from 'firebase/firestore'
+import { readFirebaseConfig } from './firebaseConfig'
 
-export type FirebaseWebConfig = {
-  apiKey: string
-  authDomain: string
-  projectId: string
-  storageBucket: string
-  messagingSenderId: string
-  appId: string
-}
-
-const readConfig = (): FirebaseWebConfig | null => {
-  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim()
-  const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim()
-  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim()
-  const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim()
-  const messagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim()
-  const appId = import.meta.env.VITE_FIREBASE_APP_ID?.trim()
-
-  if (!apiKey || !authDomain || !projectId || !storageBucket || !messagingSenderId || !appId) {
-    return null
-  }
-
-  return { apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId }
-}
+export { isFirebaseConfigured } from './firebaseConfig'
 
 let app: FirebaseApp | null = null
 let db: Firestore | null = null
 
-export const isFirebaseConfigured = () => readConfig() != null
-
 export const getFirestoreDb = (): Firestore | null => {
-  const config = readConfig()
+  const config = readFirebaseConfig()
   if (!config) return null
   if (!app) app = initializeApp(config)
-  if (!db) db = getFirestore(app)
+  if (!db) {
+    try {
+      // Long polling is more resilient on restricted mobile networks.
+      db = initializeFirestore(app, { experimentalForceLongPolling: true })
+    } catch {
+      db = getFirestore(app)
+    }
+  }
   return db
 }
+
+export const cloudUnreachableMessage =
+  '连不上旅行名单云端（国内访问 Google/Firebase 常会很慢或失败）。可先浏览行程；换 Wi‑Fi/手机热点后再试加入。'

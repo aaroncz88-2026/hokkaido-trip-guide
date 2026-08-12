@@ -48,7 +48,7 @@ import {
   type RateableTarget,
   type RatingRecord,
 } from './data/ratings'
-import { isFirebaseConfigured } from './lib/firebase'
+import { isFirebaseConfigured } from './lib/firebaseConfig'
 import {
   formatSimClock,
   getAppNow,
@@ -470,9 +470,9 @@ function App() {
       (roster) => {
         setPartyRoster(roster)
         setPartyStatus('ready')
-        setPartyError('')
         const mine = findMyTraveler(roster, deviceId)
         if (mine) {
+          setPartyError('')
           setTravelerName(mine.name)
           setNameDraft(mine.name)
           setRenameDraft(mine.name)
@@ -481,13 +481,14 @@ function App() {
         }
       },
       (message) => {
-        setPartyStatus('error')
+        // Keep the rest of the app usable even when Firebase is blocked in CN networks.
+        setPartyStatus((status) => (status === 'ready' ? status : 'error'))
         setPartyError(message)
       },
     )
 
     return () => {
-      unsubscribe?.()
+      unsubscribe()
     }
   }, [deviceId])
 
@@ -528,10 +529,12 @@ function App() {
         setWeatherError(error instanceof Error ? error.message : '天气数据暂时不可用')
       }
     }
-    void loadWeather()
+    // Defer weather so first paint / itinerary stay snappy on slow phones.
+    const start = window.setTimeout(() => void loadWeather(), 800)
     const timer = window.setInterval(() => void loadWeather(), 30 * 60_000)
     return () => {
       cancelled = true
+      window.clearTimeout(start)
       window.clearInterval(timer)
     }
   }, [])

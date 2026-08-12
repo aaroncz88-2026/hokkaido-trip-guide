@@ -1,10 +1,4 @@
-import {
-  doc,
-  onSnapshot,
-  runTransaction,
-  type Unsubscribe,
-} from 'firebase/firestore'
-import { getFirestoreDb, isFirebaseConfigured } from '../lib/firebase'
+import { isFirebaseConfigured } from '../lib/firebaseConfig'
 import { travelerStorageKey } from './ratings'
 
 export const PARTY_MAX = 4
@@ -12,6 +6,8 @@ export const partyTripId = 'hokkaido-2026'
 export const deviceIdStorageKey = 'hokkaido-device-id'
 export const travelerConfirmedStorageKey = 'hokkaido-traveler-confirmed'
 export const partyRosterCacheKey = 'hokkaido-party-roster-v1'
+export const PARTY_SYNC_TIMEOUT_MS = 5_000
+export const PARTY_WRITE_TIMEOUT_MS = 12_000
 
 export type PartyTraveler = {
   deviceId: string
@@ -26,10 +22,25 @@ export type PartyRoster = {
 
 export type PartyActionResult =
   | { ok: true; roster: PartyRoster }
-  | { ok: false; reason: 'not_configured' | 'full' | 'duplicate_name' | 'not_member' | 'invalid_name' | 'error'; message: string }
+  | {
+      ok: false
+      reason: 'not_configured' | 'full' | 'duplicate_name' | 'not_member' | 'invalid_name' | 'error'
+      message: string
+    }
 
-const partyDocRef = (db: NonNullable<ReturnType<typeof getFirestoreDb>>) =>
-  doc(db, 'trips', partyTripId)
+const withTimeout = async <T>(promise: Promise<T>, ms: number, timeoutMessage: string) => {
+  let timer = 0
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error(timeoutMessage)), ms)
+      }),
+    ])
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
 
 export const getDeviceId = () => {
   try {
@@ -109,28 +120,74 @@ const asRoster = (data: unknown): PartyRoster => {
   }
 }
 
+const loadCloud = async () => {
+  const [{ getFirestoreDb, cloudUnreachableMessage }, { doc, onSnapshot, runTransaction }] =
+    await Promise.all([import('../lib/firebase'), import('firebase/firestore')])
+  return { getFirestoreDb, cloudUnreachableMessage, doc, onSnapshot, runTransaction }
+}
+
 export const subscribePartyRoster = (
   onChange: (roster: PartyRoster) => void,
   onError?: (message: string) => void,
-): Unsubscribe | null => {
-  const db = getFirestoreDb()
-  if (!db) {
-    onChange(readRosterCache())
-    return null
+): (() => void) => {
+  let cancelled = false
+  let unsub: (() => void) | null = null
+  onChange(readRosterCache())
+
+  if (!isFirebaseConfigured()) {
+    onError?.('云端未配置：需要 Firebase 才能同步四人名单')
+    return () => {
+      cancelled = true
+    }
   }
 
-  return onSnapshot(
-    partyDocRef(db),
-    (snapshot) => {
-      const roster = asRoster(snapshot.data())
-      writeRosterCache(roster)
-      onChange(roster)
-    },
-    (error) => {
-      onError?.(error.message || '同步旅行者名单失败')
-      onChange(readRosterCache())
-    },
-  )
+  const timeout = window.setTimeout(() => {
+    if (!cancelled) {
+      onError?.(
+        '云端同步较慢或网络受限（国内常见）。行程可先正常使用；加入名单请换网络后重试。',
+      )
+    }
+  }, PARTY_SYNC_TIMEOUT_MS)
+
+  void (async () => {
+    try {
+      const { getFirestoreDb, cloudUnreachableMessage, doc, onSnapshot } = await loadCloud()
+      if (cancelled) return
+      const db = getFirestoreDb()
+      if (!db) {
+        window.clearTimeout(timeout)
+        onError?.(cloudUnreachableMessage)
+        return
+      }
+      unsub = onSnapshot(
+        doc(db, 'trips', partyTripId),
+        (snapshot) => {
+          window.clearTimeout(timeout)
+          const roster = asRoster(snapshot.data())
+          writeRosterCache(roster)
+          onChange(roster)
+        },
+        (error) => {
+          window.clearTimeout(timeout)
+          onError?.(error.message || cloudUnreachableMessage)
+          onChange(readRosterCache())
+        },
+      )
+    } catch {
+      window.clearTimeout(timeout)
+      if (!cancelled) {
+        const { cloudUnreachableMessage } = await import('../lib/firebase')
+        onError?.(cloudUnreachableMessage)
+        onChange(readRosterCache())
+      }
+    }
+  })()
+
+  return () => {
+    cancelled = true
+    window.clearTimeout(timeout)
+    unsub?.()
+  }
 }
 
 export const joinParty = async (rawName: string): Promise<PartyActionResult> => {
@@ -142,46 +199,46 @@ export const joinParty = async (rawName: string): Promise<PartyActionResult> => 
     return { ok: false, reason: 'invalid_name', message: '请填写 1–16 个字的名字' }
   }
 
-  const db = getFirestoreDb()
-  if (!db) {
-    return { ok: false, reason: 'not_configured', message: '云端尚未配置，暂时无法加入' }
-  }
-
   const deviceId = getDeviceId()
   const now = new Date().toISOString()
 
   try {
-    const roster = await runTransaction(db, async (transaction) => {
-      const ref = partyDocRef(db)
-      const snap = await transaction.get(ref)
-      const current = asRoster(snap.data())
-      const mine = current.travelers.find((item) => item.deviceId === deviceId)
-      const duplicate = current.travelers.find(
-        (item) => item.deviceId !== deviceId && item.name === name,
-      )
-      if (duplicate) {
-        throw new Error('DUPLICATE')
-      }
-      if (mine) {
-        const travelers = current.travelers.map((item) =>
-          item.deviceId === deviceId ? { ...item, name, updatedAt: now } : item,
-        )
-        const next = { travelers }
-        transaction.set(ref, next, { merge: true })
-        return next
-      }
-      if (current.travelers.length >= PARTY_MAX) {
-        throw new Error('FULL')
-      }
-      const next = {
-        travelers: [
-          ...current.travelers,
-          { deviceId, name, confirmedAt: now, updatedAt: now },
-        ],
-      }
-      transaction.set(ref, next, { merge: true })
-      return next
-    })
+    const roster = await withTimeout(
+      (async () => {
+        const { getFirestoreDb, doc, runTransaction } = await loadCloud()
+        const db = getFirestoreDb()
+        if (!db) throw new Error('UNREACHABLE')
+        return runTransaction(db, async (transaction) => {
+          const ref = doc(db, 'trips', partyTripId)
+          const snap = await transaction.get(ref)
+          const current = asRoster(snap.data())
+          const mine = current.travelers.find((item) => item.deviceId === deviceId)
+          const duplicate = current.travelers.find(
+            (item) => item.deviceId !== deviceId && item.name === name,
+          )
+          if (duplicate) throw new Error('DUPLICATE')
+          if (mine) {
+            const travelers = current.travelers.map((item) =>
+              item.deviceId === deviceId ? { ...item, name, updatedAt: now } : item,
+            )
+            const next = { travelers }
+            transaction.set(ref, next, { merge: true })
+            return next
+          }
+          if (current.travelers.length >= PARTY_MAX) throw new Error('FULL')
+          const next = {
+            travelers: [
+              ...current.travelers,
+              { deviceId, name, confirmedAt: now, updatedAt: now },
+            ],
+          }
+          transaction.set(ref, next, { merge: true })
+          return next
+        })
+      })(),
+      PARTY_WRITE_TIMEOUT_MS,
+      'TIMEOUT',
+    )
 
     writeRosterCache(roster)
     localStorage.setItem(travelerStorageKey, name)
@@ -193,6 +250,13 @@ export const joinParty = async (rawName: string): Promise<PartyActionResult> => 
     }
     if (error instanceof Error && error.message === 'DUPLICATE') {
       return { ok: false, reason: 'duplicate_name', message: '这个名字已被占用，换一个称呼吧' }
+    }
+    if (
+      error instanceof Error &&
+      (error.message === 'TIMEOUT' || error.message === 'UNREACHABLE')
+    ) {
+      const { cloudUnreachableMessage } = await import('../lib/firebase')
+      return { ok: false, reason: 'error', message: cloudUnreachableMessage }
     }
     return {
       ok: false,
@@ -211,36 +275,36 @@ export const renamePartyTraveler = async (rawName: string): Promise<PartyActionR
     return { ok: false, reason: 'invalid_name', message: '请填写 1–16 个字的名字' }
   }
 
-  const db = getFirestoreDb()
-  if (!db) {
-    return { ok: false, reason: 'not_configured', message: '云端尚未配置，暂时无法改名' }
-  }
-
   const deviceId = getDeviceId()
   const now = new Date().toISOString()
 
   try {
-    const roster = await runTransaction(db, async (transaction) => {
-      const ref = partyDocRef(db)
-      const snap = await transaction.get(ref)
-      const current = asRoster(snap.data())
-      const mine = current.travelers.find((item) => item.deviceId === deviceId)
-      if (!mine) {
-        throw new Error('NOT_MEMBER')
-      }
-      const duplicate = current.travelers.find(
-        (item) => item.deviceId !== deviceId && item.name === name,
-      )
-      if (duplicate) {
-        throw new Error('DUPLICATE')
-      }
-      const travelers = current.travelers.map((item) =>
-        item.deviceId === deviceId ? { ...item, name, updatedAt: now } : item,
-      )
-      const next = { travelers }
-      transaction.set(ref, next, { merge: true })
-      return next
-    })
+    const roster = await withTimeout(
+      (async () => {
+        const { getFirestoreDb, doc, runTransaction } = await loadCloud()
+        const db = getFirestoreDb()
+        if (!db) throw new Error('UNREACHABLE')
+        return runTransaction(db, async (transaction) => {
+          const ref = doc(db, 'trips', partyTripId)
+          const snap = await transaction.get(ref)
+          const current = asRoster(snap.data())
+          const mine = current.travelers.find((item) => item.deviceId === deviceId)
+          if (!mine) throw new Error('NOT_MEMBER')
+          const duplicate = current.travelers.find(
+            (item) => item.deviceId !== deviceId && item.name === name,
+          )
+          if (duplicate) throw new Error('DUPLICATE')
+          const travelers = current.travelers.map((item) =>
+            item.deviceId === deviceId ? { ...item, name, updatedAt: now } : item,
+          )
+          const next = { travelers }
+          transaction.set(ref, next, { merge: true })
+          return next
+        })
+      })(),
+      PARTY_WRITE_TIMEOUT_MS,
+      'TIMEOUT',
+    )
 
     writeRosterCache(roster)
     localStorage.setItem(travelerStorageKey, name)
@@ -252,6 +316,13 @@ export const renamePartyTraveler = async (rawName: string): Promise<PartyActionR
     }
     if (error instanceof Error && error.message === 'DUPLICATE') {
       return { ok: false, reason: 'duplicate_name', message: '这个名字已被占用，换一个称呼吧' }
+    }
+    if (
+      error instanceof Error &&
+      (error.message === 'TIMEOUT' || error.message === 'UNREACHABLE')
+    ) {
+      const { cloudUnreachableMessage } = await import('../lib/firebase')
+      return { ok: false, reason: 'error', message: cloudUnreachableMessage }
     }
     return {
       ok: false,
