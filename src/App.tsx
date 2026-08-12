@@ -11,6 +11,16 @@ import {
 } from './data/trip'
 import { japaneseLessons } from './data/japanese'
 import {
+  dayLocationHint,
+  fetchLocationForecast,
+  fetchTyphoonSnapshots,
+  getDayWeather,
+  tripDateSet,
+  weatherLocations,
+  type LocationForecast,
+  type TyphoonSnapshot,
+} from './data/weather'
+import {
   formatSimClock,
   getAppNow,
   getCurrentActivity,
@@ -346,6 +356,13 @@ function App() {
   const [japaneseLessonIndex, setJapaneseLessonIndex] = useState(0)
   const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
   const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
+  const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>([])
+  const [typhoons, setTyphoons] = useState<TyphoonSnapshot[]>([])
+  const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [weatherError, setWeatherError] = useState('')
+  const [weatherLocationId, setWeatherLocationId] = useState('sapporo')
+  const [weatherDate, setWeatherDate] = useState('2026-08-23')
+  const [weatherUpdatedAt, setWeatherUpdatedAt] = useState('')
 
   useEffect(() => {
     localStorage.setItem('hokkaido-completed', JSON.stringify(completed))
@@ -376,6 +393,35 @@ function App() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+    const loadWeather = async () => {
+      setWeatherStatus('loading')
+      setWeatherError('')
+      try {
+        const [forecasts, typhoonList] = await Promise.all([
+          Promise.all(weatherLocations.map((location) => fetchLocationForecast(location))),
+          fetchTyphoonSnapshots().catch(() => [] as TyphoonSnapshot[]),
+        ])
+        if (cancelled) return
+        setWeatherForecasts(forecasts)
+        setTyphoons(typhoonList)
+        setWeatherUpdatedAt(new Date().toISOString())
+        setWeatherStatus('ready')
+      } catch (error) {
+        if (cancelled) return
+        setWeatherStatus('error')
+        setWeatherError(error instanceof Error ? error.message : '天气数据暂时不可用')
+      }
+    }
+    void loadWeather()
+    const timer = window.setInterval(() => void loadWeather(), 30 * 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  useEffect(() => {
     const timer = window.setInterval(() => setClockTick((tick) => tick + 1), 15_000)
     return () => window.clearInterval(timer)
   }, [])
@@ -396,6 +442,26 @@ function App() {
   )
   const activePackingList =
     packingLists.find((list) => list.id === activePackingListId) ?? packingLists[0]
+  const selectedWeatherForecast =
+    weatherForecasts.find((item) => item.location.id === weatherLocationId) ?? weatherForecasts[0]
+  const selectedWeatherDay = selectedWeatherForecast?.daily.find((day) => day.date === weatherDate)
+  const selectedHourly = selectedWeatherForecast?.hourlyByDate[weatherDate] ?? []
+  const tripWeatherStrip = useMemo(() => {
+    return tripDays.map((day) => ({
+      day,
+      weather: getDayWeather(weatherForecasts, day.date, dayLocationHint[day.day]),
+    }))
+  }, [weatherForecasts])
+  const homeWeather =
+    journey.phase === 'during' && journey.day
+      ? getDayWeather(weatherForecasts, tripDays[journey.day - 1]?.date ?? '', dayLocationHint[journey.day])
+      : getDayWeather(weatherForecasts, '2026-08-23', 'sapporo')
+  const currentDayWeather = getDayWeather(
+    weatherForecasts,
+    currentDay.date,
+    dayLocationHint[currentDay.day],
+  )
+  const typhoonConcernCount = typhoons.filter((item) => item.concernLevel !== 'low').length
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
@@ -710,6 +776,11 @@ function App() {
                 <span className="eyebrow">正在北行</span>
                 <strong>{journey.value}</strong>
                 <p>{journey.label}</p>
+                {homeWeather && (
+                  <button className="live-weather" onClick={() => setView('more')} type="button">
+                    {homeWeather.icon} {homeWeather.label} · {homeWeather.tempMin}–{homeWeather.tempMax}°C · 雨 {homeWeather.precipProb}%
+                  </button>
+                )}
               </div>
               <button
                 type="button"
@@ -741,6 +812,13 @@ function App() {
                 <i />
                 <span>{journey.phase === 'after' ? '珍藏回忆' : '北海道'}</span>
               </div>
+              {homeWeather && journey.phase !== 'after' && (
+                <button className="hero-weather" onClick={() => setView('more')} type="button">
+                  <span>{homeWeather.icon} {homeWeather.label}</span>
+                  <strong>{homeWeather.tempMin}–{homeWeather.tempMax}°C</strong>
+                  <small>出发日札幌 · 雨概率 {homeWeather.precipProb}%</small>
+                </button>
+              )}
               <small className="hero-location">富良野 · 薰衣草花田</small>
             </div>
           </section>
@@ -905,6 +983,17 @@ function App() {
           <span>{currentDay.weekday} · {formatDate(currentDay.date)}</span>
           <h2>{currentDay.title}</h2>
           <p>{currentDay.route}</p>
+          {currentDayWeather && (
+            <button className="day-weather-chip" onClick={() => {
+              setWeatherLocationId(dayLocationHint[currentDay.day] ?? 'sapporo')
+              setWeatherDate(currentDay.date)
+              setView('more')
+            }} type="button">
+              <span>{currentDayWeather.icon} {currentDayWeather.label}</span>
+              <strong>{currentDayWeather.tempMin}–{currentDayWeather.tempMax}°C</strong>
+              <small>降雨 {currentDayWeather.precipProb}% · 阵风 {currentDayWeather.gustMax}m/s</small>
+            </button>
+          )}
           <div className="highlight-row">
             {currentDay.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
           </div>
@@ -1122,6 +1211,182 @@ function App() {
     <>
       {renderHeader()}
       <main>
+        <section className="weather-desk">
+          <div className="weather-desk__heading">
+            <div>
+              <span className="eyebrow">WEATHER & TYPHOON</span>
+              <h2>北海道天气与台风关注</h2>
+              <p>
+                数据来自 Open-Meteo 与日本气象厅。开源免密钥，约每 30 分钟自动刷新。
+                {weatherUpdatedAt && ` 最近更新 ${new Date(weatherUpdatedAt).toLocaleString('zh-CN', { hour12: false })}`}
+              </p>
+            </div>
+            <button
+              className="weather-refresh"
+              disabled={weatherStatus === 'loading'}
+              onClick={() => {
+                setWeatherStatus('loading')
+                void Promise.all([
+                  Promise.all(weatherLocations.map((location) => fetchLocationForecast(location))),
+                  fetchTyphoonSnapshots().catch(() => [] as TyphoonSnapshot[]),
+                ])
+                  .then(([forecasts, typhoonList]) => {
+                    setWeatherForecasts(forecasts)
+                    setTyphoons(typhoonList)
+                    setWeatherUpdatedAt(new Date().toISOString())
+                    setWeatherStatus('ready')
+                    setWeatherError('')
+                  })
+                  .catch((error: unknown) => {
+                    setWeatherStatus('error')
+                    setWeatherError(error instanceof Error ? error.message : '刷新失败')
+                  })
+              }}
+              type="button"
+            >
+              {weatherStatus === 'loading' ? '刷新中…' : '立即刷新'}
+            </button>
+          </div>
+
+          <div className={`typhoon-banner typhoon-banner--${typhoonConcernCount > 0 ? 'watch' : 'calm'}`}>
+            <strong>{typhoonConcernCount > 0 ? `有 ${typhoonConcernCount} 个系统需关注北海道外围影响` : '暂无直扑北海道的高关注台风'}</strong>
+            <p>
+              同事提到的「8 月 20 日左右」更可能是外围风雨窗口。当前 JMA 活跃系统中，更接近日本东侧的是台风「ナンカー / Nangka」，官方路径偏日本以东洋面，尚未判定直扑北海道；出发前请持续看这里。
+            </p>
+            <div className="typhoon-links">
+              <a href="https://www.jma.go.jp/bosai/map.html#5/35.307/140.449/&elem=root&typhoon=all&lang=en" rel="noreferrer" target="_blank">
+                日本气象厅台风图 <Icon name="external" size={14} />
+              </a>
+              <a href="https://typhoon.weather.com.cn/" rel="noreferrer" target="_blank">
+                中央气象台台风网 <Icon name="external" size={14} />
+              </a>
+            </div>
+          </div>
+
+          {weatherStatus === 'error' && <p className="weather-error">{weatherError || '天气数据加载失败，请稍后刷新。'}</p>}
+
+          <div className="typhoon-list">
+            {typhoons.length === 0 && weatherStatus === 'ready' && (
+              <p className="weather-empty">当前没有活跃台风名单，或日本气象厅暂无公开目标热带气旋。</p>
+            )}
+            {typhoons.map((storm) => (
+              <article className={`typhoon-card typhoon-card--${storm.concernLevel}`} key={storm.id}>
+                <header>
+                  <div>
+                    <span>{storm.category} · #{storm.number}</span>
+                    <h3>{storm.nameJp} / {storm.nameEn}</h3>
+                  </div>
+                  <strong>{storm.concernLevel === 'high' ? '高关注' : storm.concernLevel === 'medium' ? '持续盯' : '低风险'}</strong>
+                </header>
+                <p>{storm.hokkaidoNote}</p>
+                <div className="typhoon-meta">
+                  {storm.location && <span>位置 {storm.location}</span>}
+                  {storm.course && <span>移向 {storm.course}</span>}
+                  {storm.speed && <span>移速 {storm.speed}</span>}
+                  {storm.pressure && <span>气压 {storm.pressure} hPa</span>}
+                  {storm.windMs && <span>中心附近 {storm.windMs} m/s</span>}
+                  {storm.gustMs && <span>阵风 {storm.gustMs} m/s</span>}
+                </div>
+                {storm.outlook.length > 0 && (
+                  <div className="typhoon-outlook">
+                    {storm.outlook.slice(0, 4).map((point) => (
+                      <div key={`${storm.id}-${point.when}-${point.label}`}>
+                        <strong>{point.when || point.label}</strong>
+                        <span>{point.category}{point.location ? ` · ${point.location}` : ''}{point.course ? ` · ${point.course}` : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+
+          <div className="trip-weather-strip">
+            <div className="section-heading">
+              <div><span className="eyebrow">TRIP DAYS</span><h2>行程日天气速览</h2></div>
+            </div>
+            <div className="trip-weather-scroller">
+              {tripWeatherStrip.map(({ day, weather }) => (
+                <button
+                  className={weatherDate === day.date ? 'active' : ''}
+                  key={day.date}
+                  onClick={() => {
+                    setWeatherDate(day.date)
+                    setWeatherLocationId(dayLocationHint[day.day] ?? 'sapporo')
+                  }}
+                  type="button"
+                >
+                  <span>D{day.day}</span>
+                  <strong>{weather ? `${weather.icon} ${weather.tempMax}°` : '…'}</strong>
+                  <small>{weather ? `${weather.precipProb}%雨` : '加载中'}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="weather-location-tabs" aria-label="天气预报地点">
+            {weatherLocations.map((location) => (
+              <button
+                className={weatherLocationId === location.id ? 'active' : ''}
+                key={location.id}
+                onClick={() => setWeatherLocationId(location.id)}
+                type="button"
+              >
+                <span>{location.name}</span>
+                <small>{location.role}</small>
+              </button>
+            ))}
+          </div>
+
+          {selectedWeatherDay ? (
+            <article className={`weather-day-card weather-day-card--${selectedWeatherDay.risk}`}>
+              <header>
+                <div>
+                  <span>{selectedWeatherForecast?.location.name} · {weatherDate.slice(5).replace('-', '/')}</span>
+                  <h3>{selectedWeatherDay.icon} {selectedWeatherDay.label}</h3>
+                </div>
+                <strong>{selectedWeatherDay.tempMin}–{selectedWeatherDay.tempMax}°C</strong>
+              </header>
+              <p>{selectedWeatherDay.riskNote}</p>
+              <div className="weather-day-grid">
+                <div><span>降雨概率</span><strong>{selectedWeatherDay.precipProb}%</strong></div>
+                <div><span>降水量</span><strong>{selectedWeatherDay.precipSum} mm</strong></div>
+                <div><span>最大风速</span><strong>{selectedWeatherDay.windMax} m/s</strong></div>
+                <div><span>阵风</span><strong>{selectedWeatherDay.gustMax} m/s</strong></div>
+                <div><span>紫外线</span><strong>{selectedWeatherDay.uvMax}</strong></div>
+                <div><span>风险等级</span><strong>{selectedWeatherDay.risk === 'alert' ? '偏高' : selectedWeatherDay.risk === 'watch' ? '留意' : '平稳'}</strong></div>
+              </div>
+              <div className="hourly-weather">
+                {selectedHourly.map((hour) => (
+                  <div key={hour.time}>
+                    <span>{hour.hour}</span>
+                    <strong>{hour.temperature}°</strong>
+                    <small>{hour.precipProb}%</small>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : (
+            <p className="weather-empty">{weatherStatus === 'loading' ? '正在拉取未来 16 天预报…' : '所选日期暂无详细预报。'}</p>
+          )}
+
+          <div className="weather-table">
+            {(selectedWeatherForecast?.daily.filter((day) => tripDateSet.has(day.date)) ?? []).map((day) => (
+              <button
+                className={weatherDate === day.date ? 'active' : ''}
+                key={day.date}
+                onClick={() => setWeatherDate(day.date)}
+                type="button"
+              >
+                <span>{day.date.slice(5)}</span>
+                <strong>{day.icon} {day.label}</strong>
+                <em>{day.tempMin}/{day.tempMax}°C</em>
+                <small>雨 {day.precipProb}% · 风 {day.windMax}</small>
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className="more-handbook">
           <span className="eyebrow">POCKET GUIDE</span>
           <h2>旅行手册</h2>
