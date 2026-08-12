@@ -2700,10 +2700,31 @@ label:has(input:focus-visible) {
   background: #e7f4ee;
 }
 
+.party-name-chips span.mine {
+  outline: 2px solid rgba(47, 93, 76, 0.35);
+}
+
 .party-name-chips span.empty {
   color: #9a9287;
   background: rgba(255, 255, 255, 0.7);
   border: 1px dashed #d7d0c5;
+}
+
+.party-name-chips--pick button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.party-name-chips--pick button.selected,
+.party-name-chips--pick button:active {
+  color: #2f5d4c;
+  border-color: rgba(47, 93, 76, 0.4);
+  background: #e7f4ee;
 }
 
 .confirm-dialog {
