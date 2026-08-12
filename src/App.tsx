@@ -21,6 +21,20 @@ import {
   type TyphoonSnapshot,
 } from './data/weather'
 import {
+  findMyTraveler,
+  formatPartyReadyLine,
+  getDeviceId,
+  joinParty,
+  normalizeTravelerName,
+  PARTY_MAX,
+  readRosterCache,
+  readTravelerConfirmed,
+  renamePartyTraveler,
+  subscribePartyRoster,
+  writeTravelerConfirmed,
+  type PartyRoster,
+} from './data/party'
+import {
   countPendingRatings,
   getTravelerRating,
   isTargetUnlocked,
@@ -33,6 +47,7 @@ import {
   type RateableTarget,
   type RatingRecord,
 } from './data/ratings'
+import { isFirebaseConfigured } from './lib/firebase'
 import {
   formatSimClock,
   getAppNow,
@@ -373,6 +388,27 @@ function App() {
       return ''
     }
   })
+  const [nameDraft, setNameDraft] = useState(() => {
+    try {
+      return localStorage.getItem(travelerStorageKey) ?? ''
+    } catch {
+      return ''
+    }
+  })
+  const [travelerConfirmed, setTravelerConfirmed] = useState(() => readTravelerConfirmed())
+  const [partyRoster, setPartyRoster] = useState<PartyRoster>(() => readRosterCache())
+  const [partyStatus, setPartyStatus] = useState<'loading' | 'ready' | 'error'>(() =>
+    isFirebaseConfigured() ? 'loading' : 'error',
+  )
+  const [partyError, setPartyError] = useState(() =>
+    isFirebaseConfigured() ? '' : '云端未配置：需要 Firebase 才能同步四人名单',
+  )
+  const [partyBusy, setPartyBusy] = useState(false)
+  const [partyMessage, setPartyMessage] = useState('')
+  const [confirmDialog, setConfirmDialog] = useState<null | { mode: 'join' | 'rename'; name: string }>(
+    null,
+  )
+  const [renameDraft, setRenameDraft] = useState('')
   const [packingOwner, setPackingOwner] = useState(() => localStorage.getItem('hokkaido-packing-owner') ?? '')
   const [showPacked, setShowPacked] = useState(() => localStorage.getItem('hokkaido-show-packed') !== 'false')
   const [newListName, setNewListName] = useState('')
@@ -388,6 +424,7 @@ function App() {
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
   const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
   const [ratingMessage, setRatingMessage] = useState('')
+  const deviceId = useMemo(() => getDeviceId(), [])
   const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>([])
   const [typhoons, setTyphoons] = useState<TyphoonSnapshot[]>([])
   const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -405,11 +442,12 @@ function App() {
   }, [packingLists])
 
   useEffect(() => {
+    if (!travelerConfirmed) return
     localStorage.setItem(travelerStorageKey, travelerName)
     if (travelerName.trim() && !packingOwner.trim()) {
       setPackingOwner(travelerName.trim())
     }
-  }, [travelerName, packingOwner])
+  }, [travelerName, packingOwner, travelerConfirmed])
 
   useEffect(() => {
     localStorage.setItem('hokkaido-packing-owner', packingOwner)
@@ -418,6 +456,39 @@ function App() {
   useEffect(() => {
     writeRatings(ratings)
   }, [ratings])
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      setPartyStatus('error')
+      setPartyError('云端未配置：需要 Firebase 才能同步四人名单')
+      return
+    }
+
+    setPartyStatus('loading')
+    const unsubscribe = subscribePartyRoster(
+      (roster) => {
+        setPartyRoster(roster)
+        setPartyStatus('ready')
+        setPartyError('')
+        const mine = findMyTraveler(roster, deviceId)
+        if (mine) {
+          setTravelerName(mine.name)
+          setNameDraft(mine.name)
+          setRenameDraft(mine.name)
+          setTravelerConfirmed(true)
+          writeTravelerConfirmed(true)
+        }
+      },
+      (message) => {
+        setPartyStatus('error')
+        setPartyError(message)
+      },
+    )
+
+    return () => {
+      unsubscribe?.()
+    }
+  }, [deviceId])
 
   useEffect(() => {
     localStorage.setItem('hokkaido-show-packed', String(showPacked))
@@ -506,9 +577,14 @@ function App() {
   )
   const typhoonConcernCount = typhoons.filter((item) => item.concernLevel !== 'low').length
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
+  const myPartySeat = findMyTraveler(partyRoster, deviceId)
+  const isPartyMember = Boolean(myPartySeat)
+  const partyNames = partyRoster.travelers.map((item) => item.name)
+  const seatsLeft = Math.max(0, PARTY_MAX - partyRoster.travelers.length)
+  const canJoinParty = !isPartyMember && seatsLeft > 0
   const pendingRatingCount = useMemo(
-    () => countPendingRatings(ratings, travelerName, now),
-    [now, ratings, travelerName],
+    () => (isPartyMember ? countPendingRatings(ratings, travelerName, now) : 0),
+    [isPartyMember, now, ratings, travelerName],
   )
   const ratingBuckets = useMemo(() => {
     const name = travelerName.trim()
@@ -612,10 +688,74 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const requestJoinParty = () => {
+    const name = normalizeTravelerName(nameDraft)
+    if (!name) {
+      setPartyMessage('先写下你的旅行称呼吧')
+      return
+    }
+    if (!isFirebaseConfigured()) {
+      setPartyMessage(partyError || '云端尚未配置')
+      return
+    }
+    if (!canJoinParty) {
+      setPartyMessage(seatsLeft <= 0 ? '4 位大人已经全部就位' : '你已经在名单里了')
+      return
+    }
+    setPartyMessage('')
+    setConfirmDialog({ mode: 'join', name })
+  }
+
+  const requestRenameParty = () => {
+    const name = normalizeTravelerName(renameDraft)
+    if (!name) {
+      setPartyMessage('请填写新的称呼')
+      return
+    }
+    if (!isPartyMember) {
+      setPartyMessage('请先在首页确认加入旅行')
+      return
+    }
+    if (name === travelerName.trim()) {
+      setPartyMessage('和现在的名字一样，无需修改')
+      return
+    }
+    setPartyMessage('')
+    setConfirmDialog({ mode: 'rename', name })
+  }
+
+  const confirmPartyAction = async () => {
+    if (!confirmDialog) return
+    setPartyBusy(true)
+    setPartyMessage('')
+    const result =
+      confirmDialog.mode === 'join'
+        ? await joinParty(confirmDialog.name)
+        : await renamePartyTraveler(confirmDialog.name)
+    setPartyBusy(false)
+    if (!result.ok) {
+      setPartyMessage(result.message)
+      setConfirmDialog(null)
+      return
+    }
+    setPartyRoster(result.roster)
+    setTravelerName(confirmDialog.name)
+    setNameDraft(confirmDialog.name)
+    setRenameDraft(confirmDialog.name)
+    setTravelerConfirmed(true)
+    if (!packingOwner.trim()) setPackingOwner(confirmDialog.name)
+    setPartyMessage(
+      confirmDialog.mode === 'join'
+        ? `欢迎，${confirmDialog.name}！之后如需改名，请到「更多」。`
+        : `已更新为「${confirmDialog.name}」`,
+    )
+    setConfirmDialog(null)
+  }
+
   const saveRating = (target: RateableTarget) => {
     const name = travelerName.trim()
-    if (!name) {
-      setRatingMessage('请先在首页填写「我是此次旅行的谁」')
+    if (!name || !isPartyMember) {
+      setRatingMessage('请先在首页确认加入旅行名单')
       return
     }
     if (!isTargetUnlocked(target, now)) {
@@ -1035,31 +1175,80 @@ function App() {
           </section>
         )}
 
-        <section className="traveler-identity">
+        <section className={`traveler-identity ${isPartyMember ? 'traveler-identity--ready' : ''}`}>
           <div className="section-heading">
             <div>
-              <span className="eyebrow">WHO ARE YOU</span>
-              <h2>我是此次旅行的谁</h2>
+              <span className="eyebrow">PARTY OF FOUR</span>
+              <h2>{isPartyMember ? '参与者已就位' : '我是此次旅行的谁'}</h2>
             </div>
+            <strong className="party-seat-count">
+              {partyRoster.travelers.length}/{PARTY_MAX}
+            </strong>
           </div>
-          <label className="owner-field">
-            <span>旅行者名称</span>
-            <input
-              maxLength={16}
-              onChange={(event) => {
-                setTravelerName(event.target.value)
-                setRatingMessage('')
-              }}
-              placeholder="例如：洋葱"
-              value={travelerName}
-            />
-          </label>
-          <p>
-            {travelerName.trim()
-              ? `之后会这样问你：「${travelerName.trim()}，你评价下这个第一个景点…」`
-              : '填上名字后，打分提问会用你的称呼推进。'}
-          </p>
-          {pendingRatingCount > 0 && (
+
+          {partyStatus === 'loading' && <p className="party-status-line">正在同步四人名单…</p>}
+          {partyError && partyStatus !== 'ready' && <p className="ratings-warn">{partyError}</p>}
+
+          {isPartyMember ? (
+            <>
+              <p className="party-ready-line">{formatPartyReadyLine(partyNames)}</p>
+              <div className="party-name-chips" aria-label="旅行参与者">
+                {Array.from({ length: PARTY_MAX }, (_, index) => {
+                  const person = partyRoster.travelers[index]
+                  return (
+                    <span className={person ? 'filled' : 'empty'} key={person?.deviceId ?? `seat-${index}`}>
+                      {person ? person.name : '待加入'}
+                    </span>
+                  )
+                })}
+              </div>
+              <p className="party-you-line">
+                你是 <strong>{travelerName || myPartySeat?.name}</strong>
+                。改名请到「更多」。
+              </p>
+            </>
+          ) : seatsLeft <= 0 ? (
+            <>
+              <p className="party-ready-line">{formatPartyReadyLine(partyNames)}</p>
+              <p className="ratings-warn">4 位大人已经全部就位，这台设备无法再加入第 5 人。</p>
+            </>
+          ) : (
+            <>
+              <p className="party-lead">
+                本次旅行限 {PARTY_MAX} 位大人。确认后锁定本机身份，其他人还能加入剩余 {seatsLeft} 席。
+              </p>
+              <label className="owner-field">
+                <span>你的旅行称呼</span>
+                <input
+                  maxLength={16}
+                  onChange={(event) => {
+                    setNameDraft(event.target.value)
+                    setPartyMessage('')
+                  }}
+                  placeholder="例如：洋葱"
+                  value={nameDraft}
+                />
+              </label>
+              <p className="party-preview">
+                {normalizeTravelerName(nameDraft)
+                  ? `预览：「${normalizeTravelerName(nameDraft)}，你评价下这个第一个景点…」`
+                  : '确认后，打分提问会用你的称呼推进。'}
+              </p>
+              <button
+                className="traveler-identity__cta"
+                disabled={partyBusy || !normalizeTravelerName(nameDraft)}
+                onClick={requestJoinParty}
+                type="button"
+              >
+                确认加入旅行
+              </button>
+              <small className="party-footnote">一次确认即可；之后如需修改，只能在「更多」里改。</small>
+            </>
+          )}
+
+          {partyMessage && <p className="ratings-message">{partyMessage}</p>}
+
+          {isPartyMember && pendingRatingCount > 0 && (
             <button className="traveler-identity__cta" onClick={openRatingsPanel} type="button">
               去打分
               <span className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
@@ -1315,11 +1504,7 @@ function App() {
               <span>清单属于</span>
               <input
                 maxLength={16}
-                onChange={(event) => {
-                  const next = event.target.value
-                  setPackingOwner(next)
-                  if (!travelerName.trim()) setTravelerName(next)
-                }}
+                onChange={(event) => setPackingOwner(event.target.value)}
                 placeholder={travelerName.trim() || '输入你的名字'}
                 value={packingOwner}
               />
@@ -1483,8 +1668,8 @@ function App() {
         <p className="ratings-lead">
           景点 / 晚餐结束后才会开放。评分先存在本机，结构已预留后续写入数据库。
         </p>
-        {!travelerName.trim() && (
-          <p className="ratings-warn">请先回首页填写「我是此次旅行的谁」，评分才会记到你名下。</p>
+        {!isPartyMember && (
+          <p className="ratings-warn">请先回首页确认加入旅行名单，评分才会记到你名下。</p>
         )}
         <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
           {(
@@ -1544,6 +1729,57 @@ function App() {
               </em>
             )}
           </button>
+        </section>
+
+        <section className="party-manage">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">TRAVELER NAME</span>
+              <h2>旅行者名称</h2>
+            </div>
+            <strong className="party-seat-count">
+              {partyRoster.travelers.length}/{PARTY_MAX}
+            </strong>
+          </div>
+          <p className="party-ready-line">{formatPartyReadyLine(partyNames)}</p>
+          <div className="party-name-chips" aria-label="旅行参与者">
+            {Array.from({ length: PARTY_MAX }, (_, index) => {
+              const person = partyRoster.travelers[index]
+              return (
+                <span className={person ? 'filled' : 'empty'} key={person?.deviceId ?? `more-seat-${index}`}>
+                  {person ? person.name : '待加入'}
+                </span>
+              )
+            })}
+          </div>
+          {isPartyMember ? (
+            <>
+              <label className="owner-field">
+                <span>修改我的称呼</span>
+                <input
+                  maxLength={16}
+                  onChange={(event) => {
+                    setRenameDraft(event.target.value)
+                    setPartyMessage('')
+                  }}
+                  placeholder="新的旅行称呼"
+                  value={renameDraft}
+                />
+              </label>
+              <button
+                className="traveler-identity__cta"
+                disabled={partyBusy || !normalizeTravelerName(renameDraft)}
+                onClick={requestRenameParty}
+                type="button"
+              >
+                确认修改名称
+              </button>
+              <small className="party-footnote">首页不能改名；这里修改也需要二次确认，并同步给所有人。</small>
+            </>
+          ) : (
+            <p className="ratings-warn">你还没有加入名单。请回首页确认身份（满 4 人后无法再加入）。</p>
+          )}
+          {partyMessage && <p className="ratings-message">{partyMessage}</p>}
         </section>
 
         <section className="weather-desk">
@@ -1842,6 +2078,29 @@ function App() {
       {view === 'days' && renderDays()}
       {view === 'guide' && renderGuide()}
       {view === 'more' && renderMore()}
+      {confirmDialog && (
+        <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+          <div className="confirm-dialog__panel">
+            <span className="eyebrow">请再确认一次</span>
+            <h2 id="confirm-dialog-title">
+              {confirmDialog.mode === 'join' ? '确认加入旅行？' : '确认修改名称？'}
+            </h2>
+            <p>
+              {confirmDialog.mode === 'join'
+                ? `将以「${confirmDialog.name}」加入本次旅行（限 ${PARTY_MAX} 位大人，当前还剩 ${seatsLeft} 席）。确认后首页不能再改，如需修改请到「更多」。`
+                : `确定把称呼改为「${confirmDialog.name}」吗？修改后会同步到所有人的名单。`}
+            </p>
+            <div className="confirm-dialog__actions">
+              <button disabled={partyBusy} onClick={() => setConfirmDialog(null)} type="button">
+                再想想
+              </button>
+              <button className="confirm-dialog__primary" disabled={partyBusy} onClick={() => void confirmPartyAction()} type="button">
+                {partyBusy ? '提交中…' : confirmDialog.mode === 'join' ? '确认加入' : '确认修改'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <nav className="bottom-nav" aria-label="主要导航">
         {([
           ['home', '首页', 'home'],
