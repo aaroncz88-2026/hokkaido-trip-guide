@@ -21,6 +21,19 @@ import {
   type TyphoonSnapshot,
 } from './data/weather'
 import {
+  countPendingRatings,
+  getTravelerRating,
+  isTargetUnlocked,
+  kindLabel,
+  rateableTargets,
+  readRatings,
+  travelerStorageKey,
+  upsertRating,
+  writeRatings,
+  type RateableTarget,
+  type RatingRecord,
+} from './data/ratings'
+import {
   formatSimClock,
   getAppNow,
   getCurrentActivity,
@@ -34,6 +47,7 @@ import {
 import './App.css'
 
 type View = 'home' | 'days' | 'guide' | 'more'
+type MorePanel = 'hub' | 'ratings'
 type JourneyPhase = 'before' | 'during' | 'after'
 type JourneyState = {
   phase: JourneyPhase
@@ -97,6 +111,7 @@ const iconPaths: Record<string, string> = {
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-11v6m0-10h.01',
   wifi: 'M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01',
   volume: 'M11 5 6 9H3v6h3l5 4V5Zm4.5 4a4 4 0 0 1 0 6m2.5-9a8 8 0 0 1 0 12',
+  star: 'm12 3 2.7 5.5L21 9.3l-4.5 4.4L17.6 21 12 18.1 6.4 21l1.1-7.3L3 9.3l6.3-.8L12 3Z',
 }
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -347,6 +362,17 @@ function App() {
       return createDefaultPackingLists()
     }
   })
+  const [travelerName, setTravelerName] = useState(() => {
+    try {
+      return (
+        localStorage.getItem(travelerStorageKey) ??
+        localStorage.getItem('hokkaido-packing-owner') ??
+        ''
+      )
+    } catch {
+      return ''
+    }
+  })
   const [packingOwner, setPackingOwner] = useState(() => localStorage.getItem('hokkaido-packing-owner') ?? '')
   const [showPacked, setShowPacked] = useState(() => localStorage.getItem('hokkaido-show-packed') !== 'false')
   const [newListName, setNewListName] = useState('')
@@ -356,6 +382,12 @@ function App() {
   const [japaneseLessonIndex, setJapaneseLessonIndex] = useState(0)
   const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
   const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
+  const [morePanel, setMorePanel] = useState<MorePanel>('hub')
+  const [ratings, setRatings] = useState<RatingRecord[]>(() => readRatings())
+  const [ratingDraftStars, setRatingDraftStars] = useState<Record<string, number>>({})
+  const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
+  const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
+  const [ratingMessage, setRatingMessage] = useState('')
   const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>([])
   const [typhoons, setTyphoons] = useState<TyphoonSnapshot[]>([])
   const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -373,8 +405,19 @@ function App() {
   }, [packingLists])
 
   useEffect(() => {
+    localStorage.setItem(travelerStorageKey, travelerName)
+    if (travelerName.trim() && !packingOwner.trim()) {
+      setPackingOwner(travelerName.trim())
+    }
+  }, [travelerName, packingOwner])
+
+  useEffect(() => {
     localStorage.setItem('hokkaido-packing-owner', packingOwner)
   }, [packingOwner])
+
+  useEffect(() => {
+    writeRatings(ratings)
+  }, [ratings])
 
   useEffect(() => {
     localStorage.setItem('hokkaido-show-packed', String(showPacked))
@@ -463,6 +506,24 @@ function App() {
   )
   const typhoonConcernCount = typhoons.filter((item) => item.concernLevel !== 'low').length
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
+  const pendingRatingCount = useMemo(
+    () => countPendingRatings(ratings, travelerName, now),
+    [now, ratings, travelerName],
+  )
+  const ratingBuckets = useMemo(() => {
+    const name = travelerName.trim()
+    const open: RateableTarget[] = []
+    const locked: RateableTarget[] = []
+    const done: RateableTarget[] = []
+    for (const target of rateableTargets) {
+      const unlocked = isTargetUnlocked(target, now)
+      const existing = name ? getTravelerRating(ratings, target.id, name) : undefined
+      if (!unlocked) locked.push(target)
+      else if (existing) done.push(target)
+      else open.push(target)
+    }
+    return { open, locked, done }
+  }, [now, ratings, travelerName])
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -525,7 +586,143 @@ function App() {
     setSelectedDay(day)
     setView('days')
     setSearch('')
+    setMorePanel('hub')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const openRatingsPanel = () => {
+    const name = travelerName.trim()
+    if (name) {
+      const stars: Record<string, number> = {}
+      const comments: Record<string, string> = {}
+      for (const record of ratings) {
+        if (record.travelerName === name) {
+          stars[record.targetId] = record.stars
+          comments[record.targetId] = record.comment
+        }
+      }
+      setRatingDraftStars((prev) => ({ ...stars, ...prev }))
+      setRatingDraftComments((prev) => ({ ...comments, ...prev }))
+    }
+    setRatingFilter('open')
+    setRatingMessage('')
+    setMorePanel('ratings')
+    setView('more')
+    setSearch('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const saveRating = (target: RateableTarget) => {
+    const name = travelerName.trim()
+    if (!name) {
+      setRatingMessage('请先在首页填写「我是此次旅行的谁」')
+      return
+    }
+    if (!isTargetUnlocked(target, now)) {
+      setRatingMessage('还没到开放时间，玩完再来打分哦')
+      return
+    }
+    const existing = getTravelerRating(ratings, target.id, name)
+    const stars = ratingDraftStars[target.id] ?? existing?.stars ?? 0
+    if (stars < 1 || stars > 5) {
+      setRatingMessage('请先点选 1–5 颗星')
+      return
+    }
+    const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
+    setRatings((prev) =>
+      upsertRating(prev, {
+        targetId: target.id,
+        travelerName: name,
+        stars,
+        comment,
+      }),
+    )
+    setRatingMessage('已保存到本机，后续可同步到后台数据库')
+  }
+
+  const ratingPrompt = (target: RateableTarget, index: number) => {
+    const name = travelerName.trim() || '旅行者'
+    const kind = kindLabel(target.kind)
+    return `${name}，你评价下这个${index === 0 ? '第一个' : ''}${kind}吧：${target.title}`
+  }
+
+  const renderStarPicker = (
+    targetId: string,
+    value: number,
+    disabled = false,
+  ) => (
+    <div className="star-picker" role="radiogroup" aria-label="星级评分">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          aria-checked={value === star}
+          className={star <= value ? 'active' : ''}
+          disabled={disabled}
+          key={star}
+          onClick={() => {
+            setRatingDraftStars((prev) => ({ ...prev, [targetId]: star }))
+            setRatingMessage('')
+          }}
+          role="radio"
+          type="button"
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  )
+
+  const renderRatingCard = (target: RateableTarget, index: number, mode: 'open' | 'locked' | 'done') => {
+    const name = travelerName.trim()
+    const existing = name ? getTravelerRating(ratings, target.id, name) : undefined
+    const stars = ratingDraftStars[target.id] ?? existing?.stars ?? 0
+    const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
+    const unlockLabel = new Date(target.unlockAt).toLocaleString('zh-CN', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+
+    return (
+      <article className={`rating-card rating-card--${mode}`} key={target.id}>
+        <header>
+          <div>
+            <span>
+              DAY {target.day} · {kindLabel(target.kind)} · {target.time}
+            </span>
+            <h3>{target.title}</h3>
+          </div>
+          <em>{mode === 'locked' ? '未开放' : mode === 'done' ? `${existing?.stars ?? stars}★` : '待评价'}</em>
+        </header>
+        <p className="rating-prompt">{ratingPrompt(target, index)}</p>
+        {mode === 'locked' ? (
+          <p className="rating-lock-note">行程时段结束后开放 · 预计 {unlockLabel}</p>
+        ) : (
+          <>
+            {renderStarPicker(target.id, stars, false)}
+            <label className="rating-comment">
+              <span>评语（可选）</span>
+              <textarea
+                maxLength={200}
+                onChange={(event) =>
+                  setRatingDraftComments((prev) => ({
+                    ...prev,
+                    [target.id]: event.target.value,
+                  }))
+                }
+                placeholder="写下这一刻的感受…"
+                rows={2}
+                value={comment}
+              />
+            </label>
+            <button className="rating-save" onClick={() => saveRating(target)} type="button">
+              {existing ? '更新评分' : '提交评分'}
+            </button>
+          </>
+        )}
+      </article>
+    )
   }
 
   const togglePackingItem = (listId: string, itemId: string) => {
@@ -757,8 +954,10 @@ function App() {
             : view === 'days'
               ? `DAY ${selectedDay}`
               : view === 'guide'
-                ? `${packingOwner.trim() || '我的'}的旅行清单`
-                : '更多'}
+                ? `${packingOwner.trim() || travelerName.trim() || '我的'}的旅行清单`
+                : morePanel === 'ratings'
+                  ? '打分'
+                  : '更多'}
         </h1>
       </div>
       <span className="offline-pill"><Icon name="wifi" size={15} /> 可离线</span>
@@ -835,6 +1034,40 @@ function App() {
             <button onClick={() => setView('more')}>查看阶段预览与资料</button>
           </section>
         )}
+
+        <section className="traveler-identity">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">WHO ARE YOU</span>
+              <h2>我是此次旅行的谁</h2>
+            </div>
+          </div>
+          <label className="owner-field">
+            <span>旅行者名称</span>
+            <input
+              maxLength={16}
+              onChange={(event) => {
+                setTravelerName(event.target.value)
+                setRatingMessage('')
+              }}
+              placeholder="例如：洋葱"
+              value={travelerName}
+            />
+          </label>
+          <p>
+            {travelerName.trim()
+              ? `之后会这样问你：「${travelerName.trim()}，你评价下这个第一个景点…」`
+              : '填上名字后，打分提问会用你的称呼推进。'}
+          </p>
+          {pendingRatingCount > 0 && (
+            <button className="traveler-identity__cta" onClick={openRatingsPanel} type="button">
+              去打分
+              <span className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
+                {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
+              </span>
+            </button>
+          )}
+        </section>
 
         <div className={journey.phase === 'after' || journey.phase === 'during' ? 'phase-content--hidden' : ''}>
           <section className="section japanese-lesson">
@@ -953,6 +1186,18 @@ function App() {
             <button onClick={() => setView('more')}>
               <Icon name="info" /><span><strong>预算与应急</strong><small>离线速查</small></span>
             </button>
+            <button onClick={openRatingsPanel}>
+              <Icon name="star" />
+              <span>
+                <strong>景点打分</strong>
+                <small>{pendingRatingCount > 0 ? `${pendingRatingCount} 条待评` : '玩完再评'}</small>
+              </span>
+              {pendingRatingCount > 0 && (
+                <em className="count-badge" aria-hidden="true">
+                  {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
+                </em>
+              )}
+            </button>
           </div>
           </section>
         </div>
@@ -1070,8 +1315,12 @@ function App() {
               <span>清单属于</span>
               <input
                 maxLength={16}
-                onChange={(event) => setPackingOwner(event.target.value)}
-                placeholder="输入你的名字"
+                onChange={(event) => {
+                  const next = event.target.value
+                  setPackingOwner(next)
+                  if (!travelerName.trim()) setTravelerName(next)
+                }}
+                placeholder={travelerName.trim() || '输入你的名字'}
                 value={packingOwner}
               />
             </label>
@@ -1207,10 +1456,96 @@ function App() {
     </>
   )
 
+  const renderRatingsPanel = () => {
+    const list =
+      ratingFilter === 'open'
+        ? ratingBuckets.open
+        : ratingFilter === 'locked'
+          ? ratingBuckets.locked
+          : ratingBuckets.done
+
+    return (
+      <section className="ratings-panel">
+        <button className="text-button ratings-back" onClick={() => setMorePanel('hub')} type="button">
+          ← 返回更多
+        </button>
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">RATE THE DAY</span>
+            <h2>{travelerName.trim() ? `${travelerName.trim()}的打分` : '旅行打分'}</h2>
+          </div>
+          {pendingRatingCount > 0 && (
+            <span className="count-badge count-badge--inline" aria-label={`${pendingRatingCount} 条待评价`}>
+              {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
+            </span>
+          )}
+        </div>
+        <p className="ratings-lead">
+          景点 / 晚餐结束后才会开放。评分先存在本机，结构已预留后续写入数据库。
+        </p>
+        {!travelerName.trim() && (
+          <p className="ratings-warn">请先回首页填写「我是此次旅行的谁」，评分才会记到你名下。</p>
+        )}
+        <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
+          {(
+            [
+              ['open', `待评价 ${ratingBuckets.open.length}`],
+              ['done', `已评价 ${ratingBuckets.done.length}`],
+              ['locked', `未开放 ${ratingBuckets.locked.length}`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              aria-selected={ratingFilter === id}
+              className={ratingFilter === id ? 'active' : ''}
+              key={id}
+              onClick={() => setRatingFilter(id)}
+              role="tab"
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {ratingMessage && <p className="ratings-message">{ratingMessage}</p>}
+        <div className="rating-list">
+          {list.length === 0 && (
+            <p className="empty-state">
+              {ratingFilter === 'open'
+                ? '太棒了，当前没有待评价项目'
+                : ratingFilter === 'done'
+                  ? '还没有已保存的评分'
+                  : '没有锁定中的项目'}
+            </p>
+          )}
+          {list.map((target, index) => renderRatingCard(target, index, ratingFilter))}
+        </div>
+      </section>
+    )
+  }
+
   const renderMore = () => (
     <>
       {renderHeader()}
       <main>
+        {morePanel === 'ratings' ? (
+          renderRatingsPanel()
+        ) : (
+          <>
+        <section className="more-feature-grid">
+          <button className="more-feature-card" onClick={openRatingsPanel} type="button">
+            <span className="more-feature-card__icon"><Icon name="star" size={22} /></span>
+            <span>
+              <strong>打分</strong>
+              <small>景点 / 晚餐结束后评价</small>
+            </span>
+            {pendingRatingCount > 0 && (
+              <em className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
+                {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
+              </em>
+            )}
+          </button>
+        </section>
+
         <section className="weather-desk">
           <div className="weather-desk__heading">
             <div>
@@ -1483,6 +1818,8 @@ function App() {
           <span>HOKKAIDO · 2026</span>
           <p>为两家人的夏日北行而作</p>
         </section>
+          </>
+        )}
       </main>
     </>
   )
@@ -1518,12 +1855,20 @@ function App() {
             key={id}
             onClick={() => {
               if (id === 'days' && journey.day) setSelectedDay(journey.day)
+              if (id !== 'more') setMorePanel('hub')
               setView(id)
               setSearch('')
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           >
-            <Icon name={icon} size={21} />
+            <span className="bottom-nav__icon">
+              <Icon name={icon} size={21} />
+              {id === 'more' && pendingRatingCount > 0 && (
+                <em className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
+                  {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
+                </em>
+              )}
+            </span>
             <span>{label}</span>
           </button>
         ))}
