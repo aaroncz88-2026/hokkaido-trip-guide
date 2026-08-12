@@ -23,6 +23,7 @@ import {
 import {
   findMyTraveler,
   formatPartyReadyLine,
+  formatPartyTitle,
   getDeviceId,
   joinParty,
   normalizeTravelerName,
@@ -1175,11 +1176,19 @@ function App() {
           </section>
         )}
 
-        <section className={`traveler-identity ${isPartyMember ? 'traveler-identity--ready' : ''}`}>
+        <section
+          className={`traveler-identity ${
+            partyRoster.travelers.length >= PARTY_MAX
+              ? 'traveler-identity--launched'
+              : isPartyMember
+                ? 'traveler-identity--ready'
+                : ''
+          }`}
+        >
           <div className="section-heading">
             <div>
               <span className="eyebrow">PARTY OF FOUR</span>
-              <h2>{isPartyMember ? '参与者已就位' : '我是此次旅行的谁'}</h2>
+              <h2>{formatPartyTitle(partyRoster.travelers.length, isPartyMember)}</h2>
             </div>
             <strong className="party-seat-count">
               {partyRoster.travelers.length}/{PARTY_MAX}

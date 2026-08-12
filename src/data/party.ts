@@ -75,10 +75,18 @@ export const writeRosterCache = (roster: PartyRoster) => {
 
 export const normalizeTravelerName = (name: string) => name.trim().replace(/\s+/g, ' ')
 
+export const formatPartyTitle = (count: number, isMember: boolean) => {
+  if (count >= PARTY_MAX) return '北海道旅程，正式启动'
+  if (isMember) return '旅伴召集中'
+  return '我是此次旅行的谁'
+}
+
 export const formatPartyReadyLine = (names: string[]) => {
-  if (names.length === 0) return '还没有人就位'
-  if (names.length >= PARTY_MAX) return `${names.join('、')} 已就位！`
-  return `${names.join('、')} 已就位！还差 ${PARTY_MAX - names.length} 位`
+  if (names.length === 0) return '还没有人报到'
+  if (names.length >= PARTY_MAX) {
+    return `旅行者为：${names.join('、')}及两个可爱的宝宝，瓜瓜和小骑士`
+  }
+  return `${names.join('、')} 已就位！还差 ${PARTY_MAX - names.length} 位大人`
 }
 
 const asRoster = (data: unknown): PartyRoster => {

@@ -2604,6 +2604,17 @@ label:has(input:focus-visible) {
     var(--paper);
 }
 
+.traveler-identity--launched {
+  background:
+    linear-gradient(155deg, rgba(255, 244, 220, 0.96), rgba(232, 245, 238, 0.98)),
+    var(--paper);
+}
+
+.traveler-identity--launched .party-ready-line {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .traveler-identity .owner-field,
 .party-manage .owner-field {
   margin-top: 10px;
