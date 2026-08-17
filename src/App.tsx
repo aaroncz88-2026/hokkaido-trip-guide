@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import {
   guideSections,
-  isAndroidMapsIntent,
   isGoogleMapsWebUrl,
   mapsUrl,
+  openInMaps,
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
@@ -150,17 +150,19 @@ const MapsLink = ({
   children: ReactNode
   className?: string
 }) => {
-  const href = mapsUrl(query)
-  // intent:// must stay in the same tab; target=_blank breaks Android app handoff.
-  if (isAndroidMapsIntent(href)) {
+  const android = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+
+  // Android: button + geo/intent handoff. Never open google.com interstitial first.
+  if (android) {
     return (
-      <a className={className} href={href}>
+      <button className={className} type="button" onClick={() => openInMaps(query)}>
         {children}
-      </a>
+      </button>
     )
   }
+
   return (
-    <a className={className} href={href} rel="noopener noreferrer" target="_blank">
+    <a className={className} href={mapsUrl(query)} rel="noopener noreferrer" target="_blank">
       {children}
     </a>
   )
@@ -1146,7 +1148,7 @@ function App() {
                     <h2>当天停车点</h2>
                   </div>
                 </div>
-                <p className="home-parking__hint">时段可能浮动，目的地不变 · 点击打开 Google Maps</p>
+                <p className="home-parking__hint">时段可能浮动，目的地不变 · 安卓会直接唤起地图 App</p>
                 <ol className="home-parking__list">
                   {tripDays[journey.day - 1].navigation.map((item, index) => (
                     <li key={item.label}>

@@ -604,30 +604,32 @@ export const guideSections = [
 export const sourceLink =
   'https://docs.qq.com/sheet/DU1dKV3hzanBDSmJj?opennew=1&tab=ukregn'
 
-/** Maps link: on Android open the Google Maps app directly; elsewhere use the web URL. */
+export const mapsWebUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+
+const isAndroidDevice = () =>
+  typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+
+/**
+ * Android: use geo/intent so the installed Maps app opens.
+ * Never send users to maps.google.com first — that interstitial「打开应用」often fails in Custom Tabs.
+ */
 export const mapsUrl = (query: string) => {
   const q = encodeURIComponent(query)
-  const web = `https://maps.google.com/maps?q=${q}`
-
-  // Android Chrome can hand off to the installed Maps app via intent://.
-  // Avoid opening maps.google.com inside a Custom Tab first — that page's「打开应用」often does nothing.
-  if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)) {
-    return (
-      `intent://maps.google.com/maps?q=${q}` +
-      `#Intent;scheme=https;package=com.google.android.apps.maps;` +
-      `S.browser_fallback_url=${encodeURIComponent(web)};end`
-    )
+  if (isAndroidDevice()) {
+    return `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`
   }
-
-  return web
+  return mapsWebUrl(query)
 }
 
+export const mapsGeoUrl = (query: string) => `geo:0,0?q=${encodeURIComponent(query)}`
+
 export const isGoogleMapsWebUrl = (url: string) =>
-  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl|^intent:\/\/maps\.google)/i.test(url)
+  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl|^intent:|^geo:)/i.test(url)
 
 export const queryFromMapsWebUrl = (url: string) => {
   try {
-    if (url.startsWith('intent:')) {
+    if (url.startsWith('intent:') || url.startsWith('geo:')) {
       const match = url.match(/[?&]q=([^#&]+)/)
       return match ? decodeURIComponent(match[1]) : null
     }
@@ -643,20 +645,37 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-export const isAndroidMapsIntent = (url: string) => url.startsWith('intent:')
+export const isAndroidMapsIntent = (url: string) => url.startsWith('intent:') || url.startsWith('geo:')
 
-/** Open Maps without navigating the guide app away. */
+/** Try Google Maps app on Android without opening the broken google.com interstitial. */
 export const openInMaps = (query: string) => {
-  const href = mapsUrl(query)
-  try {
-    if (isAndroidMapsIntent(href)) {
-      window.location.href = href
-      return true
-    }
-    const win = window.open(href, '_blank', 'noopener,noreferrer')
-    if (win) return true
-  } catch {
-    // fall through
+  if (isAndroidDevice()) {
+    const q = encodeURIComponent(query)
+    const primary = `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`
+    const secondary = `geo:0,0?q=${q}`
+
+    window.location.href = primary
+    window.setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        window.location.href = secondary
+      }
+    }, 450)
+    window.setTimeout(() => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        void navigator.clipboard?.writeText(query)
+      } catch {
+        // ignore
+      }
+      window.alert(`没有跳进地图 App 时，请手动打开 Google 地图搜索：\n\n${query}\n\n（地名已尝试复制）`)
+    }, 1100)
+    return true
   }
-  return false
+
+  try {
+    const win = window.open(mapsWebUrl(query), '_blank', 'noopener,noreferrer')
+    return Boolean(win)
+  } catch {
+    return false
+  }
 }
