@@ -65,11 +65,11 @@ const dayMeta: DayMeta[] = [
     accent: '#2f6f68',
     highlights: ['机场取车', '支笏湖观光船', '山线铁桥', 'Seicomart 采购'],
     navigation: [
-      { label: '支笏湖停车场', query: 'Lake Shikotsu Parking Lot' },
+      { label: '支笏湖收费停车场', query: 'Lake Shikotsu paid parking lot' },
       { label: '支笏湖游船', query: 'Lake Shikotsu Sightseeing Ship' },
-      { label: '入住地', query: 'Suiyo Rusutsu' },
+      { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
     ],
-    reminders: ['落地后先完成入境、行李和取车', '争取 15:00 到支笏湖', '晚间采购次日早餐与饮用水'],
+    reminders: ['落地后先完成入境、行李和取车', '出发导航：Lake Shikotsu paid parking lot', '争取 15:00 到支笏湖', '晚间采购次日早餐与饮用水'],
   },
   {
     day: 2,
@@ -397,6 +397,8 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
       '【抵达】+【过关】+【取行李】+【接驳取车】\n12:30左右抵达→直奔关口→取行李→J-Net接驳→B停车场汇合',
+    '14:00~15:00':
+      '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -429,6 +431,12 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://maps.google.com/?q=%E6%96%B0%E5%8D%83%E6%AD%B3%E7%A9%BA%E6%B8%AFB%E9%A7%90%E8%BB%8A%E5%A0%B4',
       },
     ],
+    '14:00~15:00': [
+      {
+        label: 'Lake Shikotsu paid parking lot | Google Maps',
+        url: 'https://maps.google.com/?q=Lake%20Shikotsu%20paid%20parking%20lot',
+      },
+    ],
   },
 }
 
@@ -443,6 +451,11 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【过关取行李】→【J-Net接驳取车】→【开回B停车场发柱号+车照片】',
       mom: '【过关带娃】→【取行李】→【国际到达大厅等汇合消息后再出停车场】',
       kids: '【跟着大人过关】坐推车/拉杆箱旁休息，等爸爸发来停车位置再一起走',
+    },
+    '14:00~15:00': {
+      dad: '【开车】导航去 Lake Shikotsu paid parking lot；到停车场后发位置给家人',
+      mom: '【车上休息】帮忙看导航与孩子，确认停车费现金/交通卡',
+      kids: '【车上休息】系好安全带，预计约 35 分钟到湖边',
     },
   },
 }

@@ -1329,6 +1329,20 @@ function App() {
           ))}
         </div>
 
+        <section className="day-parking-sticky" aria-label="当天停车与导航">
+          <div className="day-parking-sticky__head">
+            <span>当天停车 / 导航</span>
+            <small>时段可浮动 · 目的地不变</small>
+          </div>
+          <div className="nav-links nav-links--sticky">
+            {currentDay.navigation.map((item) => (
+              <a href={mapsUrl(item.query)} key={item.label} rel="noreferrer" target="_blank">
+                <Icon name="map" size={16} /> {item.label} <Icon name="external" size={13} />
+              </a>
+            ))}
+          </div>
+        </section>
+
         <section className="day-hero" style={{ '--day-accent': currentDay.accent } as CSSProperties}>
           <span>{currentDay.weekday} · {formatDate(currentDay.date)}</span>
           <h2>{currentDay.title}</h2>
@@ -1353,19 +1367,6 @@ function App() {
           <p>{currentDay.summary}</p>
           <div><span>今晚住宿</span><strong>{currentDay.lodging}</strong></div>
           <details><summary>天气不好怎么办？</summary><p>{currentDay.fallback}</p></details>
-        </section>
-
-        <section className="section section--flush">
-          <div className="section-heading">
-            <div><span className="eyebrow">NAVIGATION</span><h2>一键导航</h2></div>
-          </div>
-          <div className="nav-links">
-            {currentDay.navigation.map((item) => (
-              <a href={mapsUrl(item.query)} key={item.label} rel="noreferrer" target="_blank">
-                <Icon name="map" size={18} /> {item.label} <Icon name="external" size={14} />
-              </a>
-            ))}
-          </div>
         </section>
 
         <section className="section section--flush">
