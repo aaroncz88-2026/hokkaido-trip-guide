@@ -310,7 +310,94 @@ const entryCardGuide: TimelineMaterial = {
   ],
 }
 
+const arrivalCustomsGuide: TimelineMaterial = {
+  title: '① 新千岁出关',
+  body: '目标约 12:30 抵达。下飞机后直奔关口，尽量不要先去厕所；现场通常有工作人员分流加速。',
+  steps: [
+    { id: 'go-gate', field: '下机后', how: '跟着“入国审查 / Immigration”指示直奔关口，先过关再处理其他事。' },
+    {
+      id: 'qr-ready',
+      field: '电子二维码',
+      how: '提前一天按 Visit Japan Web / 在线指引填好，落地直接出示，不要现场现填。',
+    },
+    {
+      id: 'clearance',
+      field: '过关三步',
+      how: '出示护照 → 扫描二维码 → 录入双手指纹。保持队形，孩子跟在大人后面。',
+    },
+    {
+      id: 'luggage',
+      field: '取行李',
+      how: '过关后到国际到达行李转盘取托运行李，再汇合去接驳取车。',
+    },
+  ],
+}
+
+const jnetShuttleGuide: TimelineMaterial = {
+  title: '② J-Net 接驳取车',
+  body: '关键：不是在航站楼内取车。没有航站楼柜台，也不会在航站楼门口交车；需坐免费接驳车约 10–15 分钟到营业所。',
+  steps: [
+    { id: 'exit', field: '出楼', how: '完成入境与取行李后，从机场 1 楼到达层出楼。' },
+    {
+      id: 'walk',
+      field: '步行路线',
+      how: '出楼后沿巴士/出租车道向左走，经过“1 番巴士站”，继续走到交番（小警察亭）附近。',
+    },
+    {
+      id: 'stop',
+      field: '上车点',
+      how: '在标有“许可车乘降所”的区域等候 Jネットレンタカー / J-Net Rent-a-Car 接驳车。',
+    },
+    {
+      id: 'bus',
+      field: '班次',
+      how: '约每 15 分钟一班，通常无需预约。上车后到营业所办手续取车。',
+    },
+    {
+      id: 'call',
+      field: '找不到就打电话',
+      how: '拨打 0120-302-554；语音提示后按 1，听接驳上车点说明。',
+    },
+  ],
+}
+
+const parkingMeetupGuide: TimelineMaterial = {
+  title: '③ B 停车场汇合口令',
+  body: '取车爸爸开回机场后，在新千岁空港 B 停车场汇合。整片 B 停车场比单独标某个立体楼更稳；目标是靠近国际线航站楼一侧。',
+  steps: [
+    {
+      id: 'nav',
+      field: '导航目标',
+      how: '导航搜“新千岁空港B停车场 / New Chitose Airport Parking Lot B”，进 B 停车场即可。',
+    },
+    {
+      id: 'park',
+      field: '取车爸爸怎么停',
+      how: '进 B 停车场后尽量停地图左侧、国际线侧，靠近 C67 / C69 方向的空位。',
+    },
+    {
+      id: 'report',
+      field: '停好立刻发消息',
+      how: '发送：楼层 + 分区 + 柱号 + 车辆照片。没有柱号就发最近标识牌照片。',
+    },
+    {
+      id: 'wait',
+      field: '行李组怎么等',
+      how: '先在国际到达大厅等消息；收到柱号和照片后再推行李出去，避免在停车场瞎找。',
+    },
+    {
+      id: 'passcode',
+      field: '全员口令',
+      how: 'B停车场，尽量停国际线侧、靠C67/C69方向；停好后发送柱号。',
+    },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
+  1: {
+    '12:00~13:00':
+      '【抵达】+【过关】+【取行李】+【接驳取车】\n12:30左右抵达→直奔关口→取行李→J-Net接驳→B停车场汇合',
+  },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
     '15:00~16:00': '【堺町通亲子任务】【小店】16:00前结束主街段',
@@ -328,6 +415,7 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     '8:00~12:00': [entryCardGuide],
+    '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
   },
 }
 
@@ -335,6 +423,12 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
   1: {
     // 首页当前行动只保留离线填写对照，不展示失效外链
     '8:00~12:00': [],
+    '12:00~13:00': [
+      {
+        label: '新千岁机场B停车场 | Google Maps',
+        url: 'https://maps.google.com/?q=%E6%96%B0%E5%8D%83%E6%AD%B3%E7%A9%BA%E6%B8%AFB%E9%A7%90%E8%BB%8A%E5%A0%B4',
+      },
+    ],
   },
 }
 
@@ -344,6 +438,11 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【入境卡填写】按下方对照表，帮全家人逐项填写并勾选完成',
       mom: '【飞机简餐】照顾孩子用餐，护照与住宿英文地址备好给爸爸抄写',
       kids: '【飞机简餐】坐好吃饭休息，需要时把护照交给爸爸妈妈',
+    },
+    '12:00~13:00': {
+      dad: '【过关取行李】→【J-Net接驳取车】→【开回B停车场发柱号+车照片】',
+      mom: '【过关带娃】→【取行李】→【国际到达大厅等汇合消息后再出停车场】',
+      kids: '【跟着大人过关】坐推车/拉杆箱旁休息，等爸爸发来停车位置再一起走',
     },
   },
 }
