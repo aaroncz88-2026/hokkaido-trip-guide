@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type 
 import {
   guideSections,
   isGoogleMapsWebUrl,
-  mapsUrl,
+  openInMaps,
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
@@ -149,14 +149,13 @@ const MapsLink = ({
   children: ReactNode
   className?: string
 }) => (
-  <a
+  <button
     className={className}
-    href={mapsUrl(query)}
-    rel="noopener noreferrer"
-    target="_blank"
+    type="button"
+    onClick={() => openInMaps(query)}
   >
     {children}
-  </a>
+  </button>
 )
 
 const ExternalOrMapsLink = ({

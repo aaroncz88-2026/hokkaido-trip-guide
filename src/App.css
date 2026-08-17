@@ -1039,8 +1039,11 @@
   color: var(--ink);
   background: var(--paper);
   text-decoration: none;
+  font: inherit;
   font-size: 0.7rem;
   font-weight: 650;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-links a .icon:first-child,
@@ -1076,13 +1079,23 @@
   grid-template-columns: 28px 1fr auto;
   gap: 10px;
   align-items: center;
+  width: 100%;
   min-height: 58px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
   color: inherit;
   background: #f8f5ef;
+  text-align: left;
   text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-parking__link:active {
+  transform: scale(0.99);
+  background: #efe8dc;
 }
 
 .home-parking__link em {

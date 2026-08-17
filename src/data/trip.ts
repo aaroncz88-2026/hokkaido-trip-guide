@@ -606,7 +606,7 @@ export const sourceLink =
 
 /** Universal Google Maps search URL (works with VPN / desktop / mobile browser). */
 export const mapsUrl = (query: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+  `https://maps.google.com/maps?q=${encodeURIComponent(query)}`
 
 export const isGoogleMapsWebUrl = (url: string) =>
   /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl)/i.test(url)
@@ -625,7 +625,29 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-/** Always open a real Google Maps page/tab — never swallow the click. */
+const isStandalonePwa = () => {
+  if (typeof window === 'undefined') return false
+  const media = window.matchMedia?.('(display-mode: standalone)')?.matches
+  const ios = 'standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
+  return Boolean(media || ios)
+}
+
+/** Open Maps in a way that works in browser tabs AND installed PWA (standalone). */
 export const openInMaps = (query: string) => {
-  window.open(mapsUrl(query), '_blank', 'noopener,noreferrer')
+  const href = mapsUrl(query)
+
+  // Installed PWA: target=_blank is often swallowed with no feedback.
+  if (isStandalonePwa()) {
+    window.location.assign(href)
+    return
+  }
+
+  try {
+    const win = window.open(href, '_blank', 'noopener,noreferrer')
+    if (win) return
+  } catch {
+    // fall through
+  }
+
+  window.location.assign(href)
 }

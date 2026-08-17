@@ -11,6 +11,11 @@ createRoot(document.getElementById('root')!).render(
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js?v=11`)
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js?v=16`)
+      .then((registration) => registration.update())
+      .catch(() => {
+        // ignore offline / private-mode registration failures
+      })
   })
 }
