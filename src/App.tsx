@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type 
 import {
   guideSections,
   isGoogleMapsWebUrl,
-  openInMaps,
+  mapsUrl,
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
@@ -149,13 +149,14 @@ const MapsLink = ({
   children: ReactNode
   className?: string
 }) => (
-  <button
+  <a
     className={className}
-    type="button"
-    onClick={() => openInMaps(query)}
+    href={mapsUrl(query)}
+    rel="noopener noreferrer"
+    target="_blank"
   >
     {children}
-  </button>
+  </a>
 )
 
 const ExternalOrMapsLink = ({
@@ -964,6 +965,23 @@ function App() {
 
   const nudgeSim = (deltaMs: number) => {
     applySimulatedTime(new Date(now.getTime() + deltaMs), undefined, { goDays: false })
+  }
+
+  const repairAppCache = async () => {
+    try {
+      localStorage.removeItem('hokkaido-sw-recovery-v17')
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(regs.map((registration) => registration.unregister()))
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+      }
+    } catch {
+      // ignore
+    }
+    window.location.href = `${import.meta.env.BASE_URL}?repair=${Date.now()}`
   }
 
   const toggleFillStep = (key: string) => {
@@ -1961,6 +1979,18 @@ function App() {
             </button>
             <button className="debug-reset" type="button" onClick={returnToRealTime}>
               回到当前
+            </button>
+          </div>
+        </section>
+        <section className="preview-card">
+          <div>
+            <span className="eyebrow">REPAIR</span>
+            <h2>打不开或白屏时</h2>
+            <p>会清理本站缓存并重新加载，不删你的清单勾选（localStorage 行程勾选会保留）。</p>
+          </div>
+          <div className="debug-time-actions" style={{ marginTop: 14 }}>
+            <button className="debug-reset" type="button" onClick={() => void repairAppCache()}>
+              修复并重新进入
             </button>
           </div>
         </section>

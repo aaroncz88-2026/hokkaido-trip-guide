@@ -625,29 +625,14 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-const isStandalonePwa = () => {
-  if (typeof window === 'undefined') return false
-  const media = window.matchMedia?.('(display-mode: standalone)')?.matches
-  const ios = 'standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
-  return Boolean(media || ios)
-}
-
-/** Open Maps in a way that works in browser tabs AND installed PWA (standalone). */
+/** Open Maps without navigating the guide app away. */
 export const openInMaps = (query: string) => {
   const href = mapsUrl(query)
-
-  // Installed PWA: target=_blank is often swallowed with no feedback.
-  if (isStandalonePwa()) {
-    window.location.assign(href)
-    return
-  }
-
   try {
     const win = window.open(href, '_blank', 'noopener,noreferrer')
-    if (win) return
+    if (win) return true
   } catch {
     // fall through
   }
-
-  window.location.assign(href)
+  return false
 }

@@ -1,57 +1,54 @@
-const CACHE = 'hokkaido-guide-v16'
+const CACHE = 'hokkaido-guide-v17'
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.add(new Request(self.registration.scope, { cache: 'reload' }))),
-  )
+self.addEventListener('install', () => {
+  // Do not precache the HTML shell — a stale shell + purged assets white-screens the app.
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
-    ),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith('hokkaido-guide-') && key !== CACHE)
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .then(() => self.clients.claim()),
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return
 
-  const url = new URL(event.request.url)
-  const isHashedAsset = url.pathname.includes('/assets/')
-
-  // Cache-first for JS/CSS so return visits open instantly even on slow networks.
-  if (isHashedAsset) {
+  // Navigations: network only (with soft offline fallback). Never serve a mismatched shell.
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const fetched = fetch(event.request)
-          .then((response) => {
-            if (response.ok) {
-              const copy = response.clone()
-              caches.open(CACHE).then((cache) => cache.put(event.request, copy))
-            }
-            return response
-          })
-          .catch(() => cached)
-        return cached || fetched
+      fetch(event.request, { cache: 'no-store' }).catch(async () => {
+        const cached = (await caches.match(event.request)) || (await caches.match('./'))
+        return cached || Response.error()
       }),
     )
     return
   }
 
+  const url = new URL(event.request.url)
+  const isHashedAsset = url.pathname.includes('/assets/')
+  if (!isHashedAsset) return
+
+  // Hashed JS/CSS: cache-first for snappy reloads.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
-          const copy = response.clone()
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy))
-        }
-        return response
-      })
-      .catch(() =>
-        caches.match(event.request).then((response) => response || caches.match(self.registration.scope)),
-      ),
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(event.request)
+      const network = fetch(event.request)
+        .then((response) => {
+          if (response.ok) cache.put(event.request, response.clone())
+          return response
+        })
+        .catch(() => cached)
+      return cached || network
+    }),
   )
 })
