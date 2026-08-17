@@ -3,7 +3,6 @@ import {
   guideSections,
   isGoogleMapsWebUrl,
   mapsUrl,
-  openInMaps,
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
@@ -153,10 +152,8 @@ const MapsLink = ({
   <a
     className={className}
     href={mapsUrl(query)}
-    onClick={(event) => {
-      event.preventDefault()
-      openInMaps(query)
-    }}
+    rel="noopener noreferrer"
+    target="_blank"
   >
     {children}
   </a>
@@ -1125,7 +1122,7 @@ function App() {
                     <h2>当天停车点</h2>
                   </div>
                 </div>
-                <p className="home-parking__hint">时段可能浮动，目的地不变 · 点击直接唤起 Google 地图 App</p>
+                <p className="home-parking__hint">时段可能浮动，目的地不变 · 点击打开 Google Maps</p>
                 <ol className="home-parking__list">
                   {tripDays[journey.day - 1].navigation.map((item, index) => (
                     <li key={item.label}>

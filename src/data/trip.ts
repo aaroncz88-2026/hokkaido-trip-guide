@@ -604,8 +604,9 @@ export const guideSections = [
 export const sourceLink =
   'https://docs.qq.com/sheet/DU1dKV3hzanBDSmJj?opennew=1&tab=ukregn'
 
-/** Fallback href that can open an installed maps app without loading google.com in the browser. */
-export const mapsUrl = (query: string) => `geo:0,0?q=${encodeURIComponent(query)}`
+/** Universal Google Maps search URL (works with VPN / desktop / mobile browser). */
+export const mapsUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 
 export const isGoogleMapsWebUrl = (url: string) =>
   /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl)/i.test(url)
@@ -624,31 +625,7 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-/**
- * Open Google Maps app when possible.
- * Avoids https://www.google.com/... first (often blocked in CN browsers even if Maps app is installed).
- */
+/** Always open a real Google Maps page/tab — never swallow the click. */
 export const openInMaps = (query: string) => {
-  const q = encodeURIComponent(query)
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-
-  if (/Android/i.test(ua)) {
-    window.location.href =
-      `intent://maps.google.com/maps?q=${q}#Intent;scheme=https;package=com.google.android.apps.maps;` +
-      `S.browser_fallback_url=${encodeURIComponent(`geo:0,0?q=${q}`)};end`
-    return
-  }
-
-  if (/iPhone|iPad|iPod/i.test(ua)) {
-    const started = Date.now()
-    window.location.href = `comgooglemaps://?q=${q}`
-    window.setTimeout(() => {
-      if (Date.now() - started < 1800) {
-        window.location.href = `maps:0,0?q=${q}`
-      }
-    }, 650)
-    return
-  }
-
-  window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank', 'noopener,noreferrer')
+  window.open(mapsUrl(query), '_blank', 'noopener,noreferrer')
 }
