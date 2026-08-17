@@ -349,6 +349,8 @@ function App() {
   const [clockTick, setClockTick] = useState(0)
   const [simDraft, setSimDraft] = useState(() => toDatetimeLocalValue(getAppNow(readSimOffset())))
   const [simMessage, setSimMessage] = useState('')
+  const [timePanelOpen, setTimePanelOpen] = useState(false)
+  const [timeDraftDay, setTimeDraftDay] = useState(1)
   const [fillChecks, setFillChecks] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem('hokkaido-fill-checks') ?? '{}')
@@ -850,7 +852,20 @@ function App() {
     setTemplateToAdd('')
   }
 
-  const applySimulatedTime = (target: Date, message?: string) => {
+  const TIME_HOUR_PRESETS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20] as const
+
+  const openTimePanel = () => {
+    setSimDraft(toDatetimeLocalValue(now))
+    const dayFromNow =
+      now >= TRIP_START && now <= TRIP_END
+        ? Math.min(8, Math.floor((now.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
+        : selectedDay
+    setTimeDraftDay(dayFromNow)
+    setSimMessage('')
+    setTimePanelOpen(true)
+  }
+
+  const applySimulatedTime = (target: Date, message?: string, options?: { goDays?: boolean }) => {
     const offset = target.getTime() - Date.now()
     writeSimOffset(offset)
     setSimOffsetMs(offset)
@@ -860,6 +875,12 @@ function App() {
     if (target >= TRIP_START && target <= TRIP_END) {
       const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
       setSelectedDay(day)
+      setTimeDraftDay(day)
+      if (options?.goDays !== false) {
+        setView('days')
+        setMorePanel('hub')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
   }
 
@@ -871,8 +892,7 @@ function App() {
       return
     }
     applySimulatedTime(target)
-    setView('home')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setTimePanelOpen(false)
   }
 
   const returnToRealTime = () => {
@@ -884,14 +904,22 @@ function App() {
     setSimMessage('已回到真实当前时间')
   }
 
-  const fillDayPreset = (dayNumber: number) => {
+  const buildDayAtHour = (dayNumber: number, hour: number, minute = 0) => {
     const day = tripDays.find((item) => item.day === dayNumber)
-    if (!day) return
+    if (!day) return null
     const [year, month, date] = day.date.split('-').map(Number)
-    const preset = new Date(year, month - 1, date, 9, 0, 0, 0)
-    applySimulatedTime(preset, `已模拟 DAY ${dayNumber} · 09:00`)
-    setView('home')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return new Date(year, month - 1, date, hour, minute, 0, 0)
+  }
+
+  const applyHourPreset = (hour: number) => {
+    const preset = buildDayAtHour(timeDraftDay, hour)
+    if (!preset) return
+    applySimulatedTime(preset, `已模拟 DAY ${timeDraftDay} · ${String(hour).padStart(2, '0')}:00`)
+    setTimePanelOpen(false)
+  }
+
+  const nudgeSim = (deltaMs: number) => {
+    applySimulatedTime(new Date(now.getTime() + deltaMs), undefined, { goDays: false })
   }
 
   const toggleFillStep = (key: string) => {
@@ -904,7 +932,7 @@ function App() {
         <section className="now-card now-card--empty">
           <span className="eyebrow">NOW · DAY {journey.day}</span>
           <h2>当前时段暂无具体安排</h2>
-          <p>可以切换到行程页查看全天时间轴，或在「更多」里调整模拟时间。</p>
+          <p>可以切换到行程页查看全天时间轴，或点顶部「调时间」跳到具体时段。</p>
         </section>
       )
     }
@@ -1853,50 +1881,20 @@ function App() {
           <div>
             <span className="eyebrow">DEBUG · TIME MACHINE</span>
             <h2>模拟旅行时间</h2>
-            <p>选好日期和时间后点「运行模拟」，或直接点 D1–D8 立即进入当天 09:00。模拟时间会保存在本机，重启后仍有效。</p>
+            <p>测试期优先入口：顶部常驻「调时间」。点下方按钮可打开同一套快捷面板（选日、选整点、±15 分钟）。</p>
           </div>
-
           <div className="debug-time-status">
             <span>{isSimulating ? '模拟中' : '真实时间'}</span>
             <strong>{formatSimClock(now)}</strong>
           </div>
-
-          <form className="debug-time-form" onSubmit={runSimulation}>
-            <label>
-              <span>日期与时间</span>
-              <input
-                type="datetime-local"
-                value={simDraft}
-                min="2026-08-20T00:00"
-                max="2026-09-02T23:59"
-                onChange={(event) => {
-                  setSimDraft(event.target.value)
-                  setSimMessage('')
-                }}
-              />
-            </label>
-            <div className="debug-day-chips" aria-label="快速填入行程日">
-              {tripDays.map((day) => (
-                <button
-                  key={day.day}
-                  type="button"
-                  onClick={() => fillDayPreset(day.day)}
-                >
-                  D{day.day}
-                </button>
-              ))}
-            </div>
-            <div className="debug-time-actions">
-              <button className="debug-run" type="submit">
-                运行模拟
-              </button>
-              <button className="debug-reset" type="button" onClick={returnToRealTime}>
-                回到当前
-              </button>
-            </div>
-          </form>
-
-          {simMessage && <p className="debug-time-message">{simMessage}</p>}
+          <div className="debug-time-actions" style={{ marginTop: 14 }}>
+            <button className="debug-run" type="button" onClick={openTimePanel}>
+              打开调时间面板
+            </button>
+            <button className="debug-reset" type="button" onClick={returnToRealTime}>
+              回到当前
+            </button>
+          </div>
         </section>
         <section className="about-card">
           <span className="eyebrow">SOURCE OF TRUTH</span>
@@ -1929,23 +1927,113 @@ function App() {
   )
 
   return (
-    <div className={`app-shell ${isSimulating ? 'app-shell--simulating' : ''}`}>
-      {isSimulating && (
-        <div className="sim-banner" role="status">
-          <div>
-            <span>模拟时间</span>
-            <strong>{formatSimClock(now)}</strong>
-          </div>
-          <div className="sim-banner__actions">
-            <button type="button" onClick={() => setView('more')}>调整</button>
+    <div className="app-shell app-shell--simulating">
+      <div className={`sim-banner ${isSimulating ? 'sim-banner--active' : ''}`} role="status">
+        <button className="sim-banner__clock" type="button" onClick={openTimePanel}>
+          <span>{isSimulating ? '模拟时间 · 点此调整' : '测试时钟 · 点此调时间'}</span>
+          <strong>{formatSimClock(now)}</strong>
+        </button>
+        <div className="sim-banner__actions">
+          <button type="button" onClick={openTimePanel}>调时间</button>
+          {isSimulating && (
             <button type="button" onClick={returnToRealTime}>回到当前</button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
       {view === 'home' && renderHome()}
       {view === 'days' && renderDays()}
       {view === 'guide' && renderGuide()}
       {view === 'more' && renderMore()}
+      {timePanelOpen && (
+        <div className="time-sheet" role="dialog" aria-modal="true" aria-labelledby="time-sheet-title">
+          <button className="time-sheet__backdrop" aria-label="关闭" type="button" onClick={() => setTimePanelOpen(false)} />
+          <div className="time-sheet__panel">
+            <div className="time-sheet__head">
+              <div>
+                <span className="eyebrow">TIME MACHINE</span>
+                <h2 id="time-sheet-title">调时间</h2>
+              </div>
+              <button className="time-sheet__close" type="button" onClick={() => setTimePanelOpen(false)}>
+                关闭
+              </button>
+            </div>
+            <div className="debug-time-status">
+              <span>{isSimulating ? '模拟中' : '真实时间'}</span>
+              <strong>{formatSimClock(now)}</strong>
+            </div>
+            <p className="time-sheet__hint">先选 DAY，再点整点；或用 ±15 分钟微调。应用后会跳到行程页方便核对。</p>
+
+            <div className="time-sheet__section">
+              <span>行程日（先选日，再点整点）</span>
+              <div className="debug-day-chips" aria-label="选择行程日">
+                {tripDays.map((day) => (
+                  <button
+                    key={day.day}
+                    className={timeDraftDay === day.day ? 'is-active' : ''}
+                    type="button"
+                    onClick={() => setTimeDraftDay(day.day)}
+                  >
+                    D{day.day}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="time-sheet__section">
+              <span>整点快切 · DAY {timeDraftDay}</span>
+              <div className="time-hour-chips" aria-label="选择整点">
+                {TIME_HOUR_PRESETS.map((hour) => (
+                  <button key={hour} type="button" onClick={() => applyHourPreset(hour)}>
+                    {String(hour).padStart(2, '0')}:00
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="time-sheet__section">
+              <span>微调</span>
+              <div className="time-nudge-chips" aria-label="时间微调">
+                <button type="button" onClick={() => nudgeSim(-60 * 60 * 1000)}>−1 小时</button>
+                <button type="button" onClick={() => nudgeSim(-15 * 60 * 1000)}>−15 分</button>
+                <button type="button" onClick={() => nudgeSim(15 * 60 * 1000)}>+15 分</button>
+                <button type="button" onClick={() => nudgeSim(60 * 60 * 1000)}>+1 小时</button>
+              </div>
+            </div>
+
+            <form className="debug-time-form" onSubmit={runSimulation}>
+              <label>
+                <span>精确到分</span>
+                <input
+                  type="datetime-local"
+                  value={simDraft}
+                  min="2026-08-20T00:00"
+                  max="2026-09-02T23:59"
+                  onChange={(event) => {
+                    setSimDraft(event.target.value)
+                    setSimMessage('')
+                  }}
+                />
+              </label>
+              <div className="debug-time-actions">
+                <button className="debug-run" type="submit">
+                  应用并看行程
+                </button>
+                <button
+                  className="debug-reset"
+                  type="button"
+                  onClick={() => {
+                    returnToRealTime()
+                    setTimePanelOpen(false)
+                  }}
+                >
+                  回到当前
+                </button>
+              </div>
+            </form>
+            {simMessage && <p className="debug-time-message">{simMessage}</p>}
+          </div>
+        </div>
+      )}
       {confirmDialog && (
         <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
           <div className="confirm-dialog__panel">

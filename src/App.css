@@ -21,21 +21,42 @@
   width: min(100%, 760px);
   padding: calc(10px + env(safe-area-inset-top)) 18px 10px;
   transform: translateX(-50%);
+  color: #1f3f3c;
+  background: #e8efe9;
+  box-shadow: 0 8px 24px rgba(31, 55, 51, 0.12);
+}
+
+.sim-banner--active {
   color: #f7f2e9;
   background: #1f3f3c;
   box-shadow: 0 10px 28px rgba(31, 55, 51, 0.22);
 }
 
-.sim-banner span {
-  display: block;
-  color: rgba(247, 242, 233, 0.62);
-  font-size: 0.62rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.sim-banner__clock {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  color: inherit;
+  background: transparent;
+  text-align: left;
 }
 
-.sim-banner strong {
+.sim-banner span,
+.sim-banner__clock span {
+  display: block;
+  color: rgba(31, 63, 60, 0.58);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.sim-banner--active span,
+.sim-banner--active .sim-banner__clock span {
+  color: rgba(247, 242, 233, 0.62);
+}
+
+.sim-banner strong,
+.sim-banner__clock strong {
   display: block;
   margin-top: 2px;
   font-size: 0.88rem;
@@ -51,18 +72,121 @@
 .sim-banner__actions button {
   min-height: 34px;
   padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(31, 63, 60, 0.18);
   border-radius: 8px;
-  color: #f7f2e9;
-  background: rgba(255, 255, 255, 0.08);
+  color: #1f3f3c;
+  background: rgba(255, 255, 255, 0.72);
   font-size: 0.72rem;
   font-weight: 700;
 }
 
-.sim-banner__actions button:last-child {
+.sim-banner--active .sim-banner__actions button {
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #f7f2e9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sim-banner--active .sim-banner__actions button:last-child {
   border-color: transparent;
   color: #1f3f3c;
   background: #f0e7d6;
+}
+
+.time-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+}
+
+.time-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(22, 32, 30, 0.42);
+}
+
+.time-sheet__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 760px);
+  max-height: min(88svh, 720px);
+  overflow: auto;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: #f7f2e9;
+  box-shadow: 0 -18px 48px rgba(20, 30, 28, 0.22);
+}
+
+.time-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.time-sheet__head h2 {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.time-sheet__close {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.time-sheet__hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.time-sheet__section {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.time-sheet__section > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.time-hour-chips,
+.time-nudge-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.time-hour-chips button,
+.time-nudge-chips button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.debug-day-chips button.is-active {
+  border-color: transparent;
+  color: #f7f2e9;
+  background: var(--brand);
 }
 
 .app-header {
