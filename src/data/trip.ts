@@ -604,15 +604,33 @@ export const guideSections = [
 export const sourceLink =
   'https://docs.qq.com/sheet/DU1dKV3hzanBDSmJj?opennew=1&tab=ukregn'
 
-/** Universal Google Maps search URL (works with VPN / desktop / mobile browser). */
-export const mapsUrl = (query: string) =>
-  `https://maps.google.com/maps?q=${encodeURIComponent(query)}`
+/** Maps link: on Android open the Google Maps app directly; elsewhere use the web URL. */
+export const mapsUrl = (query: string) => {
+  const q = encodeURIComponent(query)
+  const web = `https://maps.google.com/maps?q=${q}`
+
+  // Android Chrome can hand off to the installed Maps app via intent://.
+  // Avoid opening maps.google.com inside a Custom Tab first — that page's「打开应用」often does nothing.
+  if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)) {
+    return (
+      `intent://maps.google.com/maps?q=${q}` +
+      `#Intent;scheme=https;package=com.google.android.apps.maps;` +
+      `S.browser_fallback_url=${encodeURIComponent(web)};end`
+    )
+  }
+
+  return web
+}
 
 export const isGoogleMapsWebUrl = (url: string) =>
-  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl)/i.test(url)
+  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl|^intent:\/\/maps\.google)/i.test(url)
 
 export const queryFromMapsWebUrl = (url: string) => {
   try {
+    if (url.startsWith('intent:')) {
+      const match = url.match(/[?&]q=([^#&]+)/)
+      return match ? decodeURIComponent(match[1]) : null
+    }
     const parsed = new URL(url)
     return (
       parsed.searchParams.get('query') ||
@@ -625,10 +643,16 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
+export const isAndroidMapsIntent = (url: string) => url.startsWith('intent:')
+
 /** Open Maps without navigating the guide app away. */
 export const openInMaps = (query: string) => {
   const href = mapsUrl(query)
   try {
+    if (isAndroidMapsIntent(href)) {
+      window.location.href = href
+      return true
+    }
     const win = window.open(href, '_blank', 'noopener,noreferrer')
     if (win) return true
   } catch {

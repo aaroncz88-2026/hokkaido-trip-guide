@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import {
   guideSections,
+  isAndroidMapsIntent,
   isGoogleMapsWebUrl,
   mapsUrl,
   packingTemplates,
@@ -148,16 +149,22 @@ const MapsLink = ({
   query: string
   children: ReactNode
   className?: string
-}) => (
-  <a
-    className={className}
-    href={mapsUrl(query)}
-    rel="noopener noreferrer"
-    target="_blank"
-  >
-    {children}
-  </a>
-)
+}) => {
+  const href = mapsUrl(query)
+  // intent:// must stay in the same tab; target=_blank breaks Android app handoff.
+  if (isAndroidMapsIntent(href)) {
+    return (
+      <a className={className} href={href}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <a className={className} href={href} rel="noopener noreferrer" target="_blank">
+      {children}
+    </a>
+  )
+}
 
 const ExternalOrMapsLink = ({
   url,
