@@ -11,9 +11,53 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="北海道攻略" />
     <title>夏日北行 · 北海道亲子攻略</title>
+    <script>
+      // Always clear broken service workers / caches before boot (recovery window).
+      (function () {
+        var tasks = []
+        try {
+          if ('serviceWorker' in navigator) {
+            tasks.push(
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister() }))
+              }),
+            )
+          }
+          if ('caches' in window) {
+            tasks.push(
+              caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (key) { return caches.delete(key) }))
+              }),
+            )
+          }
+        } catch (e) {}
+        Promise.all(tasks).catch(function () {})
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot-fallback" style="position:fixed;left:16px;right:16px;bottom:24px;z-index:9999;padding:14px 16px;border-radius:14px;background:#1f3f3c;color:#f7f2e9;font:650 14px/1.45 sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+      如果一直白屏，请打开
+      <a href="./repair.html" style="color:#b7e3dc;font-weight:800">修复页 repair.html</a>
+      清理缓存后重进。
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        var tries = 0
+        var timer = setInterval(function () {
+          tries += 1
+          var root = document.getElementById('root')
+          var fallback = document.getElementById('boot-fallback')
+          if (root && root.childNodes.length > 0) {
+            if (fallback) fallback.style.display = 'none'
+            clearInterval(timer)
+          } else if (tries > 40 && fallback) {
+            fallback.style.background = '#7a2e2e'
+          }
+        }, 250)
+      })()
+    </script>
   </body>
 </html>

@@ -1,54 +1,40 @@
-const CACHE = 'hokkaido-guide-v17'
-
-self.addEventListener('install', () => {
-  // Do not precache the HTML shell — a stale shell + purged assets white-screens the app.
+/* EMERGENCY RECOVERY SW
+ * Clears broken caches and unregisters itself so the guide can load again.
+ * Do not add caching logic here until clients recover.
+ */
+self.addEventListener('install', (event) => {
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith('hokkaido-guide-') && key !== CACHE)
-            .map((key) => caches.delete(key)),
-        ),
+    (async () => {
+      try {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+      } catch {
+        // ignore
+      }
+
+      try {
+        await self.registration.unregister()
+      } catch {
+        // ignore
+      }
+
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      await Promise.all(
+        clients.map((client) => {
+          const url = new URL(client.url)
+          url.searchParams.set('recovered', '1')
+          return client.navigate(url.toString())
+        }),
       )
-      .then(() => self.clients.claim()),
+    })(),
   )
 })
 
+// While this SW briefly controls the page, never serve stale shells.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return
-
-  // Navigations: network only (with soft offline fallback). Never serve a mismatched shell.
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).catch(async () => {
-        const cached = (await caches.match(event.request)) || (await caches.match('./'))
-        return cached || Response.error()
-      }),
-    )
-    return
-  }
-
-  const url = new URL(event.request.url)
-  const isHashedAsset = url.pathname.includes('/assets/')
-  if (!isHashedAsset) return
-
-  // Hashed JS/CSS: cache-first for snappy reloads.
-  event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(event.request)
-      const network = fetch(event.request)
-        .then((response) => {
-          if (response.ok) cache.put(event.request, response.clone())
-          return response
-        })
-        .catch(() => cached)
-      return cached || network
-    }),
-  )
+  event.respondWith(fetch(event.request, { cache: 'no-store' }))
 })

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>修复北海道攻略</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #1f2a28;
+        background: #f5f2ec;
+      }
+      main {
+        width: min(100%, 420px);
+        padding: 24px;
+        border: 1px solid #d9d2c6;
+        border-radius: 18px;
+        background: #fffdf8;
+      }
+      h1 { margin: 0 0 10px; font-size: 1.4rem; }
+      p { margin: 0 0 12px; color: #66706d; line-height: 1.55; font-size: 0.92rem; }
+      button, a.button {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 10px;
+        min-height: 48px;
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        background: #2f6f68;
+        font-size: 1rem;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        line-height: 48px;
+        cursor: pointer;
+      }
+      #status { margin-top: 14px; min-height: 1.4em; font-size: 0.88rem; font-weight: 650; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>修复攻略缓存</h1>
+      <p>如果白屏或进不去，点下面按钮清理本站 Service Worker 与缓存，然后重新进入。</p>
+      <button id="repair" type="button">立即修复并进入</button>
+      <a class="button" href="./?recovered=1">已修复，直接进入</a>
+      <p id="status">准备就绪</p>
+    </main>
+    <script>
+      const status = document.getElementById('status')
+      const setStatus = (text) => { status.textContent = text }
+
+      async function repair() {
+        setStatus('正在清理…')
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations()
+            await Promise.all(regs.map((r) => r.unregister()))
+            setStatus('已卸载 Service Worker…')
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys()
+            await Promise.all(keys.map((key) => caches.delete(key)))
+            setStatus('已清理缓存…')
+          }
+          try {
+            localStorage.removeItem('hokkaido-sw-recovery-v17')
+          } catch {}
+          setStatus('完成，正在进入…')
+          location.replace('./?recovered=' + Date.now())
+        } catch (error) {
+          setStatus('自动清理失败，请到浏览器站点设置里清除数据。')
+        }
+      }
+
+      document.getElementById('repair').addEventListener('click', () => { void repair() })
+      // Auto-run once so even a cold open can recover.
+      void repair()
+    </script>
+  </body>
+</html>
