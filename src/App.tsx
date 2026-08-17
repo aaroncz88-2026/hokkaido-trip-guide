@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import {
+  copyTextReliable,
   guideSections,
   isGoogleMapsWebUrl,
   mapsUrl,
   openInMaps,
   packingTemplates,
   queryFromMapsWebUrl,
+  retryAndroidMapsLaunch,
   sourceLink,
   tripBasics,
   tripDays,
@@ -151,13 +153,66 @@ const MapsLink = ({
   className?: string
 }) => {
   const android = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+  const [fallback, setFallback] = useState<null | { query: string; copied: boolean; attempt: number }>(null)
+  const [copyHint, setCopyHint] = useState('')
 
   // Android: button + geo/intent handoff. Never open google.com interstitial first.
   if (android) {
     return (
-      <button className={className} type="button" onClick={() => openInMaps(query)}>
-        {children}
-      </button>
+      <>
+        <button
+          className={className}
+          type="button"
+          onClick={() => {
+            const result = openInMaps(query)
+            window.setTimeout(() => {
+              if (!result.shouldOfferFallback()) return
+              setFallback({ query, copied: result.copied, attempt: 0 })
+              setCopyHint(result.copied ? '地名已复制到剪贴板' : '自动复制失败，请点下方按钮手动复制')
+            }, 900)
+          }}
+        >
+          {children}
+        </button>
+        {fallback && (
+          <div className="maps-fallback" role="dialog" aria-modal="true" aria-labelledby="maps-fallback-title">
+            <button className="maps-fallback__backdrop" type="button" aria-label="关闭" onClick={() => setFallback(null)} />
+            <div className="maps-fallback__panel">
+              <span className="eyebrow">MAPS FALLBACK</span>
+              <h2 id="maps-fallback-title">没能跳进地图 App</h2>
+              <p>请手动打开 Google 地图，搜索下面地名。也可再试唤起，或改用系统地图。</p>
+              <p className="maps-fallback__query">{fallback.query}</p>
+              {copyHint && <p className="maps-fallback__hint">{copyHint}</p>}
+              <div className="maps-fallback__actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ok = copyTextReliable(fallback.query)
+                    setCopyHint(ok ? '已复制成功，去地图 App 粘贴搜索' : '复制仍失败，请长按上方地名手动选择复制')
+                    setFallback((value) => (value ? { ...value, copied: ok } : value))
+                  }}
+                >
+                  复制地名
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = fallback.attempt + 1
+                    retryAndroidMapsLaunch(fallback.query, next)
+                    setFallback({ ...fallback, attempt: next })
+                    setCopyHint(next >= 2 ? '已尝试备用唤起方式；仍不行就复制地名手动搜' : '已再试唤起地图 App')
+                  }}
+                >
+                  再试打开 App
+                </button>
+                <button type="button" onClick={() => setFallback(null)}>
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 

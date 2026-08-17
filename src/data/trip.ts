@@ -607,22 +607,63 @@ export const sourceLink =
 export const mapsWebUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 
-const isAndroidDevice = () =>
+export const isAndroidDevice = () =>
   typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
 
-/**
- * Android: use geo/intent so the installed Maps app opens.
- * Never send users to maps.google.com first — that interstitial「打开应用」often fails in Custom Tabs.
- */
-export const mapsUrl = (query: string) => {
-  const q = encodeURIComponent(query)
-  if (isAndroidDevice()) {
-    return `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`
+/** Must run inside the click handler — delayed clipboard writes are blocked on Android. */
+export const copyTextReliable = (text: string): boolean => {
+  try {
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('readonly', '')
+    area.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
+    document.body.appendChild(area)
+    area.focus()
+    area.select()
+    area.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(area)
+    if (ok) return true
+  } catch {
+    // fall through
   }
-  return mapsWebUrl(query)
+
+  try {
+    // May still work when called directly from a user gesture.
+    void navigator.clipboard?.writeText(text)
+    return Boolean(navigator.clipboard)
+  } catch {
+    return false
+  }
 }
 
-export const mapsGeoUrl = (query: string) => `geo:0,0?q=${encodeURIComponent(query)}`
+const clickAnchor = (href: string) => {
+  const anchor = document.createElement('a')
+  anchor.href = href
+  anchor.rel = 'noopener'
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+}
+
+/** Android deep links that avoid the google.com「打开应用」interstitial. */
+export const androidMapsLaunchUrls = (query: string) => {
+  const q = encodeURIComponent(query)
+  return [
+    // Force Google Maps package via geo search
+    `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`,
+    // Any installed maps app
+    `geo:0,0?q=${q}`,
+    // Google Maps navigation scheme search
+    `intent://?q=${q}#Intent;scheme=google.navigation;package=com.google.android.apps.maps;end`,
+  ] as const
+}
+
+export const mapsUrl = (query: string) => {
+  if (isAndroidDevice()) return androidMapsLaunchUrls(query)[0]
+  return mapsWebUrl(query)
+}
 
 export const isGoogleMapsWebUrl = (url: string) =>
   /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl|^intent:|^geo:)/i.test(url)
@@ -645,37 +686,37 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-export const isAndroidMapsIntent = (url: string) => url.startsWith('intent:') || url.startsWith('geo:')
+export type OpenMapsResult = {
+  copied: boolean
+  /** Call after ~1s if the page is still visible — show in-app fallback UI. */
+  shouldOfferFallback: () => boolean
+}
 
-/** Try Google Maps app on Android without opening the broken google.com interstitial. */
-export const openInMaps = (query: string) => {
+/**
+ * Android: copy place name first (while gesture is valid), then try app deep links.
+ * Never route through maps.google.com web interstitial.
+ */
+export const openInMaps = (query: string): OpenMapsResult => {
   if (isAndroidDevice()) {
-    const q = encodeURIComponent(query)
-    const primary = `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`
-    const secondary = `geo:0,0?q=${q}`
-
-    window.location.href = primary
-    window.setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        window.location.href = secondary
-      }
-    }, 450)
-    window.setTimeout(() => {
-      if (document.visibilityState !== 'visible') return
-      try {
-        void navigator.clipboard?.writeText(query)
-      } catch {
-        // ignore
-      }
-      window.alert(`没有跳进地图 App 时，请手动打开 Google 地图搜索：\n\n${query}\n\n（地名已尝试复制）`)
-    }, 1100)
-    return true
+    const copied = copyTextReliable(query)
+    const [primary] = androidMapsLaunchUrls(query)
+    clickAnchor(primary)
+    return {
+      copied,
+      shouldOfferFallback: () => document.visibilityState === 'visible',
+    }
   }
 
   try {
     const win = window.open(mapsWebUrl(query), '_blank', 'noopener,noreferrer')
-    return Boolean(win)
+    return { copied: false, shouldOfferFallback: () => !win }
   } catch {
-    return false
+    return { copied: false, shouldOfferFallback: () => true }
   }
+}
+
+export const retryAndroidMapsLaunch = (query: string, attempt: number) => {
+  const urls = androidMapsLaunchUrls(query)
+  const href = urls[Math.min(attempt, urls.length - 1)]
+  clickAnchor(href)
 }
