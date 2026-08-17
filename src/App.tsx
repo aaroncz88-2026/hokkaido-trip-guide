@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import {
   guideSections,
+  isGoogleMapsWebUrl,
   mapsUrl,
+  openInMaps,
   packingTemplates,
+  queryFromMapsWebUrl,
   sourceLink,
   tripBasics,
   tripDays,
@@ -136,6 +139,53 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 const formatDate = (date: string) => {
   const [, month, day] = date.split('-').map(Number)
   return `${month}月${day}日`
+}
+
+const MapsLink = ({
+  query,
+  children,
+  className,
+}: {
+  query: string
+  children: ReactNode
+  className?: string
+}) => (
+  <a
+    className={className}
+    href={mapsUrl(query)}
+    onClick={(event) => {
+      event.preventDefault()
+      openInMaps(query)
+    }}
+  >
+    {children}
+  </a>
+)
+
+const ExternalOrMapsLink = ({
+  url,
+  label,
+  className,
+}: {
+  url: string
+  label: string
+  className?: string
+}) => {
+  if (isGoogleMapsWebUrl(url)) {
+    const query = queryFromMapsWebUrl(url)
+    if (query) {
+      return (
+        <MapsLink className={className} query={query}>
+          <Icon name="map" size={15} /> {label}
+        </MapsLink>
+      )
+    }
+  }
+  return (
+    <a className={className} href={url} rel="noreferrer" target="_blank">
+      <Icon name="external" size={15} /> {label}
+    </a>
+  )
 }
 
 const getJourneyState = (now: Date): JourneyState => {
@@ -331,9 +381,7 @@ function TimelineCard({
               <div><span>费用</span><p>{item.costJpy && `¥${item.costJpy}`}{item.costCny && ` · 约 ¥${item.costCny} CNY`}</p></div>
             )}
             {item.links.map((link) => (
-              <a href={link.url} key={link.url} rel="noreferrer" target="_blank">
-                <Icon name="external" size={15} /> {link.label}
-              </a>
+              <ExternalOrMapsLink key={link.url} label={link.label} url={link.url} />
             ))}
           </div>
         )}
@@ -995,9 +1043,7 @@ function App() {
         {item.links.length > 0 && (
           <div className="now-card__links">
             {item.links.map((link) => (
-              <a href={link.url} key={link.url} rel="noreferrer" target="_blank">
-                <Icon name="external" size={15} /> {link.label}
-              </a>
+              <ExternalOrMapsLink key={link.url} label={link.label} url={link.url} />
             ))}
           </div>
         )}
@@ -1013,9 +1059,9 @@ function App() {
             查看今日长线行程
           </button>
           {currentActivity.navigation && (
-            <a href={mapsUrl(currentActivity.navigation.query)} rel="noreferrer" target="_blank">
+            <MapsLink query={currentActivity.navigation.query}>
               <Icon name="map" size={15} /> 导航去{currentActivity.navigation.label}
-            </a>
+            </MapsLink>
           )}
         </div>
       </section>
@@ -1071,6 +1117,31 @@ function App() {
               </button>
             </section>
             {renderNowCard()}
+            {journey.day && (
+              <section className="home-parking">
+                <div className="section-heading">
+                  <div>
+                    <span className="eyebrow">DAY {journey.day} · PARKING</span>
+                    <h2>当天停车点</h2>
+                  </div>
+                </div>
+                <p className="home-parking__hint">时段可能浮动，目的地不变 · 点击直接唤起 Google 地图 App</p>
+                <ol className="home-parking__list">
+                  {tripDays[journey.day - 1].navigation.map((item, index) => (
+                    <li key={item.label}>
+                      <MapsLink className="home-parking__link" query={item.query}>
+                        <em>{index + 1}</em>
+                        <span>
+                          <strong>{item.label}</strong>
+                          <small>{item.query}</small>
+                        </span>
+                        <Icon name="map" size={18} />
+                      </MapsLink>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
           </>
         ) : (
           <section
@@ -1336,9 +1407,9 @@ function App() {
           </div>
           <div className="nav-links nav-links--sticky">
             {currentDay.navigation.map((item) => (
-              <a href={mapsUrl(item.query)} key={item.label} rel="noreferrer" target="_blank">
+              <MapsLink className="nav-chip" key={item.label} query={item.query}>
                 <Icon name="map" size={16} /> {item.label} <Icon name="external" size={13} />
-              </a>
+              </MapsLink>
             ))}
           </div>
         </section>
