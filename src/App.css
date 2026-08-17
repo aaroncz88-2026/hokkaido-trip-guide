@@ -1130,86 +1130,33 @@
   color: var(--brand);
 }
 
-.maps-fallback {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
+.home-parking__list > li {
   display: grid;
-  align-items: end;
-  justify-items: center;
+  gap: 6px;
 }
 
-.maps-fallback__backdrop {
-  position: absolute;
-  inset: 0;
-  border: none;
-  background: rgba(22, 32, 30, 0.45);
-}
-
-.maps-fallback__panel {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 760px);
-  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
-  border-radius: 22px 22px 0 0;
-  background: #f7f2e9;
-  box-shadow: 0 -18px 48px rgba(20, 30, 28, 0.22);
-}
-
-.maps-fallback__panel h2 {
-  margin: 4px 0 0;
-  font-family: var(--serif);
-  font-size: 1.35rem;
-  font-weight: 500;
-}
-
-.maps-fallback__panel > p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.maps-fallback__query {
-  margin-top: 12px !important;
-  padding: 12px;
-  border: 1px dashed var(--line);
-  border-radius: 12px;
-  color: var(--ink) !important;
-  background: #fff;
-  font-size: 0.92rem !important;
-  font-weight: 700;
-  line-height: 1.45;
-  user-select: text;
-  -webkit-user-select: text;
-  word-break: break-word;
-}
-
-.maps-fallback__hint {
-  color: var(--brand) !important;
-  font-weight: 700;
-}
-
-.maps-fallback__actions {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.maps-fallback__actions button {
-  min-height: 46px;
+.copy-place {
+  justify-self: start;
+  min-height: 30px;
+  padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  color: var(--ink);
+  border-radius: 999px;
+  color: var(--muted);
   background: #fff;
-  font-size: 0.88rem;
-  font-weight: 750;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.maps-fallback__actions button:first-child {
-  border: none;
-  color: #fff;
-  background: var(--brand);
+.nav-chip-wrap {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-chip-wrap .copy-place {
+  min-height: 34px;
 }
 
 .switch-label {

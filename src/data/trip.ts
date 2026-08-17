@@ -604,76 +604,15 @@ export const guideSections = [
 export const sourceLink =
   'https://docs.qq.com/sheet/DU1dKV3hzanBDSmJj?opennew=1&tab=ukregn'
 
-export const mapsWebUrl = (query: string) =>
+/** Open Google Maps search in a new tab (stable UI; works with VPN). */
+export const mapsUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 
-export const isAndroidDevice = () =>
-  typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
-
-/** Must run inside the click handler — delayed clipboard writes are blocked on Android. */
-export const copyTextReliable = (text: string): boolean => {
-  try {
-    const area = document.createElement('textarea')
-    area.value = text
-    area.setAttribute('readonly', '')
-    area.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
-    document.body.appendChild(area)
-    area.focus()
-    area.select()
-    area.setSelectionRange(0, text.length)
-    const ok = document.execCommand('copy')
-    document.body.removeChild(area)
-    if (ok) return true
-  } catch {
-    // fall through
-  }
-
-  try {
-    // May still work when called directly from a user gesture.
-    void navigator.clipboard?.writeText(text)
-    return Boolean(navigator.clipboard)
-  } catch {
-    return false
-  }
-}
-
-const clickAnchor = (href: string) => {
-  const anchor = document.createElement('a')
-  anchor.href = href
-  anchor.rel = 'noopener'
-  anchor.style.display = 'none'
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-}
-
-/** Android deep links that avoid the google.com「打开应用」interstitial. */
-export const androidMapsLaunchUrls = (query: string) => {
-  const q = encodeURIComponent(query)
-  return [
-    // Force Google Maps package via geo search
-    `intent://0,0?q=${q}#Intent;scheme=geo;package=com.google.android.apps.maps;end`,
-    // Any installed maps app
-    `geo:0,0?q=${q}`,
-    // Google Maps navigation scheme search
-    `intent://?q=${q}#Intent;scheme=google.navigation;package=com.google.android.apps.maps;end`,
-  ] as const
-}
-
-export const mapsUrl = (query: string) => {
-  if (isAndroidDevice()) return androidMapsLaunchUrls(query)[0]
-  return mapsWebUrl(query)
-}
-
 export const isGoogleMapsWebUrl = (url: string) =>
-  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl|^intent:|^geo:)/i.test(url)
+  /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl)/i.test(url)
 
 export const queryFromMapsWebUrl = (url: string) => {
   try {
-    if (url.startsWith('intent:') || url.startsWith('geo:')) {
-      const match = url.match(/[?&]q=([^#&]+)/)
-      return match ? decodeURIComponent(match[1]) : null
-    }
     const parsed = new URL(url)
     return (
       parsed.searchParams.get('query') ||
@@ -686,37 +625,21 @@ export const queryFromMapsWebUrl = (url: string) => {
   }
 }
 
-export type OpenMapsResult = {
-  copied: boolean
-  /** Call after ~1s if the page is still visible — show in-app fallback UI. */
-  shouldOfferFallback: () => boolean
-}
-
-/**
- * Android: copy place name first (while gesture is valid), then try app deep links.
- * Never route through maps.google.com web interstitial.
- */
-export const openInMaps = (query: string): OpenMapsResult => {
-  if (isAndroidDevice()) {
-    const copied = copyTextReliable(query)
-    const [primary] = androidMapsLaunchUrls(query)
-    clickAnchor(primary)
-    return {
-      copied,
-      shouldOfferFallback: () => document.visibilityState === 'visible',
-    }
-  }
-
+/** Sync copy — must run inside the click handler. */
+export const copyTextReliable = (text: string): boolean => {
   try {
-    const win = window.open(mapsWebUrl(query), '_blank', 'noopener,noreferrer')
-    return { copied: false, shouldOfferFallback: () => !win }
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('readonly', '')
+    area.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
+    document.body.appendChild(area)
+    area.focus()
+    area.select()
+    area.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(area)
+    return ok
   } catch {
-    return { copied: false, shouldOfferFallback: () => true }
+    return false
   }
-}
-
-export const retryAndroidMapsLaunch = (query: string, attempt: number) => {
-  const urls = androidMapsLaunchUrls(query)
-  const href = urls[Math.min(attempt, urls.length - 1)]
-  clickAnchor(href)
 }
