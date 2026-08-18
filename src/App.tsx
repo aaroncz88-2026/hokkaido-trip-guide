@@ -63,6 +63,10 @@ import './App.css'
 type View = 'home' | 'days' | 'guide' | 'more'
 type MorePanel = 'hub' | 'ratings'
 type JourneyPhase = 'before' | 'during' | 'after'
+
+/** 临时功能开关：需要时改回 true 即可恢复首页「出发前学几句」 */
+const SHOW_JAPANESE_LESSON = false
+
 type JourneyState = {
   phase: JourneyPhase
   value: string
@@ -1276,6 +1280,7 @@ function App() {
         </section>
 
         <div className={journey.phase === 'after' || journey.phase === 'during' ? 'phase-content--hidden' : ''}>
+          {SHOW_JAPANESE_LESSON && (
           <section className="section japanese-lesson">
             <div className="section-heading">
               <div><span className="eyebrow">TRAVEL JAPANESE</span><h2>出发前学几句</h2></div>
@@ -1345,6 +1350,7 @@ function App() {
               ))}
             </div>
           </section>
+          )}
 
           <section className="section">
           <div className="section-heading">
