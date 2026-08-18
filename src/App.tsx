@@ -15,13 +15,12 @@ import {
 import { japaneseLessons } from './data/japanese'
 import {
   dayLocationHint,
-  fetchLocationForecast,
-  fetchTyphoonSnapshots,
+  fetchAllForecasts,
   getDayWeather,
+  readWeatherCache,
   tripDateSet,
   weatherLocations,
   type LocationForecast,
-  type TyphoonSnapshot,
 } from './data/weather'
 import {
   claimTravelerSeat,
@@ -464,10 +463,12 @@ function App() {
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
   const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
   const [ratingMessage, setRatingMessage] = useState('')
-  const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>([])
-  const [typhoons, setTyphoons] = useState<TyphoonSnapshot[]>([])
-  const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>(() => readWeatherCache())
+  const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>(
+    () => (readWeatherCache().length > 0 ? 'ready' : 'loading'),
+  )
   const [weatherError, setWeatherError] = useState('')
+  const [weatherNote, setWeatherNote] = useState('')
   const [weatherLocationId, setWeatherLocationId] = useState('sapporo')
   const [weatherDate, setWeatherDate] = useState('2026-08-23')
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState('')
@@ -515,28 +516,35 @@ function App() {
 
   useEffect(() => {
     let cancelled = false
-    const loadWeather = async () => {
-      setWeatherStatus('loading')
+    const loadWeather = async (silent = false) => {
+      if (!silent) setWeatherStatus((status) => (weatherForecasts.length > 0 ? status : 'loading'))
       setWeatherError('')
       try {
-        const [forecasts, typhoonList] = await Promise.all([
-          Promise.all(weatherLocations.map((location) => fetchLocationForecast(location))),
-          fetchTyphoonSnapshots().catch(() => [] as TyphoonSnapshot[]),
-        ])
+        const result = await fetchAllForecasts()
         if (cancelled) return
-        setWeatherForecasts(forecasts)
-        setTyphoons(typhoonList)
+        setWeatherForecasts(result.forecasts)
         setWeatherUpdatedAt(new Date().toISOString())
         setWeatherStatus('ready')
+        setWeatherNote(
+          result.fromCache
+            ? '正在用上次缓存，网络恢复后会自动更新。'
+            : result.partial
+              ? '部分地点刷新成功，其余地点稍后再试。'
+              : '',
+        )
       } catch (error) {
         if (cancelled) return
+        if (weatherForecasts.length > 0) {
+          setWeatherStatus('ready')
+          setWeatherNote(error instanceof Error ? error.message : '天气暂时刷不出，先看缓存')
+          return
+        }
         setWeatherStatus('error')
         setWeatherError(error instanceof Error ? error.message : '天气数据暂时不可用')
       }
     }
-    // Defer weather so first paint / itinerary stay snappy on slow phones.
-    const start = window.setTimeout(() => void loadWeather(), 800)
-    const timer = window.setInterval(() => void loadWeather(), 30 * 60_000)
+    const start = window.setTimeout(() => void loadWeather(), 400)
+    const timer = window.setInterval(() => void loadWeather(true), 30 * 60_000)
     return () => {
       cancelled = true
       window.clearTimeout(start)
@@ -584,7 +592,9 @@ function App() {
     currentDay.date,
     dayLocationHint[currentDay.day],
   )
-  const typhoonConcernCount = typhoons.filter((item) => item.concernLevel !== 'low').length
+  const weatherSourceLabel = selectedWeatherForecast?.source
+    ? `数据源 ${selectedWeatherForecast.source}`
+    : ''
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
   const isPartyMember = travelerConfirmed && isFixedTravelerName(travelerName)
   const pendingRatingCount = useMemo(
@@ -1792,10 +1802,11 @@ function App() {
         <section className="weather-desk">
           <div className="weather-desk__heading">
             <div>
-              <span className="eyebrow">WEATHER & TYPHOON</span>
-              <h2>北海道天气与台风关注</h2>
+              <span className="eyebrow">WEATHER</span>
+              <h2>北海道天气</h2>
               <p>
-                数据来自 Open-Meteo 与日本气象厅。开源免密钥，约每 30 分钟自动刷新。
+                优先走 Open-Meteo，连不上时自动换备用源。成功后会缓存在本机。
+                {weatherSourceLabel && ` ${weatherSourceLabel}。`}
                 {weatherUpdatedAt && ` 最近更新 ${new Date(weatherUpdatedAt).toLocaleString('zh-CN', { hour12: false })}`}
               </p>
             </div>
@@ -1804,18 +1815,26 @@ function App() {
               disabled={weatherStatus === 'loading'}
               onClick={() => {
                 setWeatherStatus('loading')
-                void Promise.all([
-                  Promise.all(weatherLocations.map((location) => fetchLocationForecast(location))),
-                  fetchTyphoonSnapshots().catch(() => [] as TyphoonSnapshot[]),
-                ])
-                  .then(([forecasts, typhoonList]) => {
-                    setWeatherForecasts(forecasts)
-                    setTyphoons(typhoonList)
+                setWeatherError('')
+                void fetchAllForecasts()
+                  .then((result) => {
+                    setWeatherForecasts(result.forecasts)
                     setWeatherUpdatedAt(new Date().toISOString())
                     setWeatherStatus('ready')
-                    setWeatherError('')
+                    setWeatherNote(
+                      result.fromCache
+                        ? '正在用上次缓存，网络恢复后会自动更新。'
+                        : result.partial
+                          ? '部分地点刷新成功，其余地点稍后再试。'
+                          : '',
+                    )
                   })
                   .catch((error: unknown) => {
+                    if (weatherForecasts.length > 0) {
+                      setWeatherStatus('ready')
+                      setWeatherNote(error instanceof Error ? error.message : '刷新失败，先看缓存')
+                      return
+                    }
                     setWeatherStatus('error')
                     setWeatherError(error instanceof Error ? error.message : '刷新失败')
                   })
@@ -1826,58 +1845,8 @@ function App() {
             </button>
           </div>
 
-          <div className={`typhoon-banner typhoon-banner--${typhoonConcernCount > 0 ? 'watch' : 'calm'}`}>
-            <strong>{typhoonConcernCount > 0 ? `有 ${typhoonConcernCount} 个系统需关注北海道外围影响` : '暂无直扑北海道的高关注台风'}</strong>
-            <p>
-              同事提到的「8 月 20 日左右」更可能是外围风雨窗口。当前 JMA 活跃系统中，更接近日本东侧的是台风「ナンカー / Nangka」，官方路径偏日本以东洋面，尚未判定直扑北海道；出发前请持续看这里。
-            </p>
-            <div className="typhoon-links">
-              <a href="https://www.jma.go.jp/bosai/map.html#5/35.307/140.449/&elem=root&typhoon=all&lang=en" rel="noreferrer" target="_blank">
-                日本气象厅台风图 <Icon name="external" size={14} />
-              </a>
-              <a href="https://typhoon.weather.com.cn/" rel="noreferrer" target="_blank">
-                中央气象台台风网 <Icon name="external" size={14} />
-              </a>
-            </div>
-          </div>
-
+          {weatherNote && <p className="weather-empty">{weatherNote}</p>}
           {weatherStatus === 'error' && <p className="weather-error">{weatherError || '天气数据加载失败，请稍后刷新。'}</p>}
-
-          <div className="typhoon-list">
-            {typhoons.length === 0 && weatherStatus === 'ready' && (
-              <p className="weather-empty">当前没有活跃台风名单，或日本气象厅暂无公开目标热带气旋。</p>
-            )}
-            {typhoons.map((storm) => (
-              <article className={`typhoon-card typhoon-card--${storm.concernLevel}`} key={storm.id}>
-                <header>
-                  <div>
-                    <span>{storm.category} · #{storm.number}</span>
-                    <h3>{storm.nameJp} / {storm.nameEn}</h3>
-                  </div>
-                  <strong>{storm.concernLevel === 'high' ? '高关注' : storm.concernLevel === 'medium' ? '持续盯' : '低风险'}</strong>
-                </header>
-                <p>{storm.hokkaidoNote}</p>
-                <div className="typhoon-meta">
-                  {storm.location && <span>位置 {storm.location}</span>}
-                  {storm.course && <span>移向 {storm.course}</span>}
-                  {storm.speed && <span>移速 {storm.speed}</span>}
-                  {storm.pressure && <span>气压 {storm.pressure} hPa</span>}
-                  {storm.windMs && <span>中心附近 {storm.windMs} m/s</span>}
-                  {storm.gustMs && <span>阵风 {storm.gustMs} m/s</span>}
-                </div>
-                {storm.outlook.length > 0 && (
-                  <div className="typhoon-outlook">
-                    {storm.outlook.slice(0, 4).map((point) => (
-                      <div key={`${storm.id}-${point.when}-${point.label}`}>
-                        <strong>{point.when || point.label}</strong>
-                        <span>{point.category}{point.location ? ` · ${point.location}` : ''}{point.course ? ` · ${point.course}` : ''}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
 
           <div className="trip-weather-strip">
             <div className="section-heading">

@@ -37,34 +37,7 @@ export type LocationForecast = {
   daily: DailyWeather[]
   hourlyByDate: Record<string, HourlyWeather[]>
   updatedAt: string
-}
-
-export type TyphoonSnapshot = {
-  id: string
-  number: string
-  nameJp: string
-  nameEn: string
-  category: string
-  categoryEn: string
-  issue: string
-  pressure?: string
-  windMs?: string
-  gustMs?: string
-  location?: string
-  course?: string
-  speed?: string
-  center?: [number, number]
-  outlook: Array<{
-    when: string
-    label: string
-    category: string
-    location?: string
-    course?: string
-    center?: [number, number]
-    windMs?: string
-  }>
-  hokkaidoNote: string
-  concernLevel: 'low' | 'medium' | 'high'
+  source?: string
 }
 
 export const weatherLocations: WeatherLocation[] = [
@@ -115,33 +88,25 @@ const assessRisk = (day: Omit<DailyWeather, 'risk' | 'riskNote' | 'label' | 'ico
   return { risk: 'calm', riskNote: '适合按原计划推进' }
 }
 
-const distanceKm = (a: [number, number], b: [number, number]) => {
-  const toRad = (value: number) => (value * Math.PI) / 180
-  const dLat = toRad(b[0] - a[0])
-  const dLon = toRad(b[1] - a[1])
-  const lat1 = toRad(a[0])
-  const lat2 = toRad(b[0])
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
-  return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
-}
+const WEATHER_CACHE_KEY = 'hokkaido-weather-cache-v2'
+const WEATHER_CACHE_TTL_MS = 3 * 60 * 60 * 1000
 
-const HOKKAIDO_REF: [number, number] = [43.06, 141.35]
+const OPEN_METEO_HOSTS = [
+  'https://api.open-meteo.com/v1/forecast',
+  // 部分网络打不开主站，换同协议备用主机再试一次
+  'https://previous-runs-api.open-meteo.com/v1/forecast',
+]
 
-const typhoonConcern = (centers: Array<[number, number] | undefined>) => {
-  const distances = centers
-    .filter((point): point is [number, number] => Boolean(point))
-    .map((point) => distanceKm(point, HOKKAIDO_REF))
-  if (distances.length === 0) return { level: 'low' as const, note: '暂无明确路径点，请继续关注官方更新。' }
-  const nearest = Math.min(...distances)
-  if (nearest <= 450) {
-    return { level: 'high' as const, note: `预报中心距札幌约 ${Math.round(nearest)} km，外围风雨可能波及北海道。` }
+const fetchJson = async (url: string, timeoutMs = 9000) => {
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { signal: controller.signal, cache: 'no-store' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    return await response.json()
+  } finally {
+    window.clearTimeout(timer)
   }
-  if (nearest <= 900) {
-    return { level: 'medium' as const, note: `预报中心距札幌约 ${Math.round(nearest)} km，暂非直扑，但需盯紧是否北上。` }
-  }
-  return { level: 'low' as const, note: `目前路径偏远，距札幌约 ${Math.round(nearest)} km，直接冲击概率较低。` }
 }
 
 type OpenMeteoResponse = {
@@ -165,8 +130,8 @@ type OpenMeteoResponse = {
   }
 }
 
-export const fetchLocationForecast = async (location: WeatherLocation): Promise<LocationForecast> => {
-  const params = new URLSearchParams({
+const openMeteoParams = (location: WeatherLocation) =>
+  new URLSearchParams({
     latitude: String(location.latitude),
     longitude: String(location.longitude),
     timezone: 'Asia/Tokyo',
@@ -185,9 +150,7 @@ export const fetchLocationForecast = async (location: WeatherLocation): Promise<
     hourly: ['temperature_2m', 'precipitation_probability', 'weather_code', 'wind_speed_10m'].join(','),
   })
 
-  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
-  if (!response.ok) throw new Error(`天气接口失败：${location.name}`)
-  const data = (await response.json()) as OpenMeteoResponse
+const parseOpenMeteo = (location: WeatherLocation, data: OpenMeteoResponse, source: string): LocationForecast => {
 
   const daily = data.daily.time.map((date, index) => {
     const code = data.daily.weather_code[index]
@@ -230,98 +193,146 @@ export const fetchLocationForecast = async (location: WeatherLocation): Promise<
     daily,
     hourlyByDate,
     updatedAt: new Date().toISOString(),
+    source,
   }
 }
 
-type JmaTarget = {
-  tropicalCyclone: string
-  typhoonNumber: string
-  category: string
-  issue: string
+type WttrHour = { time: string; tempC: string; chanceofrain: string; weatherCode: string; windspeedKmph: string }
+type WttrDay = { date: string; maxtempC: string; mintempC: string; uvIndex: string; hourly?: WttrHour[] }
+type WttrResponse = { weather?: WttrDay[] }
+
+const wttrCodeToOwm = (code: string) => {
+  const n = Number(code)
+  if ([113].includes(n)) return 0
+  if ([116].includes(n)) return 2
+  if ([119, 122].includes(n)) return 3
+  if ([143, 248, 260].includes(n)) return 45
+  if ([176, 263, 266, 293, 296].includes(n)) return 61
+  if ([299, 302, 305, 308, 353, 356, 359].includes(n)) return 63
+  if ([200, 386, 389].includes(n)) return 95
+  if ([227, 230, 323, 326, 329, 332, 338].includes(n)) return 71
+  return 3
 }
 
-type JmaSpecPart = {
-  part: string | { jp?: string; en?: string }
-  typhoonNumber?: string
-  name?: { jp?: string; en?: string }
-  category?: { jp?: string; en?: string }
-  issue?: { JST?: string }
-  pressure?: string
-  location?: string
-  course?: string
-  speed?: string | { note?: { jp?: string; en?: string } }
-  maximumWind?: { sustained?: { 'm/s'?: string }; gust?: { 'm/s'?: string } }
-  position?: { deg?: [number, number] }
-  validtime?: { JST?: string }
-  advancedHours?: number
-}
+const parseWttr = (location: WeatherLocation, data: WttrResponse): LocationForecast => {
+  const days = data.weather ?? []
+  if (days.length === 0) throw new Error(`天气兜底为空：${location.name}`)
 
-const readPartLabel = (part: JmaSpecPart['part']) => {
-  if (typeof part === 'string') return part
-  return part.jp || part.en || '更新'
-}
-
-const readSpeed = (speed: JmaSpecPart['speed']) => {
-  if (!speed) return undefined
-  if (typeof speed === 'string') return `${speed} km/h`
-  return speed.note?.jp || speed.note?.en
-}
-
-export const fetchTyphoonSnapshots = async (): Promise<TyphoonSnapshot[]> => {
-  const listResponse = await fetch('https://www.jma.go.jp/bosai/typhoon/data/targetTc.json')
-  if (!listResponse.ok) throw new Error('台风列表获取失败')
-  const targets = (await listResponse.json()) as JmaTarget[]
-
-  const snapshots = await Promise.all(
-    targets.map(async (target) => {
-      const response = await fetch(
-        `https://www.jma.go.jp/bosai/typhoon/data/${target.tropicalCyclone}/specifications.json`,
-      )
-      if (!response.ok) throw new Error(`台风详情失败：${target.tropicalCyclone}`)
-      const parts = (await response.json()) as JmaSpecPart[]
-      const title = parts.find((part) => part.part === 'title')
-      const analysis = parts.find((part) => readPartLabel(part.part).includes('実況') || part.advancedHours === 0)
-      const outlook = parts
-        .filter((part) => typeof part.advancedHours === 'number' && (part.advancedHours ?? 0) > 0)
-        .map((part) => ({
-          when: part.validtime?.JST?.replace('T', ' ').slice(0, 16) ?? '',
-          label: readPartLabel(part.part),
-          category: part.category?.jp || part.category?.en || target.category,
-          location: part.location,
-          course: part.course,
-          center: part.position?.deg,
-          windMs: part.maximumWind?.sustained?.['m/s'],
-        }))
-
-      const centers = [analysis?.position?.deg, ...outlook.map((item) => item.center)]
-      const concern = typhoonConcern(centers)
-
-      return {
-        id: target.tropicalCyclone,
-        number: target.typhoonNumber,
-        nameJp: title?.name?.jp || analysis?.name?.jp || target.tropicalCyclone,
-        nameEn: title?.name?.en || analysis?.name?.en || target.tropicalCyclone,
-        category: analysis?.category?.jp || title?.category?.jp || target.category,
-        categoryEn: analysis?.category?.en || title?.category?.en || target.category,
-        issue: target.issue,
-        pressure: analysis?.pressure,
-        windMs: analysis?.maximumWind?.sustained?.['m/s'],
-        gustMs: analysis?.maximumWind?.gust?.['m/s'],
-        location: analysis?.location,
-        course: analysis?.course,
-        speed: readSpeed(analysis?.speed),
-        center: analysis?.position?.deg,
-        outlook,
-        hokkaidoNote: concern.note,
-        concernLevel: concern.level,
-      } satisfies TyphoonSnapshot
-    }),
-  )
-
-  return snapshots.sort((a, b) => {
-    const rank = { high: 0, medium: 1, low: 2 }
-    return rank[a.concernLevel] - rank[b.concernLevel]
+  const daily = days.map((day) => {
+    const code = wttrCodeToOwm(day.hourly?.[4]?.weatherCode ?? day.hourly?.[0]?.weatherCode ?? '119')
+    const precipProb = Math.max(
+      ...((day.hourly ?? []).map((hour) => Number(hour.chanceofrain) || 0)),
+      0,
+    )
+    const windKmh = Math.max(...((day.hourly ?? []).map((hour) => Number(hour.windspeedKmph) || 0)), 0)
+    const windMs = windKmh / 3.6
+    const base = {
+      date: day.date,
+      weatherCode: code,
+      tempMax: Math.round(Number(day.maxtempC)),
+      tempMin: Math.round(Number(day.mintempC)),
+      precipSum: precipProb >= 70 ? 8 : precipProb >= 40 ? 2 : 0,
+      precipProb: Math.round(precipProb),
+      windMax: Number(windMs.toFixed(1)),
+      gustMax: Number((windMs * 1.4).toFixed(1)),
+      uvMax: Number(Number(day.uvIndex || 0).toFixed(1)),
+    }
+    const risk = assessRisk(base)
+    const described = describeWeatherCode(code)
+    return { ...base, ...risk, label: described.label, icon: described.icon }
   })
+
+  const hourlyByDate: Record<string, HourlyWeather[]> = {}
+  days.forEach((day) => {
+    hourlyByDate[day.date] = (day.hourly ?? [])
+      .filter((_, index) => index % 2 === 0)
+      .map((hour) => {
+        const raw = hour.time.padStart(4, '0')
+        const hhmm = `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+        const code = wttrCodeToOwm(hour.weatherCode)
+        const described = describeWeatherCode(code)
+        return {
+          time: `${day.date}T${hhmm}`,
+          hour: hhmm,
+          temperature: Math.round(Number(hour.tempC)),
+          precipProb: Math.round(Number(hour.chanceofrain) || 0),
+          weatherCode: code,
+          label: described.label,
+          wind: Number((Number(hour.windspeedKmph) / 3.6).toFixed(1)),
+        }
+      })
+  })
+
+  return {
+    location,
+    daily,
+    hourlyByDate,
+    updatedAt: new Date().toISOString(),
+    source: 'wttr.in',
+  }
+}
+
+const fetchFromOpenMeteo = async (location: WeatherLocation) => {
+  const params = openMeteoParams(location)
+  let lastError: unknown
+  for (const host of OPEN_METEO_HOSTS) {
+    try {
+      const data = (await fetchJson(`${host}?${params}`)) as OpenMeteoResponse
+      if (!data?.daily?.time?.length) throw new Error('empty')
+      return parseOpenMeteo(location, data, host.includes('previous-runs') ? 'Open-Meteo 备用' : 'Open-Meteo')
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`天气接口失败：${location.name}`)
+}
+
+const fetchFromWttr = async (location: WeatherLocation) => {
+  const url = `https://wttr.in/${location.latitude},${location.longitude}?format=j1&lang=zh`
+  const data = (await fetchJson(url, 10000)) as WttrResponse
+  return parseWttr(location, data)
+}
+
+export const fetchLocationForecast = async (location: WeatherLocation): Promise<LocationForecast> => {
+  try {
+    return await fetchFromOpenMeteo(location)
+  } catch {
+    return await fetchFromWttr(location)
+  }
+}
+
+export const readWeatherCache = (): LocationForecast[] => {
+  try {
+    const raw = localStorage.getItem(WEATHER_CACHE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as { at: number; forecasts: LocationForecast[] }
+    if (!parsed.at || Date.now() - parsed.at > WEATHER_CACHE_TTL_MS) return parsed.forecasts ?? []
+    return parsed.forecasts ?? []
+  } catch {
+    return []
+  }
+}
+
+export const writeWeatherCache = (forecasts: LocationForecast[]) => {
+  try {
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ at: Date.now(), forecasts }))
+  } catch {
+    // ignore quota
+  }
+}
+
+export const fetchAllForecasts = async () => {
+  const results = await Promise.allSettled(weatherLocations.map((location) => fetchLocationForecast(location)))
+  const forecasts = results
+    .filter((item): item is PromiseFulfilledResult<LocationForecast> => item.status === 'fulfilled')
+    .map((item) => item.value)
+  if (forecasts.length === 0) {
+    const cached = readWeatherCache()
+    if (cached.length > 0) return { forecasts: cached, partial: true, fromCache: true }
+    throw new Error('天气接口暂时连不上，请稍后刷新或打开 VPN 再试')
+  }
+  writeWeatherCache(forecasts)
+  return { forecasts, partial: forecasts.length < weatherLocations.length, fromCache: false }
 }
 
 export const tripDateSet = new Set([
