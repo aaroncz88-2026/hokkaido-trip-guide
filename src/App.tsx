@@ -65,6 +65,8 @@ type JourneyPhase = 'before' | 'during' | 'after'
 
 /** 临时功能开关：需要时改回 true 即可恢复首页「出发前学几句」 */
 const SHOW_JAPANESE_LESSON = false
+/** 成团后首页不再展示对号入座；更换身份仍在「更多」 */
+const SHOW_HOME_PARTY_SEAT = false
 
 type JourneyState = {
   phase: JourneyPhase
@@ -1228,6 +1230,7 @@ function App() {
           </section>
         )}
 
+        {SHOW_HOME_PARTY_SEAT && (
         <section className={`traveler-identity ${isPartyMember ? 'traveler-identity--launched' : ''}`}>
           <div className="section-heading">
             <div>
@@ -1288,6 +1291,7 @@ function App() {
             </button>
           )}
         </section>
+        )}
 
         <div className={journey.phase === 'after' || journey.phase === 'during' ? 'phase-content--hidden' : ''}>
           {SHOW_JAPANESE_LESSON && (
@@ -1780,7 +1784,7 @@ function App() {
           </div>
           <p className="party-ready-line">{formatPartyReadyLine()}</p>
           <p className="party-lead">
-            {isPartyMember ? `当前身份：${travelerName}。点选下方名字可更换（需二次确认）。` : '请先在首页点选入座，或在这里直接选择。'}
+            {isPartyMember ? `当前身份：${travelerName}。点选下方名字可更换（需二次确认）。` : '点选你的名字入座；身份只保存在这台手机。'}
           </p>
           <div className="party-name-chips party-name-chips--pick" aria-label="更换旅行者身份">
             {FIXED_TRAVELER_NAMES.map((name) => (
