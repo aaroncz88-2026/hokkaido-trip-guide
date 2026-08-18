@@ -393,10 +393,42 @@ const parkingMeetupGuide: TimelineMaterial = {
   ],
 }
 
+const airportFoodGuide: TimelineMaterial = {
+  title: '机场午饭 / 采购清单',
+  body: '取车期间在航站楼按这份勾选。机场先吃再买明早；支笏湖只当小吃，不把正餐押在湖边。',
+  steps: [
+    { id: 'kamaboko', field: '1 かま栄', how: '鱼浆包面包后再油炸，咸香顶饿，适合当正餐主食。' },
+    { id: 'valleys', field: '2 十勝VALLEYs', how: '芝士包＋玉米可乐饼，带娃分着吃方便。' },
+    { id: 'kinotoya', field: '3 Kinotoya / きのとや', how: '现烤芝士挞，热的最好吃，可顺手买冷藏带走。' },
+    { id: 'calbee', field: '4 Calbee+', how: '现做薯条，孩子友好；别买太多以免湖边吃不下。' },
+    { id: 'kitakaro', field: '5 北菓楼', how: '铜锣烧、泡芙，礼盒或现吃都可。' },
+    { id: 'milkcastella', field: '6 北海道牛乳カステラ', how: '瑞士卷、蛋糕，适合当晚或次日早餐甜品。' },
+    { id: 'snowcheese', field: '7 Snow Cheese', how: '网红甜品，排队的话先看时间，取车会合优先。' },
+    { id: 'letao', field: '8 LeTAO New Chitose Airport', how: '小樽本店系列在机场也能买到，芝士蛋糕可冷藏。' },
+    { id: 'pasco', field: '买早饭 · Pasco Hokkaido Premium', how: '北海道牛奶面包、红豆面包、果酱，明早酒店热一下就能吃。' },
+    {
+      id: 'supermarket',
+      field: '买早饭 · 超市补货',
+      how: '鸡蛋、香肠、牛奶、酸奶、水果、芝士切片、水、方便面、即冲汤。不够再买，避免重复。',
+    },
+  ],
+}
+
+const shikotsuSnackGuide: TimelineMaterial = {
+  title: '小吃·支笏湖',
+  body: '湖边不当正餐，走到哪买到哪。停车点仍是 Lake Shikotsu paid parking lot。',
+  steps: [
+    { id: 'hekisu', field: '1 北のうまいもん店 碧水', how: '扇贝玉米烧、烤鱿鱼，热食小吃。' },
+    { id: 'showa', field: '2 昭和物産', how: '炸物、炭火烤，和碧水二选一或各买一点即可。' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
       '【抵达】+【过关】+【取行李】+【接驳取车】\n12:30左右抵达→直奔关口→取行李→J-Net接驳→B停车场汇合',
+    '13:00~14:00':
+      '【租车】+【机场午饭采购】\n按清单勾选：かま栄 / 十勝VALLEYs / きのとや / Calbee+ / 北菓楼 / 牛乳カステラ / Snow Cheese / LeTAO；早饭买 Pasco',
     '14:00~15:00':
       '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
   },
@@ -418,6 +450,7 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
   1: {
     '8:00~12:00': [entryCardGuide],
     '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
+    '13:00~14:00': [airportFoodGuide, shikotsuSnackGuide],
   },
 }
 
@@ -451,6 +484,11 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【过关取行李】→【J-Net接驳取车】→【开回B停车场发柱号+车照片】',
       mom: '【过关带娃】→【取行李】→【国际到达大厅等汇合消息后再出停车场】',
       kids: '【跟着大人过关】坐推车/拉杆箱旁休息，等爸爸发来停车位置再一起走',
+    },
+    '13:00~14:00': {
+      dad: '【取车】在营业所办手续；随时回报进度，家人按清单买午饭',
+      mom: '【机场午饭+采购】按清单勾选；先吃かま栄/十勝/きのとや，再买 Pasco 明早，顺手北菓楼、牛乳カステラ、Snow Cheese、LeTAO',
+      kids: '【逛+吃】Pokémon Store、Calbee+ 薯条、ROYS；累了坐着等爸爸会合',
     },
     '14:00~15:00': {
       dad: '【开车】导航去 Lake Shikotsu paid parking lot；到停车场后发位置给家人',
