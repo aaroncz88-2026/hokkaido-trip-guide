@@ -257,16 +257,29 @@ const titleFromMaterialBody = (body: string, index: number) => {
   return `现场资料 ${index + 1}`
 }
 
+/** 当天停车点已在顶部 ParkingBar，表格「停车点」列不要再变成现场资料。 */
+const parkingPlaceNames = new Set(
+  dayMeta.flatMap((day) => day.navigation.flatMap((nav) => [nav.label.trim(), nav.query.trim()])),
+)
+
+const isParkingPlaceText = (text: string) => {
+  const cleaned = text.trim()
+  if (!cleaned || cleaned === '停车点：') return true
+  if (parkingPlaceNames.has(cleaned)) return true
+  return /停车场|parking lot|駐車場/i.test(cleaned) && cleaned.length < 64
+}
+
 const getMaterials = (row: Array<SourceCell | null>): TimelineMaterial[] =>
   row
     .slice(6, 8)
     .filter((cell): cell is SourceCell => {
       if (!cell) return false
       const text = cell.text.trim()
-      if (!text || text === '停车点：') return false
+      if (!text || isParkingPlaceText(text)) return false
       if (cell.url && isMostlyUrl(text)) return false
       if (cell.url) {
         const leftover = text.replace(/https?:\/\/\S+/gi, '').trim()
+        if (isParkingPlaceText(leftover)) return false
         return leftover.length >= 12
       }
       return text.length >= 8 && !/^https?:\/\/\S+$/i.test(text)
@@ -280,7 +293,7 @@ const getMaterials = (row: Array<SourceCell | null>): TimelineMaterial[] =>
         body,
       }
     })
-    .filter((material) => material.body.length >= 8)
+    .filter((material) => material.body.length >= 8 && !isParkingPlaceText(material.body))
 
 const getTitle = (value: string) => {
   const cleaned = value.replace(/【([^】]+)】/g, '$1').replace(/\s+/g, ' ').trim()
