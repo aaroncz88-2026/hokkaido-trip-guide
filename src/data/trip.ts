@@ -482,6 +482,18 @@ const toyaBrowseShopsGuide: TimelineMaterial = {
   ],
 }
 
+const toyaDinnerGuide: TimelineMaterial = {
+  title: '洞爷湖晚餐备选',
+  body: '首选 Restaurant & Flowers KARZZ；满座或排队再改去下面备选。',
+  steps: [
+    { id: 'karzz', field: '1 Restaurant & Flowers KARZZ（首选）', how: '今晚最推荐。', kind: 'option' },
+    { id: 'apecolo', field: '2 炭火ダイニング アペコロ（备选）', how: 'KARZZ 满/排队时改这里。', kind: 'option' },
+    { id: 'fuji', field: '3 洋食屋 Fuji（备选）', how: '备选。', kind: 'option' },
+    { id: 'kinjo', field: '4 焼肉 金城（备选）', how: '备选。', kind: 'option' },
+    { id: 'omoya', field: '5 OMOYA（备选）', how: '备选。', kind: 'option' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -541,6 +553,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '12:00~13:00': [lakeHillTeaGuide],
     // 湖畔：可逛店铺清单
     '17:00~18:00': [toyaBrowseShopsGuide],
+    // 晚饭：KARZZ 首选，其余备选
+    '19:00~20:00': [toyaDinnerGuide],
   },
 }
 
@@ -615,6 +629,30 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu',
       },
       kakashiMenuLink,
+    ],
+  },
+  3: {
+    '19:00~20:00': [
+      {
+        label: 'Restaurant & Flowers KARZZ | Google Maps',
+        url: 'https://maps.google.com/?q=Restaurant%20%26%20Flowers%20KARZZ%20Toyako',
+      },
+      {
+        label: '炭火ダイニング アペコロ | Google Maps',
+        url: 'https://maps.google.com/?q=%E7%82%AD%E7%81%AB%E3%83%80%E3%82%A4%E3%83%8B%E3%83%B3%E3%82%B0%20%E3%82%A2%E3%83%9A%E3%82%B3%E3%83%AD',
+      },
+      {
+        label: '洋食屋 Fuji | Google Maps',
+        url: 'https://maps.google.com/?q=%E6%B4%8B%E9%A3%9F%E5%B1%8BFuji%20%E6%B4%9E%E7%88%BA%E6%B9%96',
+      },
+      {
+        label: '焼肉 金城 | Google Maps',
+        url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%20%E9%87%91%E5%9F%8E%20%E6%B4%9E%E7%88%BA',
+      },
+      {
+        label: 'OMOYA | Google Maps',
+        url: 'https://maps.google.com/?q=OMOYA%20Toyako',
+      },
     ],
   },
 }
@@ -768,7 +806,7 @@ export const guideSections = [
       { title: '留寿都一日券', detail: '建议提前网上购买，包含游乐园、羊蹄缆车等；现场购票更贵。', badge: '待购票' },
       { title: '龙宫 Blue Cave', detail: '目标 8 月 28 日 10:30 船班；出发前再次确认海况与集合时间。', badge: '重点确认' },
       { title: 'GAjA すすきの店', detail: 'DAY4 札幌晚餐首选，按在线文档中的预约状态执行。', badge: '已安排' },
-      { title: '洞爷湖晚餐', detail: '周二删除牛助与 mog mog；首选アペコロ，KARZZ、OMOYA依次备选。', badge: '已纠正' },
+      { title: '洞爷湖晚餐', detail: '首选 Restaurant & Flowers KARZZ；备选アペコロ、洋食屋 Fuji、焼肉 金城、OMOYA。', badge: '已纠正' },
       { title: '大地のテラス', detail: 'DAY7 主方案需提前确认 8 月 29 日晚餐开放，并预约 18:00。', badge: '重点确认' },
     ],
   },
