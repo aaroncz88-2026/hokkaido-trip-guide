@@ -860,9 +860,6 @@
 }
 
 .day-tabs {
-  position: sticky;
-  z-index: 29;
-  top: 0;
   display: grid;
   grid-auto-columns: 48px;
   grid-auto-flow: column;
@@ -871,27 +868,14 @@
   margin: 0 -18px 10px;
   padding: 0 18px 8px;
   scrollbar-width: none;
-  background: linear-gradient(180deg, var(--bg) 70%, rgba(247, 242, 233, 0));
 }
 
-.day-parking-sticky {
-  position: sticky;
-  z-index: 28;
-  top: 0;
-  margin: 0 -18px 14px;
-  padding: 10px 18px 12px;
-  border-bottom: 1px solid rgba(31, 63, 60, 0.1);
-  background: rgba(247, 242, 233, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 18px rgba(31, 55, 51, 0.06);
+.day-parking {
+  margin: 0 0 14px;
+  padding: 12px 0 2px;
 }
 
-.day-parking-sticky--under-tabs {
-  top: 67px;
-}
-
-.day-parking-sticky__head {
+.day-parking__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -899,14 +883,14 @@
   margin-bottom: 8px;
 }
 
-.day-parking-sticky__head span {
+.day-parking__head span {
   color: var(--ink);
   font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.04em;
 }
 
-.day-parking-sticky__head small {
+.day-parking__head small {
   color: var(--muted);
   font-size: 0.62rem;
   font-weight: 650;

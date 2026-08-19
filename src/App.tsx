@@ -318,13 +318,10 @@ function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
   )
 }
 
-function ParkingBar({ day, underTabs = false }: { day: DayPlan; underTabs?: boolean }) {
+function ParkingBar({ day }: { day: DayPlan }) {
   return (
-    <section
-      className={`day-parking-sticky${underTabs ? ' day-parking-sticky--under-tabs' : ''}`}
-      aria-label="当天停车点"
-    >
-      <div className="day-parking-sticky__head">
+    <section className="day-parking" aria-label="当天停车点">
+      <div className="day-parking__head">
         <span>DAY {day.day} · 当天停车点</span>
         <small>时段可浮动 · 目的地不变 · 仅司机导航</small>
       </div>
@@ -1478,8 +1475,6 @@ function App() {
           ))}
         </div>
 
-        <ParkingBar day={currentDay} underTabs />
-
         <section
           className="day-hero"
           style={{ '--day-accent': currentDay.accent, backgroundImage: `url(${currentDay.cover})` } as CSSProperties}
@@ -1503,6 +1498,8 @@ function App() {
             {currentDay.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
           </div>
         </section>
+
+        <ParkingBar day={currentDay} />
 
         <section className="day-summary">
           <p>{currentDay.summary}</p>
