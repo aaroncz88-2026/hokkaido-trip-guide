@@ -422,6 +422,21 @@ const shikotsuSnackGuide: TimelineMaterial = {
   ],
 }
 
+const day2OutingSnackGuide: TimelineMaterial = {
+  title: '次日出行补给 · 便利店采购',
+  body: 'DAY2 游乐园要用的补给，今晚在 Seicomart 买好，明早少出门。',
+  steps: [
+    { id: 'water', field: '饮用水 500ml ×4～6', how: '全天够喝优先。' },
+    { id: 'sports', field: '运动饮料 ×2～4', how: '游乐出汗后补电解质。' },
+    { id: 'onigiri', field: '小饭团 ×2', how: '路上或园内垫肚子。' },
+    { id: 'bread', field: '独立包装面包 ×2', how: '不易坏，孩子也好分。' },
+    { id: 'banana', field: '香蕉 ×2', how: '快速补充能量。' },
+    { id: 'jelly', field: '能量果冻 ×2', how: '排队时一口补糖。' },
+    { id: 'kids-snack', field: '两个孩子各一小包零食', how: '按孩子口味选，别买太多。' },
+    { id: 'wipes', field: '湿巾和垃圾袋', how: '车上和园内清洁备用。' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -430,6 +445,7 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
       '【租车】+【机场午饭采购】\n按清单勾选：かま栄 / 十勝VALLEYs / きのとや / Calbee+ / 北菓楼 / 牛乳カステラ / Snow Cheese / LeTAO；早饭买 Pasco',
     '14:00~15:00':
       '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
+    '20:00~21:00': '【便利店采购】Seicomart Rusutsu\n买好 DAY2 游乐园补给（水、运动饮料、小食）',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -462,6 +478,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '18:00~19:00': [],
     // 晚饭：店名改导航，不挂无意义现场资料
     '19:00~20:00': [],
+    // 便利店：把 DAY2 出行补给提前买好
+    '20:00~21:00': [day2OutingSnackGuide],
   },
 }
 
