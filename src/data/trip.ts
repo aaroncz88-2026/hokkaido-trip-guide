@@ -562,6 +562,13 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     // 晚饭：18:00 起可看；KARZZ 首选，其余备选
     '18:00~19:00': [toyaDinnerGuide],
     '19:00~20:00': [toyaDinnerGuide],
+    // 烟花时段：原「现场资料」改为注意事项标题
+    '20:00~21:00': [
+      {
+        title: '【观看烟花注意事项】',
+        body: '尽量选择没有树木遮挡的岸边；\n汽船码头至中央温泉街湖畔都是可考虑区域。',
+      },
+    ],
   },
 }
 
