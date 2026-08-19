@@ -93,7 +93,12 @@ const dayMeta: DayMeta[] = [
     pinnedDocs: [
       { label: 'DAY1 导游发言稿', url: docUrl('day1-guide-script.pdf') },
     ],
-    reminders: ['落地后先完成入境、行李和取车', '出发导航：Lake Shikotsu paid parking lot', '争取 15:00 到支笏湖', '晚间采购次日早餐与饮用水'],
+    reminders: [
+      '落地后先完成入境、行李和取车',
+      '出发导航：Lake Shikotsu paid parking lot',
+      '争取 15:00 到支笏湖；观光船末班 17:00，晚到先砍船',
+      '晚间采购次日早餐与饮用水',
+    ],
   },
   {
     day: 2,
@@ -417,8 +422,8 @@ const parkingMeetupGuide: TimelineMaterial = {
 }
 
 const airportFoodGuide: TimelineMaterial = {
-  title: '机场午饭 / 采购清单',
-  body: '取车期间在航站楼按门牌逛。机场先吃再买明早；支笏湖只当小吃，不把正餐押在湖边。',
+  title: '机场午饭 / 采购菜单',
+  body: '取车期间按喜好点，不是任务。先吃再买明早，会合优先；支笏湖只当小吃，不把正餐押在湖边。',
   steps: [
     { id: 'kamaboko', field: 'かま栄', how: '鱼浆包面包后再油炸，咸香顶饿，适合当正餐主食。', kind: 'option' },
     { id: 'valleys', field: '十勝VALLEYs', how: '芝士包＋玉米可乐饼，带娃分着吃方便。', kind: 'option' },
@@ -438,9 +443,15 @@ const airportFoodGuide: TimelineMaterial = {
   ],
 }
 
+const shikotsuBoatGuide: TimelineMaterial = {
+  title: '观光船 · 末班 17:00',
+  body: '水中观光船约 30 分钟。2026 季末班 17:00；到湖先问下一班。赶不上或风大，改天鹅船或湖边走走。',
+  links: [{ label: '观光船官网', url: 'https://shikotsu-ship.co.jp/' }],
+}
+
 const shikotsuSnackGuide: TimelineMaterial = {
-  title: '景点小吃备选 · 支笏湖',
-  body: '湖边不当正餐，走到哪买到哪。',
+  title: '景点小吃菜单 · 支笏湖',
+  body: '湖边不当正餐，走到哪买到哪，按喜好点。',
   steps: [
     { id: 'hekisu', field: '北のうまいもん店 碧水', how: '扇贝玉米烧、烤鱿鱼，热食小吃。', kind: 'option' },
     { id: 'showa', field: '昭和物産', how: '炸物、炭火烤，和碧水二选一或各买一点即可。', kind: 'option' },
@@ -499,8 +510,8 @@ const gajaReservationLink = {
 }
 
 const day1DinnerGuide: TimelineMaterial = {
-  title: '留寿都晚餐 · 源べえ',
-  body: '今晚首选源べえ；菜单挂在店名旁，可先打开对照点餐。',
+  title: '留寿都晚餐菜单 · 源べえ',
+  body: '开车回酒店时就可打开对照，提前想好点什么。今晚首选源べえ。',
   steps: [
     {
       id: 'genbee',
@@ -797,9 +808,15 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '12:00~13:00':
       '【抵达】+【过关】+【取行李】+【接驳取车】\n12:30左右抵达→直奔关口→取行李→J-Net接驳→B停车场汇合',
     '13:00~14:00':
-      '【租车】+【机场午饭采购】\n按门牌逛：かま栄 / 十勝VALLEYs / きのとや / Calbee+ / 北菓楼 / 牛乳カステラ / Snow Cheese / LeTAO；早饭买 Pasco',
+      '【租车】+【机场午饭菜单】\n按喜好选：かま栄 / 十勝VALLEYs / きのとや / Calbee+ / 北菓楼 / 牛乳カステラ / Snow Cheese / LeTAO；早饭买 Pasco',
     '14:00~15:00':
       '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
+    '15:00~16:00':
+      '【景点2·支笏湖】\n争取15:00抵达；观光船末班17:00，晚到改天鹅船或湖边走走\n【观光船＋天鹅船】',
+    '16:00~17:00':
+      '【观光船＋天鹅船】+【商业街】\n观光船末班17:00，先问下一班再逛',
+    '18:00~19:00':
+      '【回家】开车约1小时 → 翠葉 Rusutsu\n车上可先打开源べえ菜单，到店直接点',
     '20:00~21:00': '【便利店采购】Seicomart Rusutsu\n买好 DAY2 游乐园补给（水、运动饮料、小食）',
   },
   3: {
@@ -836,9 +853,10 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '8:00~12:00': [],
     '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
     '13:00~14:00': [airportFoodGuide],
-    // 湖边景点时段：小吃备选（已停车，不再提停车场）
-    '15:00~16:00': [shikotsuSnackGuide],
-    // 晚饭：源べえ（菜单挂在店名旁）
+    // 湖边：先看末班船，小吃当菜单
+    '15:00~16:00': [shikotsuBoatGuide, shikotsuSnackGuide],
+    '16:00~17:00': [shikotsuBoatGuide, shikotsuSnackGuide],
+    // 晚饭菜单挂在回程车上，方便提前看
     '18:00~19:00': [day1DinnerGuide],
     '19:00~20:00': [day1DinnerGuide],
     // 便利店：把 DAY2 出行补给提前买好

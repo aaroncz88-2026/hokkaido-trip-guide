@@ -463,7 +463,7 @@ function MaterialSteps({
       )}
       {options.length > 0 && (
         <div className="fill-options">
-          <span className="eyebrow">门牌</span>
+          <span className="eyebrow">{/菜单|晚餐/.test(material.title) ? '菜单 · 可先看' : '门牌'}</span>
           {options.map((step, index) => {
             const door = doorLabel(step.field, index)
             return (
@@ -1323,6 +1323,10 @@ function App() {
             ? '入店出示 · 预约凭证'
             : /【晚餐】/.test(material.title)
               ? '已预约'
+            : /晚餐菜单|车上/.test(material.title + material.body)
+              ? '菜单 · 车上可先看'
+            : /菜单/.test(material.title)
+              ? '菜单 · 任选'
             : hasList
               ? '逛店清单 · LIST'
               : hasPhrases && hasTasks
