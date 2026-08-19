@@ -121,9 +121,10 @@ const dayMeta: DayMeta[] = [
     coverLabel: '洞爷湖',
     highlights: ['有珠山缆车', 'Lake Hill Farm', '火山科学馆', '洞爷湖烟花'],
     navigation: [
-      { label: '有珠山缆车', query: 'Usuzan Ropeway Parking' },
-      { label: 'Lake Hill Farm', query: 'Lake Hill Farm Toyako' },
-      { label: '洞爷湖游客中心', query: 'Toyako Visitor Center Parking' },
+      { label: '有珠山停车场', query: 'Usuzan Showashinzan Yuryo Parking Lot' },
+      { label: 'Lake Hill Farm 停车场', query: 'Lake Hill Farm Parking' },
+      { label: '洞爷湖温泉停车场', query: 'Toyako Onsen Parking' },
+      { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
     ],
     reminders: ['Oktoberfest 早餐后出发', '20:25 前到湖边等烟花', '缆车和湖边风大，带防风外套'],
   },
