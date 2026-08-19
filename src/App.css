@@ -2382,6 +2382,37 @@
   margin-top: 12px;
 }
 
+.fill-list {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fill-list li {
+  position: relative;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid #d9ebe7;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.fill-list li::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 1.05em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
 .fill-options > .eyebrow,
 .fill-guide > .eyebrow {
   margin-bottom: 2px;

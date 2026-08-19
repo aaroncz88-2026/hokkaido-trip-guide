@@ -19,6 +19,8 @@ export type TimelineMaterial = {
   title: string
   body: string
   steps?: FillGuideStep[]
+  /** 纯展示清单，不可勾选、不可点选 */
+  list?: string[]
 }
 
 export type TimelineItem = {
@@ -781,6 +783,19 @@ const day4DinnerGuide: TimelineMaterial = {
   ],
 }
 
+/** 晚饭后狸小路一带闲逛；纯 LIST，不可勾选 */
+const day4NightBrowseGuide: TimelineMaterial = {
+  title: '晚饭后可逛清单',
+  body: '约 19:00–21:00 饭后闲逛参考。括号为关门参考时间，先去早关的。',
+  list: [
+    'DAIMARUFUJII CENTRAL（约 19:00 关门）',
+    'Standard Products moyuk（约 20:00 关门）',
+    'モユク札幌ロフト（约 21:00 关门）',
+    'たぬきや',
+    '#C-pla',
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -800,6 +815,9 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
       '【河童寻宝】约 2 小时上半\n领册→盖章→找河童像答题；大人翻译题板，孩子找雕像记答案',
     '11:00~12:00':
       '【河童寻宝】约 2 小时下半\n三个提示点→回案内所终题抽奖；争取午餐前完成',
+    '17:00~18:00': '【回家】回札幌公寓休整，准备出门晚饭',
+    '19:00~20:00': '【饭后逛街】狸小路一带 · 按关门时间逛',
+    '20:00~21:00': '【饭后逛街】继续逛店；文具／玩具可顺路看',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -858,9 +876,13 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '11:00~12:00': [jozankeiKidsGuide],
     // 午餐：いち 首选，其余备选
     '12:00~13:00': [jozankeiLunchGuide],
-    // 晚餐：GAjA 烤肉自助首选（替换表格「吃…」现场资料）
+    // 回家时段：去掉误挂的「逛」现场资料
+    '17:00~18:00': [],
+    // 晚餐：GAjA 烤肉自助首选
     '18:00~19:00': [day4DinnerGuide],
-    '19:00~20:00': [day4DinnerGuide],
+    // 饭后逛：纯 LIST，挂在 19–21
+    '19:00~20:00': [day4NightBrowseGuide],
+    '20:00~21:00': [day4NightBrowseGuide],
   },
 }
 
@@ -1009,6 +1031,21 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【晚饭】GAjA 首选；停车トラストパークすすきの5・2。先看烤肉自助菜单摘要',
       mom: '【晚饭】点餐照顾孩子；对照 PDF／店内 App',
       kids: '【吃饭】跟大人点肉，注意别烫到手',
+    },
+    '17:00~18:00': {
+      dad: '【开车回家】回札幌公寓，准备晚上出门吃饭',
+      mom: '【带娃回家】到家休整，收拾出门晚饭用品',
+      kids: '【休息】到家喝水休息，准备出门吃饭',
+    },
+    '19:00~20:00': {
+      dad: '【饭后逛】按清单先去早关门的店',
+      mom: '【饭后逛】留意文具店／玩具店；看孩子别走散',
+      kids: '【逛】跟大人走，想进店就举手说',
+    },
+    '20:00~21:00': {
+      dad: '【饭后逛】继续按清单；留意 21:00 关门的店',
+      mom: '【饭后逛】文具／玩具可再看一轮，别太晚',
+      kids: '【逛】累了就跟大人说要回酒店',
     },
   },
 }

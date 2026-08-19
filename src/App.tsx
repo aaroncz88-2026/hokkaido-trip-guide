@@ -410,7 +410,9 @@ function MaterialSteps({
   onToggleFill: (key: string) => void
 }) {
   const steps = material.steps ?? []
-  if (steps.length === 0) return null
+  const list = material.list ?? []
+
+  if (steps.length === 0 && list.length === 0) return null
 
   const options = steps.filter((step) => step.kind === 'option')
   const phrases = steps.filter((step) => step.kind === 'phrase')
@@ -441,6 +443,13 @@ function MaterialSteps({
 
   return (
     <>
+      {list.length > 0 && (
+        <ul className="fill-list">
+          {list.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      )}
       {tasks.length > 0 && (
         <div className="fill-guide">
           <span className="eyebrow">{phrases.length > 0 || options.length > 0 ? '家长帮忙 · 可勾选' : '必要问询任务'}</span>
@@ -1288,11 +1297,13 @@ function App() {
         </div>
 
         {item.materials.map((material) => {
+          const hasList = Boolean(material.list?.length)
           const hasOptions = material.steps?.some((step) => step.kind === 'option')
           const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
-          const eyebrow =
-            hasPhrases && hasTasks
+          const eyebrow = hasList
+            ? '逛店清单 · LIST'
+            : hasPhrases && hasTasks
               ? '家长任务 · 可复制话术'
               : hasOptions && hasTasks
                 ? '晚饭备选 · 必要任务'
@@ -1300,7 +1311,9 @@ function App() {
                   ? '现场话术 · 可复制'
                   : hasOptions
                     ? '门牌备选'
-                    : '填写攻略 · 可勾选'
+                    : hasTasks
+                      ? '填写攻略 · 可勾选'
+                      : '现场资料'
           return (
             <article className="now-card__material" key={material.title}>
               <span className="eyebrow">{eyebrow}</span>
