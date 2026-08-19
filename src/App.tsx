@@ -318,19 +318,25 @@ function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
   )
 }
 
-function ParkingBar({ day }: { day: DayPlan }) {
+function ParkingBar({ day, underTabs = false }: { day: DayPlan; underTabs?: boolean }) {
   return (
-    <section className="day-parking-sticky" aria-label="当天停车与导航">
+    <section
+      className={`day-parking-sticky${underTabs ? ' day-parking-sticky--under-tabs' : ''}`}
+      aria-label="当天停车点"
+    >
       <div className="day-parking-sticky__head">
-        <span>DAY {day.day} · 当天停车</span>
-        <small>时段可浮动 · 目的地不变</small>
+        <span>DAY {day.day} · 当天停车点</span>
+        <small>时段可浮动 · 目的地不变 · 仅司机导航</small>
       </div>
       <div className="nav-links nav-links--sticky">
         {day.navigation.map((item, index) => (
-          <span className="nav-chip-wrap" key={item.label}>
+          <span className="nav-chip-wrap" key={`${day.day}-${item.label}`}>
             <MapsLink className="nav-chip" query={item.query}>
               <em className="nav-chip__n">{index + 1}</em>
-              {item.label}
+              <span className="nav-chip__text">
+                <strong>{item.label}</strong>
+                {item.query !== item.label && <small>{item.query}</small>}
+              </span>
               <Icon name="external" size={13} />
             </MapsLink>
             <CopyPlaceButton query={item.query} />
@@ -1463,7 +1469,7 @@ function App() {
           ))}
         </div>
 
-        <ParkingBar day={currentDay} />
+        <ParkingBar day={currentDay} underTabs />
 
         <section
           className="day-hero"

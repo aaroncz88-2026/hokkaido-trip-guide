@@ -73,7 +73,7 @@ const dayMeta: DayMeta[] = [
     coverLabel: '支笏湖',
     highlights: ['机场取车', '支笏湖观光船', '山线铁桥', 'Seicomart 采购'],
     navigation: [
-      { label: '空港 B 停车场', query: '新千歳空港B駐車場' },
+      { label: '新千岁机场 B 停车场', query: '新千歳空港B駐車場' },
       { label: '支笏湖收费停车场', query: 'Lake Shikotsu paid parking lot' },
       { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
     ],
