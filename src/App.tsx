@@ -1011,7 +1011,8 @@ function App() {
       const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
       setSelectedDay(day)
       setTimeDraftDay(day)
-      if (options?.goDays !== false) {
+      // 调时间只刷新首页「当前行动」，不强制切到行程页
+      if (options?.goDays) {
         setView('days')
         setMorePanel('hub')
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1054,7 +1055,7 @@ function App() {
   }
 
   const nudgeSim = (deltaMs: number) => {
-    applySimulatedTime(new Date(now.getTime() + deltaMs), undefined, { goDays: false })
+    applySimulatedTime(new Date(now.getTime() + deltaMs))
   }
 
   const repairAppCache = async () => {
