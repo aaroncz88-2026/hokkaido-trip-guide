@@ -432,6 +432,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '13:00~14:00': [airportFoodGuide],
     // 湖边景点时段：小吃备选（已停车，不再提停车场）
     '15:00~16:00': [shikotsuSnackGuide],
+    // 回酒店：住宿名已在正文，不重复挂 Suiyo 现场资料
+    '18:00~19:00': [],
   },
 }
 
