@@ -484,7 +484,7 @@ function TimelineCard({
   )
 
   return (
-    <article className={`timeline-card ${checked ? 'timeline-card--done' : ''}`}>
+    <article className={`timeline-card ${checked ? 'timeline-card--done' : ''}`} id={`timeline-${item.id}`}>
       <button
         aria-label={checked ? '标记为未完成' : '标记为已完成'}
         className="timeline-check"
@@ -706,9 +706,38 @@ function App() {
   const journey = getJourneyState(now)
   /** 8 月 23 日行程日起关闭行李清单，底栏改天气预报 */
   const packingClosed = now >= TRIP_START
+  const resolveLiveDayNumber = () => {
+    if (journey.day) return journey.day
+    if (now >= TRIP_START && now <= TRIP_END) {
+      return Math.min(8, Math.floor((now.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
+    }
+    return null
+  }
+  const syncViewsToLiveDay = () => {
+    const dayNum = resolveLiveDayNumber()
+    if (!dayNum) return null
+    const day = tripDays[dayNum - 1]
+    if (!day) return null
+    setSelectedDay(dayNum)
+    setWeatherDate(day.date)
+    setWeatherLocationId(dayLocationHint[dayNum] ?? 'sapporo')
+    return day
+  }
+  const scrollToLiveTimeline = () => {
+    window.setTimeout(() => {
+      const activity = getCurrentActivity(getAppNow(simOffsetMs))
+      if (!activity) return
+      document
+        .getElementById(`timeline-${activity.item.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 80)
+  }
   const openWeatherDesk = (locationId?: string, date?: string) => {
+    const live = syncViewsToLiveDay()
     if (locationId) setWeatherLocationId(locationId)
+    else if (!live) setWeatherLocationId('sapporo')
     if (date) setWeatherDate(date)
+    else if (!live) setWeatherDate('2026-08-23')
     setMorePanel('hub')
     setView(packingClosed ? 'guide' : 'more')
     setSearch('')
@@ -1102,6 +1131,11 @@ function App() {
       const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
       setSelectedDay(day)
       setTimeDraftDay(day)
+      const plan = tripDays[day - 1]
+      if (plan) {
+        setWeatherDate(plan.date)
+        setWeatherLocationId(dayLocationHint[day] ?? 'sapporo')
+      }
     }
   }
 
@@ -1532,7 +1566,11 @@ function App() {
           <section className="section">
           <div className="section-heading">
             <div><span className="eyebrow">8 DAYS</span><h2>每日路线</h2></div>
-            <button className="text-button" onClick={() => setView('days')}>展开全部</button>
+            <button className="text-button" onClick={() => {
+              syncViewsToLiveDay()
+              setView('days')
+              scrollToLiveTimeline()
+            }}>展开全部</button>
           </div>
           <div className="day-scroller">
             {tripDays.map((day) => <DayCard day={day} key={day.day} onOpen={() => openDay(day.day)} />)}
@@ -2307,7 +2345,18 @@ function App() {
             className={view === id ? 'active' : ''}
             key={id}
             onClick={() => {
-              if (id === 'days' && journey.day) setSelectedDay(journey.day)
+              if (id === 'days') {
+                syncViewsToLiveDay()
+                setMorePanel('hub')
+                setView(id)
+                setSearch('')
+                if (resolveLiveDayNumber()) scrollToLiveTimeline()
+                else window.scrollTo({ top: 0, behavior: 'smooth' })
+                return
+              }
+              if (id === 'guide' && packingClosed) {
+                syncViewsToLiveDay()
+              }
               if (id !== 'more') setMorePanel('hub')
               setView(id)
               setSearch('')
