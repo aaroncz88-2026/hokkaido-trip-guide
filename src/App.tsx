@@ -401,17 +401,29 @@ function MaterialSteps({
     )
   }
 
+  const doorLabel = (field: string, index: number) => {
+    const matched = field.match(/^(\d+)\s*(.*)$/)
+    if (matched) return { n: matched[1], name: matched[2] || field }
+    return { n: String(index + 1), name: field }
+  }
+
   return (
     <>
       {options.length > 0 && (
         <div className="fill-options">
-          <span className="eyebrow">清单</span>
-          {options.map((step) => (
-            <div className="fill-options__item" key={step.id}>
-              <strong>{step.field}</strong>
-              <small>{step.how}</small>
-            </div>
-          ))}
+          <span className="eyebrow">门牌</span>
+          {options.map((step, index) => {
+            const door = doorLabel(step.field, index)
+            return (
+              <div className="fill-options__item" key={step.id}>
+                <em className="fill-options__n" aria-hidden="true">{door.n}</em>
+                <span>
+                  <strong>{door.name}</strong>
+                  <small>{step.how}</small>
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
       {tasks.length > 0 && (
@@ -1174,7 +1186,7 @@ function App() {
             hasOptions && hasTasks
               ? '晚饭备选 · 必要任务'
               : hasOptions
-                ? '清单'
+                ? '门牌备选'
                 : '填写攻略 · 可勾选'
           return (
             <article className="now-card__material" key={material.title}>

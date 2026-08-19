@@ -2389,11 +2389,33 @@
 
 .fill-options__item {
   display: grid;
-  gap: 2px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
   padding: 10px 12px;
   border: 1px solid #d9ebe7;
   border-radius: 12px;
   background: #fff;
+}
+
+.fill-options__n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 999px;
+  color: #f7f2e9;
+  background: var(--brand);
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.fill-options__item > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .fill-options__item strong {
