@@ -405,7 +405,7 @@ function MaterialSteps({
     <>
       {options.length > 0 && (
         <div className="fill-options">
-          <span className="eyebrow">晚饭可选</span>
+          <span className="eyebrow">清单</span>
           {options.map((step) => (
             <div className="fill-options__item" key={step.id}>
               <strong>{step.field}</strong>
@@ -1174,7 +1174,7 @@ function App() {
             hasOptions && hasTasks
               ? '晚饭备选 · 必要任务'
               : hasOptions
-                ? '晚饭可选'
+                ? '清单'
                 : '填写攻略 · 可勾选'
           return (
             <article className="now-card__material" key={material.title}>

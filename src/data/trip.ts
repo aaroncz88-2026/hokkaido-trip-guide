@@ -456,6 +456,22 @@ const day2DinnerGuide: TimelineMaterial = {
   ],
 }
 
+const lakeHillTeaGuide: TimelineMaterial = {
+  title: '下午茶清单 · Lake Hill Farm',
+  body: '牧场轻食与乳制品甜点，按喜好点即可，不用全买。',
+  steps: [
+    { id: 'curry', field: '村一番咖喱', how: '热食主食选项。', kind: 'option' },
+    { id: 'pizza', field: '披萨等轻食', how: '分着吃方便。', kind: 'option' },
+    { id: 'gelato', field: '杰拉托（约 20 种口味）', how: '必点；可多口味分装。', kind: 'option' },
+    { id: 'milk', field: '牛奶', how: '牧场鲜奶。', kind: 'option' },
+    { id: 'icecream', field: '冰淇淋', how: '和杰拉托二选一或都尝尝。', kind: 'option' },
+    { id: 'coffee', field: '咖啡', how: '配甜点。', kind: 'option' },
+    { id: 'pudding', field: '布丁', how: '乳制品甜点。', kind: 'option' },
+    { id: 'puff', field: '泡芙及其他乳制品甜点', how: '顺手带给孩子。', kind: 'option' },
+    { id: 'souvenir', field: '奶酪、果酱和烘焙纪念品', how: '可带走，不必一次买齐。', kind: 'option' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -509,6 +525,10 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     // 园区晚饭：首选 Kakashi，备选 Pub Cricket / Mokumokuya
     '17:00~18:00': [day2DinnerGuide],
     '18:00~19:00': [day2DinnerGuide],
+  },
+  3: {
+    // Lake Hill：合并成一份下午茶清单，不勾选
+    '12:00~13:00': [lakeHillTeaGuide],
   },
 }
 
