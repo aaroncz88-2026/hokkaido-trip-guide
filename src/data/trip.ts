@@ -153,6 +153,7 @@ const dayMeta: DayMeta[] = [
     pinnedDocs: [
       { label: 'DAY4 定山溪旅游指南', url: docUrl('day4-guide-script.pdf') },
       { label: '河童寻宝中文亲子版', url: docUrl('jozankei-kappa-rally-zh.pdf') },
+      { label: 'GAjA 烤肉自助菜单摘要', url: docUrl('gaja-susukino-menu-zh.pdf') },
     ],
     reminders: [
       '出发前完成垃圾分类和退房检查',
@@ -578,11 +579,30 @@ const jozankeiKidsGuide: TimelineMaterial = {
 
 const jozankeiLunchGuide: TimelineMaterial = {
   title: '定山溪午餐备选',
-  body: '首选 食堂いち；满座或排队再改下面备选。',
+  body: '首选 食堂いち；满座或排队再改下面备选。三家菜单摘要见下方 PDF（中文整理，价目以店内为准）。',
   steps: [
-    { id: 'ichi', field: '1 食堂いち（首选）', how: '午餐第一选择。', kind: 'option' },
-    { id: 'haruranna', field: '2 埜ノ山キッチン はるらんな（备选）', how: 'いち 满/排队时改这里。', kind: 'option' },
-    { id: 'konno', field: '3 食堂こんの（40年拉面馆 · 备选）', how: '第二备选。', kind: 'option' },
+    { id: 'ichi', field: '1 食堂いち（首选）', how: '炭火定食；11:00–15:00。点开中文菜单摘要。', kind: 'option' },
+    { id: 'haruranna', field: '2 埜ノ山キッチン はるらんな（备选）', how: 'いち 满/排队时改这里；炖菜／轻食。', kind: 'option' },
+    { id: 'konno', field: '3 食堂こんの（40年拉面馆 · 备选）', how: '第二备选；盐／酱油／味噌拉面。', kind: 'option' },
+  ],
+}
+
+const day4DinnerGuide: TimelineMaterial = {
+  title: '札幌晚餐备选 · 薄野',
+  body: '首选 GAjA すすきの店烤肉自助；备选和食铁板烧。停车可去トラストパークすすきの5・2。',
+  steps: [
+    {
+      id: 'gaja',
+      field: '1 GAjA すすきの店（首选 · 烤肉自助）',
+      how: '点餐式吃到饱；现场 App／二维码点餐。先看中文菜单摘要。',
+      kind: 'option',
+    },
+    {
+      id: 'teppan',
+      field: '2 和食と鉄板焼（备选）',
+      how: 'GAjA 排不上或想换口味时改这里。',
+      kind: 'option',
+    },
   ],
 }
 
@@ -630,6 +650,26 @@ const kakashiMenuLink = {
   url: docUrl('kakashi-menu-zh.pdf'),
 }
 
+const ichiMenuLink = {
+  label: '食堂いち 中文菜单摘要（PDF）',
+  url: docUrl('jozankei-ichi-menu-zh.pdf'),
+}
+
+const harurannaMenuLink = {
+  label: 'はるらんな 中文菜单摘要（PDF）',
+  url: docUrl('jozankei-haruranna-menu-zh.pdf'),
+}
+
+const konnoMenuLink = {
+  label: '食堂こんの 中文菜单摘要（PDF）',
+  url: docUrl('jozankei-konno-menu-zh.pdf'),
+}
+
+const gajaMenuLink = {
+  label: 'GAjA 烤肉自助 中文菜单摘要（PDF）',
+  url: docUrl('gaja-susukino-menu-zh.pdf'),
+}
+
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
@@ -674,6 +714,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '11:00~12:00': [jozankeiKidsGuide],
     // 午餐：いち 首选，其余备选
     '12:00~13:00': [jozankeiLunchGuide],
+    // 晚餐：GAjA 烤肉自助首选（替换表格「吃…」现场资料）
+    '18:00~19:00': [day4DinnerGuide],
+    '19:00~20:00': [day4DinnerGuide],
   },
 }
 
@@ -812,6 +855,9 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       },
     ],
     '12:00~13:00': [
+      ichiMenuLink,
+      harurannaMenuLink,
+      konnoMenuLink,
       {
         label: '食堂いち | Google Maps',
         url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%84%E3%81%A1%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
@@ -823,6 +869,28 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       {
         label: '食堂こんの | Google Maps',
         url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%93%E3%82%93%E3%81%AE%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
+      },
+    ],
+    '18:00~19:00': [
+      gajaMenuLink,
+      {
+        label: 'GAjA すすきの店 | Google Maps',
+        url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
+      },
+      {
+        label: '和食と鉄板焼 | Google Maps',
+        url: 'https://maps.google.com/?q=%E5%92%8C%E9%A3%9F%E3%81%A8%E9%89%84%E6%9D%BF%E7%84%BC%20%E6%9C%AD%E5%B9%8C%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE',
+      },
+      {
+        label: 'トラストパークすすきの5・2 | Google Maps',
+        url: 'https://maps.google.com/?q=%E3%83%88%E3%83%A9%E3%82%B9%E3%83%88%E3%83%91%E3%83%BC%E3%82%AF%E6%9C%AD%E5%B9%8C%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE5%E3%83%BB2',
+      },
+    ],
+    '19:00~20:00': [
+      gajaMenuLink,
+      {
+        label: 'GAjA すすきの店 | Google Maps',
+        url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
       },
     ],
     '10:00~11:00': [
@@ -893,6 +961,16 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【河童寻宝】带队去三个提示点，最后回案内所终题抽奖',
       mom: '【河童寻宝】继续翻译；午餐前确认册子填完并交工作人员',
       kids: '【寻宝】继续找像答题；累了就喝水休息，别乱跑楼梯',
+    },
+    '12:00~13:00': {
+      dad: '【午餐】首选食堂いち；满了改はるらんな／こんの。先打开中文菜单摘要',
+      mom: '【午餐】点餐照顾孩子；对照 PDF 菜单摘要沟通',
+      kids: '【吃饭】乖乖吃饭，别乱跑',
+    },
+    '18:00~19:00': {
+      dad: '【晚饭】GAjA 首选；停车トラストパークすすきの5・2。先看烤肉自助菜单摘要',
+      mom: '【晚饭】点餐照顾孩子；对照 PDF／店内 App',
+      kids: '【吃饭】跟大人点肉，注意别烫到手',
     },
   },
 }
