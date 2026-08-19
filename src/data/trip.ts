@@ -510,27 +510,67 @@ const toyaDinnerGuide: TimelineMaterial = {
 }
 
 const jozankeiKidsGuide: TimelineMaterial = {
-  title: '带7岁、5岁孩子的实战攻略',
+  title: '河童寻宝 · 家长帮忙清单（约 2 小时）',
   body:
-    '可以参加，不要求孩子会日语。现场活动册/题板多为日文：大人用手机相机翻译即可；孩子负责找河童像、记答案。到停车场后先去观光案内所领纸质活动册。把下面日文给工作人员看（可复制）：',
+    '约 10:30–12:30。孩子不用会日语；题板多为日文，大人相机翻译即可。按顺序勾选推进，别跳过盖章和三个提示点。',
   steps: [
+    {
+      id: 'info-center',
+      field: '① 停车→观光案内所领活动册',
+      how: '到定山溪后第一站先领纸质册；问清当天是否有施工绕行。',
+    },
+    {
+      id: 'ask-staff',
+      field: '② 出示日文话术说明要参加',
+      how: '把下方「话术1」给工作人员看；再问二见定山之道能否做完全部题（话术2）。',
+    },
+    {
+      id: 'stamp-first',
+      field: '③ 先消费盖 1 个章（抽奖资格）',
+      how: '冰淇淋/小食/饮料即可。出示话术3请店员盖章；没章不能抽奖。',
+    },
+    {
+      id: 'phone-translate',
+      field: '④ 打开手机相机翻译（日→中）',
+      how: 'Google 翻译相机对准题板；只框题目、避免反光。',
+    },
+    {
+      id: 'split-roles',
+      field: '⑤ 家庭分工到位',
+      how: '大人A：翻译题板；大人B：地图+计时+拍照；7岁：记答案；5岁：找河童像。',
+    },
+    {
+      id: 'each-kappa',
+      field: '⑥ 每到一处河童像',
+      how: '拍雕像全景 + 题板特写；对照活动册河童名字，把答案写进圆圈。',
+    },
+    {
+      id: 'three-hints',
+      field: '⑦ 三个提示点必去',
+      how: '河童大王（二见公园）/ 定山源泉公园 / 岩户观音堂。终题常相关，别省。',
+    },
+    {
+      id: 'finish-draw',
+      field: '⑧ 全部完成后回案内所终题抽奖',
+      how: '把答案填进红框，交给工作人员抽奖。抽奖窗口 9:00–17:00；午餐前尽量做完。',
+    },
     {
       id: 'jozan-rally',
       field:
         '中国から来ました。7歳と5歳の子どもと、かっぱんラリーに参加したいです。中国語版はありますか？簡単に遊び方を教えてください。',
-      how: '我们来自中国，想带7岁和5岁的孩子参加河童寻宝。请问有中文版吗？可以简单说明一下玩法吗？',
+      how: '话术1：我们来自中国，想带7岁和5岁孩子参加河童寻宝。有中文版吗？请简单说明玩法。',
       kind: 'phrase',
     },
     {
       id: 'jozan-trail',
       field: '二見定山の道を歩きながら、問題を全部解けますか？',
-      how: '沿着“二见定山之道”徒步时，可以完成全部题目吗？',
+      how: '话术2：沿二见定山之道徒步，能做完全部题目吗？',
       kind: 'phrase',
     },
     {
       id: 'jozan-stamp',
       field: 'かっぱんラリーのスタンプをお願いします。',
-      how: '请帮我盖河童寻宝的店铺印章（消费后盖章才有抽奖资格）。',
+      how: '话术3：请帮我盖河童寻宝的店铺印章。',
       kind: 'phrase',
     },
   ],
@@ -561,6 +601,10 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   },
   4: {
     '12:00~13:00': '【午餐】定山溪\n首选 食堂いち；备选 はるらんな / 食堂こんの',
+    '10:00~11:00':
+      '【河童寻宝】约 2 小时上半\n领册→盖章→找河童像答题；大人翻译题板，孩子找雕像记答案',
+    '11:00~12:00':
+      '【河童寻宝】约 2 小时下半\n三个提示点→回案内所终题抽奖；争取午餐前完成',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -623,8 +667,11 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     ],
   },
   4: {
-    // 定山溪：日文话术可一键复制
+    // 车上/抵达前：先看话术；正式执行在 10–12
     '9:00~10:00': [jozankeiKidsGuide],
+    // 河童寻宝约 2 小时：家长任务清单 + 日文话术
+    '10:00~11:00': [jozankeiKidsGuide],
+    '11:00~12:00': [jozankeiKidsGuide],
     // 午餐：いち 首选，其余备选
     '12:00~13:00': [jozankeiLunchGuide],
   },
@@ -778,6 +825,26 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%93%E3%82%93%E3%81%AE%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
       },
     ],
+    '10:00~11:00': [
+      {
+        label: '河童寻宝中文亲子版（PDF）',
+        url: docUrl('jozankei-kappa-rally-zh.pdf'),
+      },
+      {
+        label: '定山溪游客中心 | Google Maps',
+        url: 'https://maps.google.com/?q=Jozankei%20Tourist%20Information%20Center',
+      },
+    ],
+    '11:00~12:00': [
+      {
+        label: '河童寻宝中文亲子版（PDF）',
+        url: docUrl('jozankei-kappa-rally-zh.pdf'),
+      },
+      {
+        label: '定山溪游客中心 | Google Maps',
+        url: 'https://maps.google.com/?q=Jozankei%20Tourist%20Information%20Center',
+      },
+    ],
   },
 }
 
@@ -814,6 +881,18 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【晚饭】Kakashi 首选；满了改 Pub Cricket / Mokumokuya。务必订好明早 Oktoberfest',
       mom: '【晚饭】点餐照顾孩子；核对 Oktoberfest 早餐已预订',
       kids: '【吃】乖乖吃饭',
+    },
+  },
+  4: {
+    '10:00~11:00': {
+      dad: '【河童寻宝】地图计时拍照；带队领册、盖章、找雕像',
+      mom: '【河童寻宝】相机翻译题板（日→中）；照顾孩子节奏，别赶太猛',
+      kids: '【寻宝】5岁找河童像；7岁把答案写进活动册圆圈',
+    },
+    '11:00~12:00': {
+      dad: '【河童寻宝】带队去三个提示点，最后回案内所终题抽奖',
+      mom: '【河童寻宝】继续翻译；午餐前确认册子填完并交工作人员',
+      kids: '【寻宝】继续找像答题；累了就喝水休息，别乱跑楼梯',
     },
   },
 }

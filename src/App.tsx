@@ -430,6 +430,12 @@ function MaterialSteps({
 
   return (
     <>
+      {tasks.length > 0 && (
+        <div className="fill-guide">
+          <span className="eyebrow">{phrases.length > 0 || options.length > 0 ? '家长帮忙 · 可勾选' : '必要问询任务'}</span>
+          {tasks.map(renderTask)}
+        </div>
+      )}
       {options.length > 0 && (
         <div className="fill-options">
           <span className="eyebrow">门牌</span>
@@ -462,12 +468,6 @@ function MaterialSteps({
               <small className="fill-phrases__zh">{step.how}</small>
             </div>
           ))}
-        </div>
-      )}
-      {tasks.length > 0 && (
-        <div className="fill-guide">
-          {(options.length > 0 || phrases.length > 0) && <span className="eyebrow">必要问询任务</span>}
-          {tasks.map(renderTask)}
         </div>
       )}
     </>
@@ -1268,13 +1268,15 @@ function App() {
           const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
           const eyebrow =
-            hasOptions && hasTasks
-              ? '晚饭备选 · 必要任务'
-              : hasPhrases
-                ? '现场话术 · 可复制'
-                : hasOptions
-                  ? '门牌备选'
-                  : '填写攻略 · 可勾选'
+            hasPhrases && hasTasks
+              ? '家长任务 · 可复制话术'
+              : hasOptions && hasTasks
+                ? '晚饭备选 · 必要任务'
+                : hasPhrases
+                  ? '现场话术 · 可复制'
+                  : hasOptions
+                    ? '门牌备选'
+                    : '填写攻略 · 可勾选'
           return (
             <article className="now-card__material" key={material.title}>
               <span className="eyebrow">{eyebrow}</span>
