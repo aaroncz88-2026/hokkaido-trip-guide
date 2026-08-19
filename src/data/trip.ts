@@ -392,8 +392,8 @@ const airportFoodGuide: TimelineMaterial = {
 }
 
 const shikotsuSnackGuide: TimelineMaterial = {
-  title: '小吃·支笏湖',
-  body: '湖边不当正餐，走到哪买到哪。停车点仍是 Lake Shikotsu paid parking lot。',
+  title: '景点小吃备选 · 支笏湖',
+  body: '湖边不当正餐，走到哪买到哪。',
   steps: [
     { id: 'hekisu', field: '1 北のうまいもん店 碧水', how: '扇贝玉米烧、烤鱿鱼，热食小吃。' },
     { id: 'showa', field: '2 昭和物産', how: '炸物、炭火烤，和碧水二选一或各买一点即可。' },
@@ -428,9 +428,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
     '8:00~12:00': [],
     '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
-    '13:00~14:00': [airportFoodGuide, shikotsuSnackGuide],
-    // 已到湖边：不再重复停车场资料
-    '15:00~16:00': [],
+    '13:00~14:00': [airportFoodGuide],
+    // 湖边景点时段：小吃备选（已停车，不再提停车场）
+    '15:00~16:00': [shikotsuSnackGuide],
   },
 }
 
