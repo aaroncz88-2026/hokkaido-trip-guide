@@ -126,6 +126,9 @@ const dayMeta: DayMeta[] = [
       { label: '洞爷湖温泉停车场', query: 'Toyako Onsen Parking' },
       { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
     ],
+    pinnedDocs: [
+      { label: 'DAY3 导游发言稿', url: docUrl('day3-guide-script.pdf') },
+    ],
     reminders: ['Oktoberfest 早餐后出发', '20:25 前到湖边等烟花', '缆车和湖边风大，带防风外套'],
   },
   {
