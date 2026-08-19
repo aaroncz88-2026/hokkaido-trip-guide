@@ -437,6 +437,16 @@ const day2OutingSnackGuide: TimelineMaterial = {
   ],
 }
 
+const day2DinnerGuide: TimelineMaterial = {
+  title: '园区晚餐备选',
+  body: '首选居酒屋かかし Kakashi；若排队或满座，改去 Pub Cricket / Mokumokuya。',
+  steps: [
+    { id: 'kakashi', field: '1 居酒屋かかし Kakashi（首选）', how: '点中文菜单点餐。' },
+    { id: 'cricket', field: '2 Pub Cricket（备选）', how: 'Kakashi 满座或排队太久时改这里。' },
+    { id: 'moku', field: '3 Mokumokuya（备选）', how: '第二备选，园区内就近即可。' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -487,8 +497,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '20:00~21:00': [day2OutingSnackGuide],
   },
   2: {
-    // 园区晚饭：店名改菜单 PDF / 导航，不挂无意义现场资料
-    '18:00~19:00': [],
+    // 园区晚饭：首选 Kakashi，备选 Pub Cricket / Mokumokuya
+    '17:00~18:00': [day2DinnerGuide],
+    '18:00~19:00': [day2DinnerGuide],
   },
 }
 
@@ -534,11 +545,33 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
     ],
   },
   2: {
-    '17:00~18:00': [kakashiMenuLink],
+    '17:00~18:00': [
+      {
+        label: '居酒屋かかし Kakashi | Google Maps',
+        url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
+      },
+      {
+        label: 'Pub Cricket | Google Maps',
+        url: 'https://maps.google.com/?q=Pub%20Cricket%20Rusutsu',
+      },
+      {
+        label: 'Mokumokuya | Google Maps',
+        url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu',
+      },
+      kakashiMenuLink,
+    ],
     '18:00~19:00': [
       {
         label: '居酒屋かかし Kakashi | Google Maps',
         url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
+      },
+      {
+        label: 'Pub Cricket | Google Maps',
+        url: 'https://maps.google.com/?q=Pub%20Cricket%20Rusutsu',
+      },
+      {
+        label: 'Mokumokuya | Google Maps',
+        url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu',
       },
       kakashiMenuLink,
     ],
