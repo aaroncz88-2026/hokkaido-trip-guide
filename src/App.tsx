@@ -12,7 +12,9 @@ import {
   tripBasics,
   tripDays,
   type DayPlan,
+  type FillGuideStep,
   type TimelineItem,
+  type TimelineMaterial,
 } from './data/trip'
 import { japaneseLessons } from './data/japanese'
 import {
@@ -365,6 +367,63 @@ function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
   )
 }
 
+function MaterialSteps({
+  material,
+  itemId,
+  fillChecks,
+  onToggleFill,
+}: {
+  material: TimelineMaterial
+  itemId: string
+  fillChecks: Record<string, boolean>
+  onToggleFill: (key: string) => void
+}) {
+  const steps = material.steps ?? []
+  if (steps.length === 0) return null
+
+  const options = steps.filter((step) => step.kind === 'option')
+  const tasks = steps.filter((step) => step.kind !== 'option')
+
+  const renderTask = (step: FillGuideStep) => {
+    const key = `${itemId}:${step.id}`
+    return (
+      <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
+        <input
+          checked={Boolean(fillChecks[key])}
+          type="checkbox"
+          onChange={() => onToggleFill(key)}
+        />
+        <span>
+          <strong>{step.field}</strong>
+          <small>{step.how}</small>
+        </span>
+      </label>
+    )
+  }
+
+  return (
+    <>
+      {options.length > 0 && (
+        <div className="fill-options">
+          <span className="eyebrow">晚饭可选</span>
+          {options.map((step) => (
+            <div className="fill-options__item" key={step.id}>
+              <strong>{step.field}</strong>
+              <small>{step.how}</small>
+            </div>
+          ))}
+        </div>
+      )}
+      {tasks.length > 0 && (
+        <div className="fill-guide">
+          {options.length > 0 && <span className="eyebrow">必要问询任务</span>}
+          {tasks.map(renderTask)}
+        </div>
+      )}
+    </>
+  )
+}
+
 function ParkingBar({ day }: { day: DayPlan }) {
   return (
     <section className="day-parking" aria-label="当天导航">
@@ -449,26 +508,12 @@ function TimelineCard({
                 <span>资料</span>
                 <strong>{material.title}</strong>
                 <p>{material.body}</p>
-                {material.steps && material.steps.length > 0 && (
-                  <div className="fill-guide">
-                    {material.steps.map((step) => {
-                      const key = `${item.id}:${step.id}`
-                      return (
-                        <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
-                          <input
-                            checked={Boolean(fillChecks[key])}
-                            type="checkbox"
-                            onChange={() => onToggleFill(key)}
-                          />
-                          <span>
-                            <strong>{step.field}</strong>
-                            <small>{step.how}</small>
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
+                <MaterialSteps
+                  fillChecks={fillChecks}
+                  itemId={item.id}
+                  material={material}
+                  onToggleFill={onToggleFill}
+                />
               </div>
             ))}
             {item.dad && <div><span>爸爸</span><p>{item.dad}</p></div>}
@@ -1122,33 +1167,29 @@ function App() {
           <div><em>孩子</em><p>{item.kids || '本时段无额外任务'}</p></div>
         </div>
 
-        {item.materials.map((material) => (
-          <article className="now-card__material" key={material.title}>
-            <span className="eyebrow">填写攻略 · 可勾选</span>
-            <strong>{material.title}</strong>
-            <p>{material.body}</p>
-            {material.steps && material.steps.length > 0 && (
-              <div className="fill-guide">
-                {material.steps.map((step) => {
-                  const key = `${item.id}:${step.id}`
-                  return (
-                    <label className={fillChecks[key] ? 'fill-guide__step done' : 'fill-guide__step'} key={step.id}>
-                      <input
-                        checked={Boolean(fillChecks[key])}
-                        type="checkbox"
-                        onChange={() => toggleFillStep(key)}
-                      />
-                      <span>
-                        <strong>{step.field}</strong>
-                        <small>{step.how}</small>
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
-            )}
-          </article>
-        ))}
+        {item.materials.map((material) => {
+          const hasOptions = material.steps?.some((step) => step.kind === 'option')
+          const hasTasks = material.steps?.some((step) => step.kind !== 'option')
+          const eyebrow =
+            hasOptions && hasTasks
+              ? '晚饭备选 · 必要任务'
+              : hasOptions
+                ? '晚饭可选'
+                : '填写攻略 · 可勾选'
+          return (
+            <article className="now-card__material" key={material.title}>
+              <span className="eyebrow">{eyebrow}</span>
+              <strong>{material.title}</strong>
+              <p>{material.body}</p>
+              <MaterialSteps
+                fillChecks={fillChecks}
+                itemId={item.id}
+                material={material}
+                onToggleFill={toggleFillStep}
+              />
+            </article>
+          )
+        })}
 
         {(item.costJpy || item.costCny) && (
           <div className="now-card__cost">

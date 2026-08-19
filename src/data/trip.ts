@@ -9,6 +9,8 @@ export type FillGuideStep = {
   id: string
   field: string
   how: string
+  /** option = 只展示备选；task = 必要任务可勾选。默认 task。 */
+  kind?: 'option' | 'task'
 }
 
 export type TimelineMaterial = {
@@ -439,15 +441,16 @@ const day2OutingSnackGuide: TimelineMaterial = {
 
 const day2DinnerGuide: TimelineMaterial = {
   title: '园区晚餐备选 · 顺手订明早',
-  body: '首选居酒屋かかし Kakashi；若排队或满座，改去 Pub Cricket / Mokumokuya。晚饭前后务必预订 DAY3 早餐 Oktoberfest，确保明早能吃到。',
+  body: '1～3 为晚饭可选餐厅；第 4 项为必要问询任务：务必预订 DAY3 早餐 Oktoberfest。',
   steps: [
-    { id: 'kakashi', field: '1 居酒屋かかし Kakashi（首选）', how: '点中文菜单点餐。' },
-    { id: 'cricket', field: '2 Pub Cricket（备选）', how: 'Kakashi 满座或排队太久时改这里。' },
-    { id: 'moku', field: '3 Mokumokuya（备选）', how: '第二备选，园区内就近即可。' },
+    { id: 'kakashi', field: '1 居酒屋かかし Kakashi（首选）', how: '点中文菜单点餐。', kind: 'option' },
+    { id: 'cricket', field: '2 Pub Cricket（备选）', how: 'Kakashi 满座或排队太久时改这里。', kind: 'option' },
+    { id: 'moku', field: '3 Mokumokuya（备选）', how: '第二备选，园区内就近即可。', kind: 'option' },
     {
       id: 'book-oktoberfest',
-      field: '4 预订明早早餐 · Oktoberfest',
+      field: '预订明早早餐 · Oktoberfest',
       how: 'DAY3 早餐在 Oktoberfest；今晚务必完成预订/确认，避免明早吃不上。',
+      kind: 'task',
     },
   ],
 }
