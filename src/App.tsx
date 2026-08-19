@@ -368,6 +368,25 @@ function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
   )
 }
 
+function CopyPhraseButton({ text }: { text: string }) {
+  const [hint, setHint] = useState('')
+  return (
+    <button
+      className="copy-phrase"
+      type="button"
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        const ok = copyTextReliable(text)
+        setHint(ok ? '已复制' : '复制失败，请长按')
+        window.setTimeout(() => setHint(''), 1600)
+      }}
+    >
+      {hint || '复制日文'}
+    </button>
+  )
+}
+
 function MaterialSteps({
   material,
   itemId,
@@ -383,7 +402,8 @@ function MaterialSteps({
   if (steps.length === 0) return null
 
   const options = steps.filter((step) => step.kind === 'option')
-  const tasks = steps.filter((step) => step.kind !== 'option')
+  const phrases = steps.filter((step) => step.kind === 'phrase')
+  const tasks = steps.filter((step) => step.kind !== 'option' && step.kind !== 'phrase')
 
   const renderTask = (step: FillGuideStep) => {
     const key = `${itemId}:${step.id}`
@@ -427,9 +447,26 @@ function MaterialSteps({
           })}
         </div>
       )}
+      {phrases.length > 0 && (
+        <div className="fill-phrases">
+          <span className="eyebrow">现场话术 · 可复制</span>
+          {phrases.map((step, index) => (
+            <div className="fill-phrases__item" key={step.id}>
+              <div className="fill-phrases__head">
+                <em className="fill-options__n" aria-hidden="true">{index + 1}</em>
+                <CopyPhraseButton text={step.field} />
+              </div>
+              <p className="fill-phrases__jp" lang="ja">
+                {step.field}
+              </p>
+              <small className="fill-phrases__zh">{step.how}</small>
+            </div>
+          ))}
+        </div>
+      )}
       {tasks.length > 0 && (
         <div className="fill-guide">
-          {options.length > 0 && <span className="eyebrow">必要问询任务</span>}
+          {(options.length > 0 || phrases.length > 0) && <span className="eyebrow">必要问询任务</span>}
           {tasks.map(renderTask)}
         </div>
       )}
@@ -1228,13 +1265,16 @@ function App() {
 
         {item.materials.map((material) => {
           const hasOptions = material.steps?.some((step) => step.kind === 'option')
-          const hasTasks = material.steps?.some((step) => step.kind !== 'option')
+          const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
+          const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
           const eyebrow =
             hasOptions && hasTasks
               ? '晚饭备选 · 必要任务'
-              : hasOptions
-                ? '门牌备选'
-                : '填写攻略 · 可勾选'
+              : hasPhrases
+                ? '现场话术 · 可复制'
+                : hasOptions
+                  ? '门牌备选'
+                  : '填写攻略 · 可勾选'
           return (
             <article className="now-card__material" key={material.title}>
               <span className="eyebrow">{eyebrow}</span>

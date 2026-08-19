@@ -2429,6 +2429,64 @@
   line-height: 1.45;
 }
 
+.fill-phrases {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fill-phrases > .eyebrow {
+  margin-bottom: 2px;
+}
+
+.fill-phrases__item {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d9ebe7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.fill-phrases__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fill-phrases__jp {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f3faf8;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.55;
+  user-select: text;
+  -webkit-user-select: text;
+  white-space: pre-wrap;
+}
+
+.fill-phrases__zh {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.copy-phrase {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid #c9e4de;
+  border-radius: 999px;
+  background: #eef8f5;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .fill-guide__step {
   display: grid;
   grid-template-columns: 18px 1fr;

@@ -9,8 +9,8 @@ export type FillGuideStep = {
   id: string
   field: string
   how: string
-  /** option = 只展示备选；task = 必要任务可勾选。默认 task。 */
-  kind?: 'option' | 'task'
+  /** option = 门牌备选；phrase = 可复制话术；task = 必要任务可勾选。默认 task。 */
+  kind?: 'option' | 'task' | 'phrase'
 }
 
 export type TimelineMaterial = {
@@ -498,6 +498,26 @@ const toyaDinnerGuide: TimelineMaterial = {
   ],
 }
 
+const jozankeiKidsGuide: TimelineMaterial = {
+  title: '带7岁、5岁孩子的实战攻略',
+  body: '到停车场后，第一站直接去观光案内所领取纸质活动册。把下面日文给工作人员看（可复制，方便贴给 GPT 继续对话）：',
+  steps: [
+    {
+      id: 'jozan-rally',
+      field:
+        '中国から来ました。7歳と5歳の子どもと、かっぽんラリーに参加したいです。中国語版はありますか？簡単に遊び方を教えてください。',
+      how: '我们来自中国，想带7岁和5岁的孩子参加河童寻宝。请问有中文版吗？可以简单说明一下玩法吗？',
+      kind: 'phrase',
+    },
+    {
+      id: 'jozan-trail',
+      field: '二見定山の道を歩きながら、問題を全部解けますか？',
+      how: '沿着“二见定山之道”徒步时，可以完成全部题目吗？',
+      kind: 'phrase',
+    },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -570,6 +590,10 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
         body: '尽量选择没有树木遮挡的岸边；\n汽船码头至中央温泉街湖畔都是可考虑区域。',
       },
     ],
+  },
+  4: {
+    // 定山溪：日文话术可一键复制
+    '9:00~10:00': [jozankeiKidsGuide],
   },
 }
 
