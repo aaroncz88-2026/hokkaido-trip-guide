@@ -2495,6 +2495,19 @@
   line-height: 1.2;
 }
 
+.fill-options__link--loud {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-color: var(--brand);
+  background: #2f6f68;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.material-doc-links {
+  margin: 10px 0 4px;
+}
+
 .fill-phrases {
   display: grid;
   gap: 8px;

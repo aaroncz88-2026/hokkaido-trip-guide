@@ -21,6 +21,8 @@ export type TimelineMaterial = {
   steps?: FillGuideStep[]
   /** 纯展示清单，不可勾选、不可点选 */
   list?: string[]
+  /** 挂在整块资料标题下的链接（如预约凭证） */
+  links?: { label: string; url: string }[]
 }
 
 export type TimelineItem = {
@@ -757,9 +759,15 @@ const jozankeiLunchGuide: TimelineMaterial = {
   ],
 }
 
+const day4GajaVoucher: TimelineMaterial = {
+  title: '【预约凭证】GAjA すすきの店',
+  body: '2026-08-26（三）18:45 入店 → 20:45 离店\n6人 · プレミア食べ放題 ¥6,028/人 · 屏风隔间\n预约编号 #30633 · 姓名 CHEN ZHONG\n入店请打开下方 PDF 出示，或直接报编号。',
+  links: [gajaReservationLink, gajaMenuLink],
+}
+
 const day4DinnerGuide: TimelineMaterial = {
   title: '札幌晚餐 · GAjA 已预约',
-  body: '已订 GAjA すすきの店：8/26 18:45 入店，プレミア食べ放題 ×6人，屏风隔间。预约编号 #30633。停车可去トラストパークすすきの5・2。',
+  body: '已订 GAjA：18:45 到店。停车トラストパークすすきの5・2。下方可再开预约凭证与菜单。',
   steps: [
     {
       id: 'gaja',
@@ -892,8 +900,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '12:00~13:00': [jozankeiLunchGuide],
     // 回家时段：去掉误挂的「逛」现场资料
     '17:00~18:00': [],
-    // 晚餐：GAjA 烤肉自助首选
-    '18:00~19:00': [day4DinnerGuide],
+    // 晚餐：预约凭证置顶 + GAjA 门牌
+    '18:00~19:00': [day4GajaVoucher, day4DinnerGuide],
     // 饭后逛：纯 LIST，挂在 19–21
     '19:00~20:00': [day4NightBrowseGuide],
     '20:00~21:00': [day4NightBrowseGuide],

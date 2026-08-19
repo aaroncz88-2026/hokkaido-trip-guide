@@ -235,13 +235,13 @@ const ExternalOrMapsLink = ({
   )
 }
 
-/** 已挂在门牌选项旁的链接，不再在时段底部重复展示 */
+/** 已挂在资料／门牌旁的链接，不再在时段底部重复展示 */
 const leftoverItemLinks = (item: TimelineItem) => {
   const attached = new Set(
-    item.materials
-      .flatMap((material) => material.steps ?? [])
-      .flatMap((step) => step.links ?? [])
-      .map((link) => link.url),
+    item.materials.flatMap((material) => [
+      ...(material.links ?? []).map((link) => link.url),
+      ...(material.steps ?? []).flatMap((step) => (step.links ?? []).map((link) => link.url)),
+    ]),
   )
   return item.links.filter((link) => !attached.has(link.url))
 }
@@ -595,6 +595,18 @@ function TimelineCard({
                 <span>资料</span>
                 <strong>{material.title}</strong>
                 <p>{material.body}</p>
+                {material.links && material.links.length > 0 && (
+                  <div className="fill-options__links material-doc-links">
+                    {material.links.map((link) => (
+                      <ExternalOrMapsLink
+                        className="fill-options__link fill-options__link--loud"
+                        key={link.url}
+                        label={link.label}
+                        url={link.url}
+                      />
+                    ))}
+                  </div>
+                )}
                 <MaterialSteps
                   fillChecks={fillChecks}
                   itemId={item.id}
@@ -1303,27 +1315,44 @@ function App() {
 
         {item.materials.map((material) => {
           const hasList = Boolean(material.list?.length)
+          const hasMaterialLinks = Boolean(material.links?.length)
           const hasOptions = material.steps?.some((step) => step.kind === 'option')
           const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
-          const eyebrow = hasList
-            ? '逛店清单 · LIST'
-            : hasPhrases && hasTasks
-              ? '家长任务 · 可复制话术'
-              : hasOptions && hasTasks
-                ? '晚饭备选 · 必要任务'
-                : hasPhrases
-                  ? '现场话术 · 可复制'
-                  : hasOptions
-                    ? '门牌备选'
-                    : hasTasks
-                      ? '填写攻略 · 可勾选'
-                      : '现场资料'
+          const eyebrow = /预约凭证/.test(material.title)
+            ? '入店出示 · 预约凭证'
+            : hasList
+              ? '逛店清单 · LIST'
+              : hasPhrases && hasTasks
+                ? '家长任务 · 可复制话术'
+                : hasOptions && hasTasks
+                  ? '晚饭备选 · 必要任务'
+                  : hasPhrases
+                    ? '现场话术 · 可复制'
+                    : hasOptions
+                      ? '门牌备选'
+                      : hasTasks
+                        ? '填写攻略 · 可勾选'
+                        : hasMaterialLinks
+                          ? '重要资料'
+                          : '现场资料'
           return (
             <article className="now-card__material" key={material.title}>
               <span className="eyebrow">{eyebrow}</span>
               <strong>{material.title}</strong>
               <p>{material.body}</p>
+              {hasMaterialLinks && (
+                <div className="fill-options__links material-doc-links">
+                  {material.links!.map((link) => (
+                    <ExternalOrMapsLink
+                      className="fill-options__link fill-options__link--loud"
+                      key={link.url}
+                      label={link.label}
+                      url={link.url}
+                    />
+                  ))}
+                </div>
+              )}
               <MaterialSteps
                 fillChecks={fillChecks}
                 itemId={item.id}
