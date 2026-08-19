@@ -12,23 +12,39 @@
     <meta name="apple-mobile-web-app-title" content="北海道攻略" />
     <title>夏日北行 · 北海道亲子攻略</title>
     <script>
-      // Clear broken service workers quietly; do not change visible UI.
+      // Force one reload after each published shell so phones drop sticky parking caches.
       (function () {
+        var BUILD = '2026-08-19-parking-under-hero-v3'
+        var KEY = 'hokkaido-shell-build'
         try {
+          var url = new URL(location.href)
+          var alreadyBusted = url.searchParams.get('shell') === BUILD
+          var prev = null
+          try { prev = localStorage.getItem(KEY) } catch (e) {}
+          var tasks = []
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              return Promise.all(regs.map(function (r) { return r.unregister() }))
-            }).catch(function () {})
+            tasks.push(
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister() }))
+              }),
+            )
           }
           if ('caches' in window) {
-            caches.keys().then(function (keys) {
-              return Promise.all(
-                keys
-                  .filter(function (key) { return key.indexOf('hokkaido-guide') === 0 })
-                  .map(function (key) { return caches.delete(key) }),
-              )
-            }).catch(function () {})
+            tasks.push(
+              caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (key) { return caches.delete(key) }))
+              }),
+            )
           }
+          Promise.all(tasks).catch(function () {}).finally(function () {
+            if (prev === BUILD || alreadyBusted) {
+              try { localStorage.setItem(KEY, BUILD) } catch (e) {}
+              return
+            }
+            try { localStorage.setItem(KEY, BUILD) } catch (e) {}
+            url.searchParams.set('shell', BUILD)
+            location.replace(url.toString())
+          })
         } catch (e) {}
       })()
     </script>
