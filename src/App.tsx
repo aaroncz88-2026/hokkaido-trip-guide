@@ -232,23 +232,24 @@ const ExternalOrMapsLink = ({
   )
 }
 
-function PinnedDocs({ docs }: { docs?: { label: string; url: string }[] }) {
+function PinnedDocDots({ docs }: { docs?: { label: string; url: string }[] }) {
   if (!docs?.length) return null
   return (
-    <div className="pinned-docs">
+    <>
       {docs.map((doc) => (
         <a
-          className="pinned-docs__link"
+          className="highlight-row__doc"
           href={doc.url}
           key={doc.url}
           rel="noopener noreferrer"
           target="_blank"
+          title={doc.label}
         >
-          <Icon name="guide" size={15} />
-          <span>{doc.label}</span>
+          <Icon name="guide" size={12} />
+          {/发言稿/.test(doc.label) ? '发言稿' : doc.label.replace(/^DAY\s*\d+\s*/i, '')}
         </a>
       ))}
-    </div>
+    </>
   )
 }
 
@@ -1213,46 +1214,48 @@ function App() {
       <main>
         {journey.phase === 'during' ? (
           <>
-            <section
-              className="live-status"
-              style={
-                journey.day
-                  ? { backgroundImage: `url(${tripDays[journey.day - 1].cover})` }
-                  : undefined
-              }
-            >
-              <div className="live-status__row">
-                <div>
-                  <span className="eyebrow">正在北行</span>
-                  <strong>{journey.value}</strong>
-                  <p>{journey.label}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDay(journey.day ?? selectedDay)
-                    setView('days')
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+            {(() => {
+              const liveDay = tripDays[(journey.day ?? 1) - 1]
+              return (
+                <section
+                  className="day-hero day-hero--live"
+                  style={
+                    {
+                      '--day-accent': liveDay.accent,
+                      backgroundImage: `url(${liveDay.cover})`,
+                    } as CSSProperties
+                  }
                 >
-                  全天行程
-                </button>
-              </div>
-              {homeWeather && (
-                <button className="live-weather" onClick={() => setView('more')} type="button">
-                  <span className="live-weather__main">
-                    {homeWeather.icon} {homeWeather.label}
-                  </span>
-                  <span className="live-weather__meta">
-                    {homeWeather.tempMin}–{homeWeather.tempMax}°C · 雨 {homeWeather.precipProb}%
-                  </span>
-                </button>
-              )}
-              {journey.day && <PinnedDocs docs={tripDays[journey.day - 1].pinnedDocs} />}
-              {journey.day && (
-                <small className="live-status__place">{tripDays[journey.day - 1].coverLabel}</small>
-              )}
-            </section>
+                  <div className="day-hero__live-top">
+                    <span>正在北行 · {liveDay.weekday} · {formatDate(liveDay.date)}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDay(liveDay.day)
+                        setView('days')
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                    >
+                      全天行程
+                    </button>
+                  </div>
+                  <h2>{liveDay.title}</h2>
+                  <p>{liveDay.route}</p>
+                  <small className="day-hero__place">{liveDay.coverLabel}</small>
+                  {homeWeather && (
+                    <button className="day-weather-chip" onClick={() => setView('more')} type="button">
+                      <span>{homeWeather.icon} {homeWeather.label}</span>
+                      <strong>{homeWeather.tempMin}–{homeWeather.tempMax}°C</strong>
+                      <small>降雨 {homeWeather.precipProb}%</small>
+                    </button>
+                  )}
+                  <div className="highlight-row">
+                    {liveDay.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+                    <PinnedDocDots docs={liveDay.pinnedDocs} />
+                  </div>
+                </section>
+              )
+            })()}
             {journey.day && <ParkingBar day={tripDays[journey.day - 1]} />}
             {renderNowCard()}
           </>
@@ -1538,10 +1541,10 @@ function App() {
           )}
           <div className="highlight-row">
             {currentDay.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+            <PinnedDocDots docs={currentDay.pinnedDocs} />
           </div>
         </section>
 
-        <PinnedDocs docs={currentDay.pinnedDocs} />
         <ParkingBar day={currentDay} />
 
         <section className="day-summary">
