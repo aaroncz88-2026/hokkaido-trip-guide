@@ -147,8 +147,10 @@ const dayMeta: DayMeta[] = [
     navigation: [
       { label: '定山溪游客中心', query: 'Jozankei Tourist Information Center' },
       { label: '白色恋人公园', query: 'Shiroi Koibito Park Parking' },
+      { label: '札幌市区公寓（下午回酒店）', query: '札幌市区公寓' },
+      { label: '晚饭停车 · トラストパークすすきの5・2', query: 'トラストパーク札幌すすきの5・2' },
     ],
-    reminders: ['出发前完成垃圾分类和退房检查', '白色恋人公园预留约 3 小时', '晚餐 GAjA 已作为首选'],
+    reminders: ['出发前完成垃圾分类和退房检查', '白色恋人公园预留约 3 小时', '晚餐 GAjA 首选；停车可去すすきの5・2'],
   },
   {
     day: 5,
