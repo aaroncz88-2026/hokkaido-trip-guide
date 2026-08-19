@@ -536,6 +536,16 @@ const jozankeiKidsGuide: TimelineMaterial = {
   ],
 }
 
+const jozankeiLunchGuide: TimelineMaterial = {
+  title: '定山溪午餐备选',
+  body: '首选 食堂いち；满座或排队再改下面备选。',
+  steps: [
+    { id: 'ichi', field: '1 食堂いち（首选）', how: '午餐第一选择。', kind: 'option' },
+    { id: 'haruranna', field: '2 埜ノ山キッチン はるらんな（备选）', how: 'いち 满/排队时改这里。', kind: 'option' },
+    { id: 'konno', field: '3 食堂こんの（40年拉面馆 · 备选）', how: '第二备选。', kind: 'option' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -548,6 +558,9 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   },
   3: {
     '18:00~19:00': '【逛纪念品】+【晚饭可开始】\n首选 KARZZ；备选アペコロ / Fuji / 金城 / OMOYA',
+  },
+  4: {
+    '12:00~13:00': '【午餐】定山溪\n首选 食堂いち；备选 はるらんな / 食堂こんの',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -612,6 +625,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
   4: {
     // 定山溪：日文话术可一键复制
     '9:00~10:00': [jozankeiKidsGuide],
+    // 午餐：いち 首选，其余备选
+    '12:00~13:00': [jozankeiLunchGuide],
   },
 }
 
@@ -747,6 +762,20 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       {
         label: '定山溪活动资料',
         url: 'https://jozankei.jp/cn/oneday/ontama/',
+      },
+    ],
+    '12:00~13:00': [
+      {
+        label: '食堂いち | Google Maps',
+        url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%84%E3%81%A1%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
+      },
+      {
+        label: '埜ノ山キッチン はるらんな | Google Maps',
+        url: 'https://maps.google.com/?q=%E5%9F%9E%E3%83%8E%E5%B1%B1%E3%82%AD%E3%83%83%E3%83%81%E3%83%B3%20%E3%81%AF%E3%82%8B%E3%82%89%E3%82%93%E3%81%AA',
+      },
+      {
+        label: '食堂こんの | Google Maps',
+        url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%93%E3%82%93%E3%81%AE%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
       },
     ],
   },
