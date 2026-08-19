@@ -141,8 +141,8 @@ const dayMeta: DayMeta[] = [
     lodging: '札幌市区公寓',
     fallback: '雨天减少定山溪户外步行，把时间留给白色恋人公园室内区域。',
     accent: '#99618e',
-    cover: coverUrl('day4-sapporo.jpg'),
-    coverLabel: '札幌',
+    cover: coverUrl('day4-shiroi-koibito.jpg'),
+    coverLabel: '白色恋人公园',
     highlights: ['定山溪散步', '温泉街午餐', '白色恋人公园', '狸小路'],
     navigation: [
       { label: '定山溪游客中心', query: 'Jozankei Tourist Information Center' },
