@@ -328,21 +328,23 @@ function ParkingBar({ day, underTabs = false }: { day: DayPlan; underTabs?: bool
         <span>DAY {day.day} · 当天停车点</span>
         <small>时段可浮动 · 目的地不变 · 仅司机导航</small>
       </div>
-      <div className="nav-links nav-links--sticky">
+      <ul className="parking-stop-list">
         {day.navigation.map((item, index) => (
-          <span className="nav-chip-wrap" key={`${day.day}-${item.label}`}>
-            <MapsLink className="nav-chip" query={item.query}>
-              <em className="nav-chip__n">{index + 1}</em>
-              <span className="nav-chip__text">
+          <li className="parking-stop" key={`${day.day}-${item.label}`}>
+            <MapsLink className="parking-stop__nav" query={item.query}>
+              <em className="parking-stop__n">{index + 1}</em>
+              <span className="parking-stop__text">
                 <strong>{item.label}</strong>
                 {item.query !== item.label && <small>{item.query}</small>}
               </span>
-              <Icon name="external" size={13} />
+              <span className="parking-stop__go">
+                导航 <Icon name="external" size={13} />
+              </span>
             </MapsLink>
             <CopyPlaceButton query={item.query} />
-          </span>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }
