@@ -2397,9 +2397,9 @@
   border-radius: 12px;
   background: #fff;
   color: var(--ink);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 650;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .fill-list li::before {
@@ -2411,6 +2411,19 @@
   height: 6px;
   border-radius: 50%;
   background: var(--brand);
+}
+
+.fill-list__sep {
+  padding-left: 12px;
+  border-style: dashed;
+  background: #eef6f4;
+  color: var(--brand);
+  font-weight: 750;
+  text-align: center;
+}
+
+.fill-list__sep::before {
+  display: none;
 }
 
 .fill-options > .eyebrow,

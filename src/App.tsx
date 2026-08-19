@@ -445,9 +445,14 @@ function MaterialSteps({
     <>
       {list.length > 0 && (
         <ul className="fill-list">
-          {list.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
+          {list.map((item) => {
+            const isSep = /^[—－\-]{2,}/.test(item.trim())
+            return (
+              <li className={isSep ? 'fill-list__sep' : undefined} key={item}>
+                {isSep ? item.replace(/^[—－\-\s]+|[—－\-\s]+$/g, '') : item}
+              </li>
+            )
+          })}
         </ul>
       )}
       {tasks.length > 0 && (
