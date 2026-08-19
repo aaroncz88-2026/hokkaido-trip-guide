@@ -472,6 +472,16 @@ const lakeHillTeaGuide: TimelineMaterial = {
   ],
 }
 
+const toyaBrowseShopsGuide: TimelineMaterial = {
+  title: '可以逛的店',
+  body: '湖畔散步时顺路可进，括号内为关门参考时间。',
+  steps: [
+    { id: 'wakasaimo', field: 'わかさいも本舗', how: '约 18:00 关门，优先去。', kind: 'option' },
+    { id: 'echigoya', field: '洞爷湖越后屋', how: '约 19:30 关门。', kind: 'option' },
+    { id: 'shibataya', field: '柴田屋', how: '约 20:00 关门。', kind: 'option' },
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -529,6 +539,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
   3: {
     // Lake Hill：合并成一份下午茶清单，不勾选
     '12:00~13:00': [lakeHillTeaGuide],
+    // 湖畔：可逛店铺清单
+    '17:00~18:00': [toyaBrowseShopsGuide],
   },
 }
 
