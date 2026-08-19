@@ -103,7 +103,7 @@ const dayMeta: DayMeta[] = [
     navigation: [
       { label: '留寿都度假村', query: 'Rusutsu Resort' },
     ],
-    reminders: ['提前网上购票比现场更省', '午餐按所在区域就近解决', '游乐园不建议撑伞，带雨衣'],
+    reminders: ['提前网上购票比现场更省', '午餐按所在区域就近解决', '游乐园不建议撑伞，带雨衣', '晚饭前后预订 DAY3 Oktoberfest 早餐'],
   },
   {
     day: 3,
@@ -438,12 +438,17 @@ const day2OutingSnackGuide: TimelineMaterial = {
 }
 
 const day2DinnerGuide: TimelineMaterial = {
-  title: '园区晚餐备选',
-  body: '首选居酒屋かかし Kakashi；若排队或满座，改去 Pub Cricket / Mokumokuya。',
+  title: '园区晚餐备选 · 顺手订明早',
+  body: '首选居酒屋かかし Kakashi；若排队或满座，改去 Pub Cricket / Mokumokuya。晚饭前后务必预订 DAY3 早餐 Oktoberfest，确保明早能吃到。',
   steps: [
     { id: 'kakashi', field: '1 居酒屋かかし Kakashi（首选）', how: '点中文菜单点餐。' },
     { id: 'cricket', field: '2 Pub Cricket（备选）', how: 'Kakashi 满座或排队太久时改这里。' },
     { id: 'moku', field: '3 Mokumokuya（备选）', how: '第二备选，园区内就近即可。' },
+    {
+      id: 'book-oktoberfest',
+      field: '4 预订明早早餐 · Oktoberfest',
+      how: 'DAY3 早餐在 Oktoberfest；今晚务必完成预订/确认，避免明早吃不上。',
+    },
   ],
 }
 
@@ -599,6 +604,18 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【开车】按上方停车导航去 Lake Shikotsu paid parking lot',
       mom: '【车上休息】看孩子休息即可，不用盯导航',
       kids: '【车上休息】系好安全带，跟妈妈休息，预计约 35 分钟到湖边',
+    },
+  },
+  2: {
+    '17:00~18:00': {
+      dad: '【逛/晚饭准备】顺手确认并预订明早 Oktoberfest 早餐',
+      mom: '【带娃】提醒爸爸完成 Oktoberfest 早餐预订，避免明早吃不上',
+      kids: '【休息】跟大人逛园区，准备晚饭',
+    },
+    '18:00~19:00': {
+      dad: '【晚饭】Kakashi 首选；满了改 Pub Cricket / Mokumokuya。务必订好明早 Oktoberfest',
+      mom: '【晚饭】点餐照顾孩子；核对 Oktoberfest 早餐已预订',
+      kids: '【吃】乖乖吃饭',
     },
   },
 }
