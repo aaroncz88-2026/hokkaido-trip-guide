@@ -366,10 +366,10 @@ function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
 
 function ParkingBar({ day }: { day: DayPlan }) {
   return (
-    <section className="day-parking" aria-label="当天停车点">
+    <section className="day-parking" aria-label="当天导航">
       <div className="day-parking__head">
-        <span>DAY {day.day} · 当天停车点</span>
-        <small>时段可浮动 · 目的地不变 · 仅司机导航</small>
+        <span>DAY {day.day} · 当天导航</span>
+        <small>停车 / 吃饭 / 便利店 · 仅司机导航</small>
       </div>
       <ul className="parking-stop-list">
         {day.navigation.map((item, index) => (

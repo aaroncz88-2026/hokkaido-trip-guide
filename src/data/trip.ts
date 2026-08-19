@@ -79,6 +79,8 @@ const dayMeta: DayMeta[] = [
       { label: '新千岁机场 B 停车场', query: '新千歳空港B駐車場' },
       { label: '支笏湖收费停车场', query: 'Lake Shikotsu paid parking lot' },
       { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
+      { label: '源べえ 留寿都店', query: '源べえ 留寿都店' },
+      { label: 'Seicomart Rusutsu', query: 'Seicomart Rusutsu' },
     ],
     pinnedDocs: [
       { label: 'DAY1 导游发言稿', url: docUrl('day1-guide-script.pdf') },
@@ -458,6 +460,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '15:00~16:00': [shikotsuSnackGuide],
     // 回酒店：住宿名已在正文，不重复挂 Suiyo 现场资料
     '18:00~19:00': [],
+    // 晚饭：店名改导航，不挂无意义现场资料
+    '19:00~20:00': [],
   },
 }
 
@@ -484,7 +488,23 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       },
     ],
     '18:00~19:00': [genbeeMenuLink],
-    '19:00~20:00': [genbeeMenuLink],
+    '19:00~20:00': [
+      {
+        label: '源べえ 留寿都店 | Google Maps',
+        url: 'https://maps.google.com/?q=%E6%BA%90%E3%81%B9%E3%81%88%20%E7%95%99%E5%AF%BF%E9%83%BD%E5%BA%97',
+      },
+      {
+        label: 'Seicomart Rusutsu | Google Maps',
+        url: 'https://maps.google.com/?q=Seicomart%20Rusutsu',
+      },
+      genbeeMenuLink,
+    ],
+    '20:00~21:00': [
+      {
+        label: 'Seicomart Rusutsu | Google Maps',
+        url: 'https://maps.google.com/?q=Seicomart%20Rusutsu',
+      },
+    ],
   },
 }
 
