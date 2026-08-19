@@ -429,6 +429,15 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '8:00~12:00': [],
     '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
     '13:00~14:00': [airportFoodGuide, shikotsuSnackGuide],
+    // 已到湖边：不再重复停车场资料
+    '15:00~16:00': [],
+  },
+}
+
+const costCorrections: Record<number, Record<string, string>> = {
+  1: {
+    // 停车费属于抵达前，景点时段不再展示
+    '15:00~16:00': '',
   },
 }
 
@@ -509,8 +518,8 @@ const buildTimeline = () => {
       kids: roleFix?.kids ?? getText(row, 5),
       links: linkCorrections[currentDay]?.[time] ?? getLinks(row, context),
       materials: materialCorrections[currentDay]?.[time] ?? getMaterials(row),
-      costJpy: getText(row, 8),
-      costCny: toCny(getText(row, 8)),
+      costJpy: costCorrections[currentDay]?.[time] ?? getText(row, 8),
+      costCny: toCny(costCorrections[currentDay]?.[time] ?? getText(row, 8)),
       isRest: /睡觉|洗漱|整理/.test(detail) && !/出发|景点|游乐/.test(detail),
     }
 
