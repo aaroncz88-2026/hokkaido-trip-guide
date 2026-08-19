@@ -1181,29 +1181,36 @@ function App() {
                   : undefined
               }
             >
-              <div>
-                <span className="eyebrow">正在北行</span>
-                <strong>{journey.value}</strong>
-                <p>{journey.label}</p>
-                {homeWeather && (
-                  <button className="live-weather" onClick={() => setView('more')} type="button">
-                    {homeWeather.icon} {homeWeather.label} · {homeWeather.tempMin}–{homeWeather.tempMax}°C · 雨 {homeWeather.precipProb}%
-                  </button>
-                )}
-                {journey.day && (
-                  <small className="live-status__place">{tripDays[journey.day - 1].coverLabel}</small>
-                )}
+              <div className="live-status__row">
+                <div>
+                  <span className="eyebrow">正在北行</span>
+                  <strong>{journey.value}</strong>
+                  <p>{journey.label}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDay(journey.day ?? selectedDay)
+                    setView('days')
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  全天行程
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDay(journey.day ?? selectedDay)
-                  setView('days')
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-              >
-                全天行程
-              </button>
+              {homeWeather && (
+                <button className="live-weather" onClick={() => setView('more')} type="button">
+                  <span className="live-weather__main">
+                    {homeWeather.icon} {homeWeather.label}
+                  </span>
+                  <span className="live-weather__meta">
+                    {homeWeather.tempMin}–{homeWeather.tempMax}°C · 雨 {homeWeather.precipProb}%
+                  </span>
+                </button>
+              )}
+              {journey.day && (
+                <small className="live-status__place">{tripDays[journey.day - 1].coverLabel}</small>
+              )}
             </section>
             {journey.day && <ParkingBar day={tripDays[journey.day - 1]} />}
             {renderNowCard()}
