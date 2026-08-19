@@ -150,7 +150,16 @@ const dayMeta: DayMeta[] = [
       { label: '札幌市区公寓（下午回酒店）', query: '札幌市区公寓' },
       { label: '晚饭停车 · トラストパークすすきの5・2', query: 'トラストパーク札幌すすきの5・2' },
     ],
-    reminders: ['出发前完成垃圾分类和退房检查', '白色恋人公园预留约 3 小时', '晚餐 GAjA 首选；停车可去すすきの5・2'],
+    pinnedDocs: [
+      { label: 'DAY4 定山溪旅游指南', url: docUrl('day4-guide-script.pdf') },
+      { label: '河童寻宝中文亲子版', url: docUrl('jozankei-kappa-rally-zh.pdf') },
+    ],
+    reminders: [
+      '出发前完成垃圾分类和退房检查',
+      '白色恋人公园预留约 3 小时',
+      '晚餐 GAjA 首选；停车可去すすきの5・2',
+      '河童寻宝：孩子可玩；题板多为日语，大人用翻译拍题即可',
+    ],
   },
   {
     day: 5,
@@ -502,12 +511,13 @@ const toyaDinnerGuide: TimelineMaterial = {
 
 const jozankeiKidsGuide: TimelineMaterial = {
   title: '带7岁、5岁孩子的实战攻略',
-  body: '到停车场后，第一站直接去观光案内所领取纸质活动册。把下面日文给工作人员看（可复制，方便贴给 GPT 继续对话）：',
+  body:
+    '可以参加，不要求孩子会日语。现场活动册/题板多为日文：大人用手机相机翻译即可；孩子负责找河童像、记答案。到停车场后先去观光案内所领纸质活动册。把下面日文给工作人员看（可复制）：',
   steps: [
     {
       id: 'jozan-rally',
       field:
-        '中国から来ました。7歳と5歳の子どもと、かっぽんラリーに参加したいです。中国語版はありますか？簡単に遊び方を教えてください。',
+        '中国から来ました。7歳と5歳の子どもと、かっぱんラリーに参加したいです。中国語版はありますか？簡単に遊び方を教えてください。',
       how: '我们来自中国，想带7岁和5岁的孩子参加河童寻宝。请问有中文版吗？可以简单说明一下玩法吗？',
       kind: 'phrase',
     },
@@ -515,6 +525,12 @@ const jozankeiKidsGuide: TimelineMaterial = {
       id: 'jozan-trail',
       field: '二見定山の道を歩きながら、問題を全部解けますか？',
       how: '沿着“二见定山之道”徒步时，可以完成全部题目吗？',
+      kind: 'phrase',
+    },
+    {
+      id: 'jozan-stamp',
+      field: 'かっぱんラリーのスタンプをお願いします。',
+      how: '请帮我盖河童寻宝的店铺印章（消费后盖章才有抽奖资格）。',
       kind: 'phrase',
     },
   ],
@@ -715,6 +731,22 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       {
         label: 'OMOYA | Google Maps',
         url: 'https://maps.google.com/?q=OMOYA%20Toyako',
+      },
+    ],
+  },
+  4: {
+    '9:00~10:00': [
+      {
+        label: '河童寻宝中文亲子版（PDF）',
+        url: docUrl('jozankei-kappa-rally-zh.pdf'),
+      },
+      {
+        label: '定山溪旅游指南（PDF）',
+        url: docUrl('day4-guide-script.pdf'),
+      },
+      {
+        label: '定山溪活动资料',
+        url: 'https://jozankei.jp/cn/oneday/ontama/',
       },
     ],
   },
