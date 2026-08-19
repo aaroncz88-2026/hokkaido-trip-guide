@@ -1000,7 +1000,7 @@ function App() {
     setTimePanelOpen(true)
   }
 
-  const applySimulatedTime = (target: Date, message?: string, options?: { goDays?: boolean }) => {
+  const applySimulatedTime = (target: Date, message?: string) => {
     const offset = target.getTime() - Date.now()
     writeSimOffset(offset)
     setSimOffsetMs(offset)
@@ -1011,12 +1011,6 @@ function App() {
       const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
       setSelectedDay(day)
       setTimeDraftDay(day)
-      // 调时间只刷新首页「当前行动」，不强制切到行程页
-      if (options?.goDays) {
-        setView('days')
-        setMorePanel('hub')
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
     }
   }
 
