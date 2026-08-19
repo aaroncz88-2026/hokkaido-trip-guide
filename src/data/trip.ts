@@ -397,6 +397,7 @@ const shikotsuSnackGuide: TimelineMaterial = {
   steps: [
     { id: 'hekisu', field: '1 北のうまいもん店 碧水', how: '扇贝玉米烧、烤鱿鱼，热食小吃。' },
     { id: 'showa', field: '2 昭和物産', how: '炸物、炭火烤，和碧水二选一或各买一点即可。' },
+    { id: 'patissier', field: '3 スイーツショップ パティシエ・ラボ（买早饭）', how: '甜点店，可顺手买明早甜品/面包类带走。' },
   ],
 }
 
