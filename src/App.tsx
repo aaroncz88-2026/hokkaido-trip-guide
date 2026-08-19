@@ -7,6 +7,7 @@ import {
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
+  HOME_COVER,
   tripBasics,
   tripDays,
   type DayPlan,
@@ -303,13 +304,40 @@ const speakJapanese = (text: string, onStart?: () => void, onEnd?: () => void) =
 
 function DayCard({ day, onOpen }: { day: DayPlan; onOpen: () => void }) {
   return (
-    <button className="day-card" onClick={onOpen} style={{ '--day-accent': day.accent } as CSSProperties}>
+    <button
+      className="day-card"
+      onClick={onOpen}
+      style={{ '--day-accent': day.accent, backgroundImage: `url(${day.cover})` } as CSSProperties}
+    >
       <span className="day-card__index">DAY {day.day}</span>
       <span className="day-card__date">{formatDate(day.date)} · {day.weekday}</span>
       <strong>{day.title}</strong>
       <span className="day-card__route">{day.route}</span>
       <span className="day-card__cta">查看行程 <Icon name="arrow" size={16} /></span>
     </button>
+  )
+}
+
+function ParkingBar({ day }: { day: DayPlan }) {
+  return (
+    <section className="day-parking-sticky" aria-label="当天停车与导航">
+      <div className="day-parking-sticky__head">
+        <span>DAY {day.day} · 当天停车</span>
+        <small>时段可浮动 · 目的地不变</small>
+      </div>
+      <div className="nav-links nav-links--sticky">
+        {day.navigation.map((item, index) => (
+          <span className="nav-chip-wrap" key={item.label}>
+            <MapsLink className="nav-chip" query={item.query}>
+              <em className="nav-chip__n">{index + 1}</em>
+              {item.label}
+              <Icon name="external" size={13} />
+            </MapsLink>
+            <CopyPlaceButton query={item.query} />
+          </span>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -1139,7 +1167,14 @@ function App() {
       <main>
         {journey.phase === 'during' ? (
           <>
-            <section className="live-status">
+            <section
+              className="live-status"
+              style={
+                journey.day
+                  ? { backgroundImage: `url(${tripDays[journey.day - 1].cover})` }
+                  : undefined
+              }
+            >
               <div>
                 <span className="eyebrow">正在北行</span>
                 <strong>{journey.value}</strong>
@@ -1148,6 +1183,9 @@ function App() {
                   <button className="live-weather" onClick={() => setView('more')} type="button">
                     {homeWeather.icon} {homeWeather.label} · {homeWeather.tempMin}–{homeWeather.tempMax}°C · 雨 {homeWeather.precipProb}%
                   </button>
+                )}
+                {journey.day && (
+                  <small className="live-status__place">{tripDays[journey.day - 1].coverLabel}</small>
                 )}
               </div>
               <button
@@ -1161,38 +1199,13 @@ function App() {
                 全天行程
               </button>
             </section>
+            {journey.day && <ParkingBar day={tripDays[journey.day - 1]} />}
             {renderNowCard()}
-            {journey.day && (
-              <section className="home-parking">
-                <div className="section-heading">
-                  <div>
-                    <span className="eyebrow">DAY {journey.day} · PARKING</span>
-                    <h2>当天停车点</h2>
-                  </div>
-                </div>
-                <p className="home-parking__hint">时段可能浮动，目的地不变 · 点卡片打开地图，或点「复制地名」去 App 搜索</p>
-                <ol className="home-parking__list">
-                  {tripDays[journey.day - 1].navigation.map((item, index) => (
-                    <li key={item.label}>
-                      <MapsLink className="home-parking__link" query={item.query}>
-                        <em>{index + 1}</em>
-                        <span>
-                          <strong>{item.label}</strong>
-                          <small>{item.query}</small>
-                        </span>
-                        <Icon name="map" size={18} />
-                      </MapsLink>
-                      <CopyPlaceButton query={item.query} />
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
           </>
         ) : (
           <section
             className={`hero-panel hero-panel--${journey.phase}`}
-            style={{ backgroundImage: `url(${import.meta.env.BASE_URL}furano-lavender-cover.png)` }}
+            style={{ backgroundImage: `url(${HOME_COVER})` }}
           >
             <div className="hero-panel__texture" />
             <div className="hero-panel__content">
@@ -1450,27 +1463,16 @@ function App() {
           ))}
         </div>
 
-        <section className="day-parking-sticky" aria-label="当天停车与导航">
-          <div className="day-parking-sticky__head">
-            <span>当天停车 / 导航</span>
-            <small>时段可浮动 · 目的地不变</small>
-          </div>
-          <div className="nav-links nav-links--sticky">
-            {currentDay.navigation.map((item) => (
-              <span className="nav-chip-wrap" key={item.label}>
-                <MapsLink className="nav-chip" query={item.query}>
-                  <Icon name="map" size={16} /> {item.label} <Icon name="external" size={13} />
-                </MapsLink>
-                <CopyPlaceButton query={item.query} />
-              </span>
-            ))}
-          </div>
-        </section>
+        <ParkingBar day={currentDay} />
 
-        <section className="day-hero" style={{ '--day-accent': currentDay.accent } as CSSProperties}>
+        <section
+          className="day-hero"
+          style={{ '--day-accent': currentDay.accent, backgroundImage: `url(${currentDay.cover})` } as CSSProperties}
+        >
           <span>{currentDay.weekday} · {formatDate(currentDay.date)}</span>
           <h2>{currentDay.title}</h2>
           <p>{currentDay.route}</p>
+          <small className="day-hero__place">{currentDay.coverLabel}</small>
           {currentDayWeather && (
             <button className="day-weather-chip" onClick={() => {
               setWeatherLocationId(dayLocationHint[currentDay.day] ?? 'sapporo')
