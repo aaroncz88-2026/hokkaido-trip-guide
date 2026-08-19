@@ -1321,6 +1321,8 @@ function App() {
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
           const eyebrow = /预约凭证/.test(material.title)
             ? '入店出示 · 预约凭证'
+            : /【晚餐】/.test(material.title)
+              ? '已预约'
             : hasList
               ? '逛店清单 · LIST'
               : hasPhrases && hasTasks

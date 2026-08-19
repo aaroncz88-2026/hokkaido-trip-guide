@@ -759,41 +759,15 @@ const jozankeiLunchGuide: TimelineMaterial = {
   ],
 }
 
-const day4GajaVoucher: TimelineMaterial = {
-  title: '【预约凭证】GAjA すすきの店',
-  body: '2026-08-26（三）18:45 入店 → 20:45 离店\n6人 · プレミア食べ放題 ¥6,028/人 · 屏风隔间\n预约编号 #30633 · 姓名 CHEN ZHONG\n入店请打开下方 PDF 出示，或直接报编号。',
-  links: [gajaReservationLink, gajaMenuLink],
-}
-
 const day4DinnerGuide: TimelineMaterial = {
-  title: '札幌晚餐 · GAjA 已预约',
-  body: '已订 GAjA：18:45 到店。停车トラストパークすすきの5・2。下方可再开预约凭证与菜单。',
-  steps: [
+  title: '【晚餐】',
+  body: 'GAjA すすきの店（已预约 · 烤肉自助）\n2026-08-26（三）18:45 入店 → 20:45 离店\n6人 · プレミア食べ放題 ¥6,028/人 · 屏风隔间\n预约编号 #30633 · 姓名 CHEN ZHONG\n停车：トラストパークすすきの5・2\n入店出示预约凭证，或直接报编号。',
+  links: [
+    gajaReservationLink,
+    gajaMenuLink,
     {
-      id: 'gaja',
-      field: '1 GAjA すすきの店（已预约 · 烤肉自助）',
-      how: '18:45 到店；出示预约凭证／报编号 #30633。点餐式吃到饱。',
-      kind: 'option',
-      links: [
-        gajaReservationLink,
-        gajaMenuLink,
-        {
-          label: '地图',
-          url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
-        },
-      ],
-    },
-    {
-      id: 'teppan',
-      field: '2 和食と鉄板焼（备选）',
-      how: '仅当 GAjA 无法履约时再改；正常按预约去 GAjA。',
-      kind: 'option',
-      links: [
-        {
-          label: '地图',
-          url: 'https://maps.google.com/?q=%E5%92%8C%E9%A3%9F%E3%81%A8%E9%89%84%E6%9D%BF%E7%84%BC%20%E6%9C%AD%E5%B9%8C%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE',
-        },
-      ],
+      label: '地图',
+      url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
     },
   ],
 }
@@ -838,6 +812,7 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '11:00~12:00':
       '【河童寻宝】约 2 小时下半\n三个提示点→回案内所终题抽奖；争取午餐前完成',
     '17:00~18:00': '【回家】回札幌公寓休整，准备出门晚饭',
+    '18:00~19:00': '【晚餐】GAjA すすきの店（已预约）\n18:45 入店 · #30633 · プレミア ×6 · 屏风隔间',
     '19:00~20:00': '【饭后逛街】狸小路一带 · 按关门时间逛',
     '20:00~21:00': '【饭后逛街】继续逛店；文具／玩具可顺路看',
   },
@@ -900,8 +875,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '12:00~13:00': [jozankeiLunchGuide],
     // 回家时段：去掉误挂的「逛」现场资料
     '17:00~18:00': [],
-    // 晚餐：预约凭证置顶 + GAjA 门牌
-    '18:00~19:00': [day4GajaVoucher, day4DinnerGuide],
+    // 晚餐：仅已预约的 GAjA
+    '18:00~19:00': [day4DinnerGuide],
     // 饭后逛：纯 LIST，挂在 19–21
     '19:00~20:00': [day4NightBrowseGuide],
     '20:00~21:00': [day4NightBrowseGuide],
