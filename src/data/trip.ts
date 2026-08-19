@@ -468,9 +468,9 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       kids: '【逛+吃】Pokémon Store、Calbee+ 薯条、ROYS；累了坐着等爸爸会合',
     },
     '14:00~15:00': {
-      dad: '【开车】导航去 Lake Shikotsu paid parking lot；到停车场后发位置给家人',
-      mom: '【车上休息】帮忙看导航与孩子，确认停车费现金/交通卡',
-      kids: '【车上休息】系好安全带，预计约 35 分钟到湖边',
+      dad: '【开车】按上方停车导航去 Lake Shikotsu paid parking lot；可用携程导航，到停车场后发位置给家人',
+      mom: '【车上休息】看孩子休息即可，不用盯导航',
+      kids: '【车上休息】系好安全带，跟妈妈休息，预计约 35 分钟到湖边',
     },
   },
 }
