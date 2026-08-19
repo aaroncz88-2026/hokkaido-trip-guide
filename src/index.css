@@ -1,12 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&display=swap');
 
 :root {
-  --background: #f5f2ec;
-  --paper: #fffdf9;
-  --ink: #292621;
-  --muted: #777066;
-  --line: #ded9d0;
-  --brand: #2f6f68;
+  --background: #f4f0f6;
+  --paper: #fffbfd;
+  --ink: #2a2430;
+  --muted: #7a7080;
+  --line: #e4dce6;
+  --brand: #6b4d78;
+  --brand-deep: #3d2b44;
+  --brand-soft: #efe6f3;
+  --brand-mist: #f4eef6;
+  --cream: #faf6fb;
   --serif: 'Noto Serif SC', 'Songti SC', SimSun, serif;
   color: var(--ink);
   background: var(--background);
@@ -35,8 +39,9 @@ body {
   min-height: 100svh;
   margin: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)),
-    var(--background);
+    radial-gradient(ellipse 90% 42% at 50% -8%, rgba(167, 122, 186, 0.22), transparent 58%),
+    radial-gradient(ellipse 70% 36% at 100% 18%, rgba(196, 150, 186, 0.12), transparent 48%),
+    linear-gradient(180deg, #f7f2f9 0%, #f3eef6 52%, #f4f0f6 100%);
 }
 
 body,
