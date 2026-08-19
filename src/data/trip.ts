@@ -623,6 +623,42 @@ export const sourceLink =
 export const mapsUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 
+/** Apple Maps web link — more reliable than Google inside WeChat on iPhone. */
+export const appleMapsUrl = (query: string) =>
+  `https://maps.apple.com/?q=${encodeURIComponent(query)}`
+
+/** Android geo intent — opens an installed maps app chooser when allowed. */
+export const androidGeoUrl = (query: string) =>
+  `geo:0,0?q=${encodeURIComponent(query)}`
+
+export const isWeChatBrowser = () =>
+  typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)
+
+export const isAppleTouchDevice = () =>
+  typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+/**
+ * Open navigation for the current environment.
+ * WeChat blocks Google Maps + target=_blank often; copy the place name and
+ * prefer Apple Maps / geo: so the system maps app can take over.
+ */
+export const openMapsNavigation = (query: string): 'wechat' | 'browser' => {
+  const google = mapsUrl(query)
+  if (isWeChatBrowser()) {
+    copyTextReliable(query)
+    if (isAppleTouchDevice()) {
+      window.location.href = appleMapsUrl(query)
+    } else {
+      window.location.href = androidGeoUrl(query)
+    }
+    return 'wechat'
+  }
+
+  const opened = window.open(google, '_blank', 'noopener,noreferrer')
+  if (!opened) window.location.assign(google)
+  return 'browser'
+}
+
 export const isGoogleMapsWebUrl = (url: string) =>
   /(?:maps\.google\.|google\.[^/]+\/maps|maps\.app\.goo\.gl)/i.test(url)
 

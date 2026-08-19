@@ -4,6 +4,7 @@ import {
   guideSections,
   isGoogleMapsWebUrl,
   mapsUrl,
+  openMapsNavigation,
   packingTemplates,
   queryFromMapsWebUrl,
   sourceLink,
@@ -155,11 +156,36 @@ const MapsLink = ({
   query: string
   children: ReactNode
   className?: string
-}) => (
-  <a className={className} href={mapsUrl(query)} rel="noopener noreferrer" target="_blank">
-    {children}
-  </a>
-)
+}) => {
+  const [tip, setTip] = useState('')
+
+  return (
+    <>
+      <a
+        className={className}
+        href={mapsUrl(query)}
+        rel="noopener noreferrer"
+        onClick={(event) => {
+          event.preventDefault()
+          const mode = openMapsNavigation(query)
+          if (mode === 'wechat') {
+            setTip(
+              '地名已复制。微信里谷歌地图常打不开：已尝试唤起系统地图；若仍无反应，点右上角 ··· → 在浏览器打开后再点导航，或去地图 App 粘贴地名。',
+            )
+            window.setTimeout(() => setTip(''), 5200)
+          }
+        }}
+      >
+        {children}
+      </a>
+      {tip && (
+        <div className="maps-toast" role="status">
+          {tip}
+        </div>
+      )}
+    </>
+  )
+}
 
 const CopyPlaceButton = ({ query }: { query: string }) => {
   const [hint, setHint] = useState('')

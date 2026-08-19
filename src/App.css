@@ -980,6 +980,24 @@
   border-radius: 14px;
 }
 
+.maps-toast {
+  position: fixed;
+  z-index: 60;
+  right: 12px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  left: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: #f7f2e9;
+  background: rgba(31, 63, 60, 0.96);
+  box-shadow: 0 14px 36px rgba(31, 55, 51, 0.28);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .day-tabs button {
   display: flex;
   height: 59px;
