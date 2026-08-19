@@ -34,6 +34,7 @@ export type TimelineItem = {
 }
 
 const coverUrl = (file: string) => `${import.meta.env.BASE_URL}covers/${file}`
+export const docUrl = (file: string) => `${import.meta.env.BASE_URL}docs/${file}`
 
 export type DayMeta = {
   day: number
@@ -50,6 +51,8 @@ export type DayMeta = {
   highlights: string[]
   navigation: { label: string; query: string }[]
   reminders: string[]
+  /** Day-level pinned docs (e.g. guide script), shown on home live card. */
+  pinnedDocs?: { label: string; url: string }[]
 }
 
 export const HOME_COVER = coverUrl('furano-lavender-cover.jpg')
@@ -76,6 +79,9 @@ const dayMeta: DayMeta[] = [
       { label: '新千岁机场 B 停车场', query: '新千歳空港B駐車場' },
       { label: '支笏湖收费停车场', query: 'Lake Shikotsu paid parking lot' },
       { label: '翠葉 Rusutsu', query: 'Suiyo Rusutsu' },
+    ],
+    pinnedDocs: [
+      { label: 'DAY1 导游发言稿', url: docUrl('day1-guide-script.pdf') },
     ],
     reminders: ['落地后先完成入境、行李和取车', '出发导航：Lake Shikotsu paid parking lot', '争取 15:00 到支笏湖', '晚间采购次日早餐与饮用水'],
   },
@@ -437,6 +443,11 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   },
 }
 
+const genbeeMenuLink = {
+  label: '源べえ 中文菜单（PDF）',
+  url: docUrl('genbee-menu-zh.pdf'),
+}
+
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
@@ -472,6 +483,8 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://maps.google.com/?q=Lake%20Shikotsu%20paid%20parking%20lot',
       },
     ],
+    '18:00~19:00': [genbeeMenuLink],
+    '19:00~20:00': [genbeeMenuLink],
   },
 }
 

@@ -2687,6 +2687,39 @@ label:has(input:focus-visible) {
   text-align: center;
 }
 
+.pinned-docs {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.pinned-docs__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(12, 28, 26, 0.48);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+main > .pinned-docs {
+  margin: 0 0 12px;
+}
+
+main > .pinned-docs .pinned-docs__link {
+  justify-content: flex-start;
+  border-color: var(--line);
+  color: var(--ink);
+  background: #fff;
+}
+
 .hero-weather strong,
 .day-weather-chip strong {
   font-size: 0.92rem;

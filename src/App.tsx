@@ -226,9 +226,29 @@ const ExternalOrMapsLink = ({
     }
   }
   return (
-    <a className={className} href={url} rel="noreferrer" target="_blank">
-      <Icon name="external" size={15} /> {label}
+    <a className={className} href={url} rel="noopener noreferrer" target="_blank">
+      <Icon name={/\.pdf($|\?)/i.test(url) ? 'guide' : 'external'} size={15} /> {label}
     </a>
+  )
+}
+
+function PinnedDocs({ docs }: { docs?: { label: string; url: string }[] }) {
+  if (!docs?.length) return null
+  return (
+    <div className="pinned-docs">
+      {docs.map((doc) => (
+        <a
+          className="pinned-docs__link"
+          href={doc.url}
+          key={doc.url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <Icon name="guide" size={15} />
+          <span>{doc.label}</span>
+        </a>
+      ))}
+    </div>
   )
 }
 
@@ -1228,6 +1248,7 @@ function App() {
                   </span>
                 </button>
               )}
+              {journey.day && <PinnedDocs docs={tripDays[journey.day - 1].pinnedDocs} />}
               {journey.day && (
                 <small className="live-status__place">{tripDays[journey.day - 1].coverLabel}</small>
               )}
@@ -1520,6 +1541,7 @@ function App() {
           </div>
         </section>
 
+        <PinnedDocs docs={currentDay.pinnedDocs} />
         <ParkingBar day={currentDay} />
 
         <section className="day-summary">
