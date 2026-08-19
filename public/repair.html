@@ -71,9 +71,10 @@
           }
           try {
             localStorage.removeItem('hokkaido-sw-recovery-v17')
+            localStorage.removeItem('hokkaido-shell-build')
           } catch {}
           setStatus('完成，正在进入…')
-          location.replace('./?recovered=' + Date.now())
+          location.replace('./?shell=2026-08-19-menu-beside-force-v25&recovered=' + Date.now())
         } catch (error) {
           setStatus('自动清理失败，请到浏览器站点设置里清除数据。')
         }
