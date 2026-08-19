@@ -235,6 +235,17 @@ const ExternalOrMapsLink = ({
   )
 }
 
+/** 已挂在门牌选项旁的链接，不再在时段底部重复展示 */
+const leftoverItemLinks = (item: TimelineItem) => {
+  const attached = new Set(
+    item.materials
+      .flatMap((material) => material.steps ?? [])
+      .flatMap((step) => step.links ?? [])
+      .map((link) => link.url),
+  )
+  return item.links.filter((link) => !attached.has(link.url))
+}
+
 function PinnedDocDots({ docs }: { docs?: { label: string; url: string }[] }) {
   if (!docs?.length) return null
   return (
@@ -447,6 +458,18 @@ function MaterialSteps({
                 <span>
                   <strong>{door.name}</strong>
                   <small>{step.how}</small>
+                  {step.links && step.links.length > 0 && (
+                    <div className="fill-options__links">
+                      {step.links.map((link) => (
+                        <ExternalOrMapsLink
+                          className="fill-options__link"
+                          key={link.url}
+                          label={link.label}
+                          url={link.url}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </span>
               </div>
             )
@@ -572,7 +595,7 @@ function TimelineCard({
             {(item.costJpy || item.costCny) && (
               <div><span>费用</span><p>{item.costJpy && `¥${item.costJpy}`}{item.costCny && ` · 约 ¥${item.costCny} CNY`}</p></div>
             )}
-            {item.links.map((link) => (
+            {leftoverItemLinks(item).map((link) => (
               <ExternalOrMapsLink key={link.url} label={link.label} url={link.url} />
             ))}
           </div>
@@ -1247,6 +1270,7 @@ function App() {
     }
 
     const item = currentActivity.item
+    const extraLinks = leftoverItemLinks(item)
     return (
       <section className="now-card">
         <div className="now-card__head">
@@ -1302,9 +1326,9 @@ function App() {
           </div>
         )}
 
-        {item.links.length > 0 && (
+        {extraLinks.length > 0 && (
           <div className="now-card__links">
-            {item.links.map((link) => (
+            {extraLinks.map((link) => (
               <ExternalOrMapsLink key={link.url} label={link.label} url={link.url} />
             ))}
           </div>

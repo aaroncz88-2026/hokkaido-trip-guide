@@ -2429,6 +2429,28 @@
   line-height: 1.45;
 }
 
+.fill-options__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.fill-options__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #cfe3df;
+  border-radius: 999px;
+  background: #f4faf8;
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
 .fill-phrases {
   display: grid;
   gap: 8px;

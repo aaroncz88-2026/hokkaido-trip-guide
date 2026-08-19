@@ -11,6 +11,8 @@ export type FillGuideStep = {
   how: string
   /** option = 门牌备选；phrase = 可复制话术；task = 必要任务可勾选。默认 task。 */
   kind?: 'option' | 'task' | 'phrase'
+  /** 挂在该备选旁的菜单 / 地图等链接（优先于时段底部链接展示） */
+  links?: { label: string; url: string }[]
 }
 
 export type TimelineMaterial = {
@@ -456,13 +458,87 @@ const day2OutingSnackGuide: TimelineMaterial = {
   ],
 }
 
+const genbeeMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('genbee-menu-zh.pdf'),
+}
+
+const kakashiMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('kakashi-menu-zh.pdf'),
+}
+
+const ichiMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('jozankei-ichi-menu-zh.pdf'),
+}
+
+const harurannaMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('jozankei-haruranna-menu-zh.pdf'),
+}
+
+const konnoMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('jozankei-konno-menu-zh.pdf'),
+}
+
+const gajaMenuLink = {
+  label: '中文菜单（PDF）',
+  url: docUrl('gaja-susukino-menu-zh.pdf'),
+}
+
+const day1DinnerGuide: TimelineMaterial = {
+  title: '留寿都晚餐 · 源べえ',
+  body: '今晚首选源べえ；菜单挂在店名旁，可先打开对照点餐。',
+  steps: [
+    {
+      id: 'genbee',
+      field: '1 源べえ 留寿都店（首选）',
+      how: '居酒屋；对照中文菜单点餐。',
+      kind: 'option',
+      links: [
+        genbeeMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E6%BA%90%E3%81%B9%E3%81%88%20%E7%95%99%E5%AF%BF%E9%83%BD%E5%BA%97',
+        },
+      ],
+    },
+  ],
+}
+
 const day2DinnerGuide: TimelineMaterial = {
   title: '园区晚餐备选 · 顺手订明早',
   body: '1～3 为晚饭可选餐厅；第 4 项为必要问询任务：务必预订 DAY3 早餐 Oktoberfest。',
   steps: [
-    { id: 'kakashi', field: '1 居酒屋かかし Kakashi（首选）', how: '点中文菜单点餐。', kind: 'option' },
-    { id: 'cricket', field: '2 Pub Cricket（备选）', how: 'Kakashi 满座或排队太久时改这里。', kind: 'option' },
-    { id: 'moku', field: '3 Mokumokuya（备选）', how: '第二备选，园区内就近即可。', kind: 'option' },
+    {
+      id: 'kakashi',
+      field: '1 居酒屋かかし Kakashi（首选）',
+      how: '点中文菜单点餐。',
+      kind: 'option',
+      links: [
+        kakashiMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
+        },
+      ],
+    },
+    {
+      id: 'cricket',
+      field: '2 Pub Cricket（备选）',
+      how: 'Kakashi 满座或排队太久时改这里。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Pub%20Cricket%20Rusutsu' }],
+    },
+    {
+      id: 'moku',
+      field: '3 Mokumokuya（备选）',
+      how: '第二备选，园区内就近即可。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu' }],
+    },
     {
       id: 'book-oktoberfest',
       field: '预订明早早餐 · Oktoberfest',
@@ -502,11 +578,61 @@ const toyaDinnerGuide: TimelineMaterial = {
   title: '洞爷湖晚餐备选',
   body: '首选 Restaurant & Flowers KARZZ；满座或排队再改去下面备选。',
   steps: [
-    { id: 'karzz', field: '1 Restaurant & Flowers KARZZ（首选）', how: '今晚最推荐。', kind: 'option' },
-    { id: 'apecolo', field: '2 炭火ダイニング アペコロ（备选）', how: 'KARZZ 满/排队时改这里。', kind: 'option' },
-    { id: 'fuji', field: '3 洋食屋 Fuji（备选）', how: '备选。', kind: 'option' },
-    { id: 'kinjo', field: '4 焼肉 金城（备选）', how: '备选。', kind: 'option' },
-    { id: 'omoya', field: '5 OMOYA（备选）', how: '备选。', kind: 'option' },
+    {
+      id: 'karzz',
+      field: '1 Restaurant & Flowers KARZZ（首选）',
+      how: '今晚最推荐。',
+      kind: 'option',
+      links: [
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=Restaurant%20%26%20Flowers%20KARZZ%20Toyako',
+        },
+      ],
+    },
+    {
+      id: 'apecolo',
+      field: '2 炭火ダイニング アペコロ（备选）',
+      how: 'KARZZ 满/排队时改这里。',
+      kind: 'option',
+      links: [
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E7%82%AD%E7%81%AB%E3%83%80%E3%82%A4%E3%83%8B%E3%83%B3%E3%82%B0%20%E3%82%A2%E3%83%9A%E3%82%B3%E3%83%AD',
+        },
+      ],
+    },
+    {
+      id: 'fuji',
+      field: '3 洋食屋 Fuji（备选）',
+      how: '备选。',
+      kind: 'option',
+      links: [
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E6%B4%8B%E9%A3%9F%E5%B1%8BFuji%20%E6%B4%9E%E7%88%BA%E6%B9%96',
+        },
+      ],
+    },
+    {
+      id: 'kinjo',
+      field: '4 焼肉 金城（备选）',
+      how: '备选。',
+      kind: 'option',
+      links: [
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%20%E9%87%91%E5%9F%8E%20%E6%B4%9E%E7%88%BA',
+        },
+      ],
+    },
+    {
+      id: 'omoya',
+      field: '5 OMOYA（备选）',
+      how: '备选。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=OMOYA%20Toyako' }],
+    },
   ],
 }
 
@@ -579,11 +705,47 @@ const jozankeiKidsGuide: TimelineMaterial = {
 
 const jozankeiLunchGuide: TimelineMaterial = {
   title: '定山溪午餐备选',
-  body: '首选 食堂いち；满座或排队再改下面备选。三家菜单摘要见下方 PDF（中文整理，价目以店内为准）。',
+  body: '首选 食堂いち；满座或排队再改下面备选。菜单在各店名旁（中文摘要，价目以店内为准）。',
   steps: [
-    { id: 'ichi', field: '1 食堂いち（首选）', how: '炭火定食；11:00–15:00。点开中文菜单摘要。', kind: 'option' },
-    { id: 'haruranna', field: '2 埜ノ山キッチン はるらんな（备选）', how: 'いち 满/排队时改这里；炖菜／轻食。', kind: 'option' },
-    { id: 'konno', field: '3 食堂こんの（40年拉面馆 · 备选）', how: '第二备选；盐／酱油／味噌拉面。', kind: 'option' },
+    {
+      id: 'ichi',
+      field: '1 食堂いち（首选）',
+      how: '炭火定食；11:00–15:00。',
+      kind: 'option',
+      links: [
+        ichiMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%84%E3%81%A1%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
+        },
+      ],
+    },
+    {
+      id: 'haruranna',
+      field: '2 埜ノ山キッチン はるらんな（备选）',
+      how: 'いち 满/排队时改这里；炖菜／轻食。',
+      kind: 'option',
+      links: [
+        harurannaMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E5%9F%9E%E3%83%8E%E5%B1%B1%E3%82%AD%E3%83%83%E3%83%81%E3%83%B3%20%E3%81%AF%E3%82%8B%E3%82%89%E3%82%93%E3%81%AA',
+        },
+      ],
+    },
+    {
+      id: 'konno',
+      field: '3 食堂こんの（40年拉面馆 · 备选）',
+      how: '第二备选；盐／酱油／味噌拉面。',
+      kind: 'option',
+      links: [
+        konnoMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%93%E3%82%93%E3%81%AE%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
+        },
+      ],
+    },
   ],
 }
 
@@ -594,14 +756,27 @@ const day4DinnerGuide: TimelineMaterial = {
     {
       id: 'gaja',
       field: '1 GAjA すすきの店（首选 · 烤肉自助）',
-      how: '点餐式吃到饱；现场 App／二维码点餐。先看中文菜单摘要。',
+      how: '点餐式吃到饱；现场 App／二维码点餐。',
       kind: 'option',
+      links: [
+        gajaMenuLink,
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
+        },
+      ],
     },
     {
       id: 'teppan',
       field: '2 和食と鉄板焼（备选）',
       how: 'GAjA 排不上或想换口味时改这里。',
       kind: 'option',
+      links: [
+        {
+          label: '地图',
+          url: 'https://maps.google.com/?q=%E5%92%8C%E9%A3%9F%E3%81%A8%E9%89%84%E6%9D%BF%E7%84%BC%20%E6%9C%AD%E5%B9%8C%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE',
+        },
+      ],
     },
   ],
 }
@@ -640,36 +815,6 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   },
 }
 
-const genbeeMenuLink = {
-  label: '源べえ 中文菜单（PDF）',
-  url: docUrl('genbee-menu-zh.pdf'),
-}
-
-const kakashiMenuLink = {
-  label: 'Kakashi 中文菜单（PDF）',
-  url: docUrl('kakashi-menu-zh.pdf'),
-}
-
-const ichiMenuLink = {
-  label: '食堂いち 中文菜单摘要（PDF）',
-  url: docUrl('jozankei-ichi-menu-zh.pdf'),
-}
-
-const harurannaMenuLink = {
-  label: 'はるらんな 中文菜单摘要（PDF）',
-  url: docUrl('jozankei-haruranna-menu-zh.pdf'),
-}
-
-const konnoMenuLink = {
-  label: '食堂こんの 中文菜单摘要（PDF）',
-  url: docUrl('jozankei-konno-menu-zh.pdf'),
-}
-
-const gajaMenuLink = {
-  label: 'GAjA 烤肉自助 中文菜单摘要（PDF）',
-  url: docUrl('gaja-susukino-menu-zh.pdf'),
-}
-
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
@@ -678,10 +823,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '13:00~14:00': [airportFoodGuide],
     // 湖边景点时段：小吃备选（已停车，不再提停车场）
     '15:00~16:00': [shikotsuSnackGuide],
-    // 回酒店：住宿名已在正文，不重复挂 Suiyo 现场资料
-    '18:00~19:00': [],
-    // 晚饭：店名改导航，不挂无意义现场资料
-    '19:00~20:00': [],
+    // 晚饭：源べえ（菜单挂在店名旁）
+    '18:00~19:00': [day1DinnerGuide],
+    '19:00~20:00': [day1DinnerGuide],
     // 便利店：把 DAY2 出行补给提前买好
     '20:00~21:00': [day2OutingSnackGuide],
   },
@@ -742,17 +886,12 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://maps.google.com/?q=Lake%20Shikotsu%20paid%20parking%20lot',
       },
     ],
-    '18:00~19:00': [genbeeMenuLink],
+    '18:00~19:00': [],
     '19:00~20:00': [
-      {
-        label: '源べえ 留寿都店 | Google Maps',
-        url: 'https://maps.google.com/?q=%E6%BA%90%E3%81%B9%E3%81%88%20%E7%95%99%E5%AF%BF%E9%83%BD%E5%BA%97',
-      },
       {
         label: 'Seicomart Rusutsu | Google Maps',
         url: 'https://maps.google.com/?q=Seicomart%20Rusutsu',
       },
-      genbeeMenuLink,
     ],
     '20:00~21:00': [
       {
@@ -762,82 +901,12 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
     ],
   },
   2: {
-    '17:00~18:00': [
-      {
-        label: '居酒屋かかし Kakashi | Google Maps',
-        url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
-      },
-      {
-        label: 'Pub Cricket | Google Maps',
-        url: 'https://maps.google.com/?q=Pub%20Cricket%20Rusutsu',
-      },
-      {
-        label: 'Mokumokuya | Google Maps',
-        url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu',
-      },
-      kakashiMenuLink,
-    ],
-    '18:00~19:00': [
-      {
-        label: '居酒屋かかし Kakashi | Google Maps',
-        url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
-      },
-      {
-        label: 'Pub Cricket | Google Maps',
-        url: 'https://maps.google.com/?q=Pub%20Cricket%20Rusutsu',
-      },
-      {
-        label: 'Mokumokuya | Google Maps',
-        url: 'https://maps.google.com/?q=Mokumokuya%20Rusutsu',
-      },
-      kakashiMenuLink,
-    ],
+    '17:00~18:00': [],
+    '18:00~19:00': [],
   },
   3: {
-    '18:00~19:00': [
-      {
-        label: 'Restaurant & Flowers KARZZ | Google Maps',
-        url: 'https://maps.google.com/?q=Restaurant%20%26%20Flowers%20KARZZ%20Toyako',
-      },
-      {
-        label: '炭火ダイニング アペコロ | Google Maps',
-        url: 'https://maps.google.com/?q=%E7%82%AD%E7%81%AB%E3%83%80%E3%82%A4%E3%83%8B%E3%83%B3%E3%82%B0%20%E3%82%A2%E3%83%9A%E3%82%B3%E3%83%AD',
-      },
-      {
-        label: '洋食屋 Fuji | Google Maps',
-        url: 'https://maps.google.com/?q=%E6%B4%8B%E9%A3%9F%E5%B1%8BFuji%20%E6%B4%9E%E7%88%BA%E6%B9%96',
-      },
-      {
-        label: '焼肉 金城 | Google Maps',
-        url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%20%E9%87%91%E5%9F%8E%20%E6%B4%9E%E7%88%BA',
-      },
-      {
-        label: 'OMOYA | Google Maps',
-        url: 'https://maps.google.com/?q=OMOYA%20Toyako',
-      },
-    ],
-    '19:00~20:00': [
-      {
-        label: 'Restaurant & Flowers KARZZ | Google Maps',
-        url: 'https://maps.google.com/?q=Restaurant%20%26%20Flowers%20KARZZ%20Toyako',
-      },
-      {
-        label: '炭火ダイニング アペコロ | Google Maps',
-        url: 'https://maps.google.com/?q=%E7%82%AD%E7%81%AB%E3%83%80%E3%82%A4%E3%83%8B%E3%83%B3%E3%82%B0%20%E3%82%A2%E3%83%9A%E3%82%B3%E3%83%AD',
-      },
-      {
-        label: '洋食屋 Fuji | Google Maps',
-        url: 'https://maps.google.com/?q=%E6%B4%8B%E9%A3%9F%E5%B1%8BFuji%20%E6%B4%9E%E7%88%BA%E6%B9%96',
-      },
-      {
-        label: '焼肉 金城 | Google Maps',
-        url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%20%E9%87%91%E5%9F%8E%20%E6%B4%9E%E7%88%BA',
-      },
-      {
-        label: 'OMOYA | Google Maps',
-        url: 'https://maps.google.com/?q=OMOYA%20Toyako',
-      },
-    ],
+    '18:00~19:00': [],
+    '19:00~20:00': [],
   },
   4: {
     '9:00~10:00': [
@@ -854,45 +923,14 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: 'https://jozankei.jp/cn/oneday/ontama/',
       },
     ],
-    '12:00~13:00': [
-      ichiMenuLink,
-      harurannaMenuLink,
-      konnoMenuLink,
-      {
-        label: '食堂いち | Google Maps',
-        url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%84%E3%81%A1%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
-      },
-      {
-        label: '埜ノ山キッチン はるらんな | Google Maps',
-        url: 'https://maps.google.com/?q=%E5%9F%9E%E3%83%8E%E5%B1%B1%E3%82%AD%E3%83%83%E3%83%81%E3%83%B3%20%E3%81%AF%E3%82%8B%E3%82%89%E3%82%93%E3%81%AA',
-      },
-      {
-        label: '食堂こんの | Google Maps',
-        url: 'https://maps.google.com/?q=%E9%A3%9F%E5%A0%82%E3%81%93%E3%82%93%E3%81%AE%20%E5%AE%9A%E5%B1%B1%E6%BA%AA',
-      },
-    ],
+    '12:00~13:00': [],
     '18:00~19:00': [
-      gajaMenuLink,
-      {
-        label: 'GAjA すすきの店 | Google Maps',
-        url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
-      },
-      {
-        label: '和食と鉄板焼 | Google Maps',
-        url: 'https://maps.google.com/?q=%E5%92%8C%E9%A3%9F%E3%81%A8%E9%89%84%E6%9D%BF%E7%84%BC%20%E6%9C%AD%E5%B9%8C%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE',
-      },
       {
         label: 'トラストパークすすきの5・2 | Google Maps',
         url: 'https://maps.google.com/?q=%E3%83%88%E3%83%A9%E3%82%B9%E3%83%88%E3%83%91%E3%83%BC%E3%82%AF%E6%9C%AD%E5%B9%8C%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE5%E3%83%BB2',
       },
     ],
-    '19:00~20:00': [
-      gajaMenuLink,
-      {
-        label: 'GAjA すすきの店 | Google Maps',
-        url: 'https://maps.google.com/?q=GAjA%20%E3%81%99%E3%81%99%E3%81%8D%E3%81%AE%E5%BA%97',
-      },
-    ],
+    '19:00~20:00': [],
     '10:00~11:00': [
       {
         label: '河童寻宝中文亲子版（PDF）',
