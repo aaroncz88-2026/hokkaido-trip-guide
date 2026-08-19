@@ -466,6 +466,11 @@ const genbeeMenuLink = {
   url: docUrl('genbee-menu-zh.pdf'),
 }
 
+const kakashiMenuLink = {
+  label: 'Kakashi 中文菜单（PDF）',
+  url: docUrl('kakashi-menu-zh.pdf'),
+}
+
 const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = {
   1: {
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
@@ -480,6 +485,10 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '19:00~20:00': [],
     // 便利店：把 DAY2 出行补给提前买好
     '20:00~21:00': [day2OutingSnackGuide],
+  },
+  2: {
+    // 园区晚饭：店名改菜单 PDF / 导航，不挂无意义现场资料
+    '18:00~19:00': [],
   },
 }
 
@@ -522,6 +531,16 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         label: 'Seicomart Rusutsu | Google Maps',
         url: 'https://maps.google.com/?q=Seicomart%20Rusutsu',
       },
+    ],
+  },
+  2: {
+    '17:00~18:00': [kakashiMenuLink],
+    '18:00~19:00': [
+      {
+        label: '居酒屋かかし Kakashi | Google Maps',
+        url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%E3%81%8B%E3%81%8B%E3%81%97%20Kakashi%20Rusutsu',
+      },
+      kakashiMenuLink,
     ],
   },
 }
