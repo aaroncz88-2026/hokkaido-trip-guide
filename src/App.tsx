@@ -1910,7 +1910,7 @@ function App() {
               <span className="eyebrow">WEATHER</span>
               <h2>北海道天气</h2>
               <p>
-                优先走 Open-Meteo，连不上时自动换备用源。成功后会缓存在本机。
+                优先日本气象厅（JMA）官方预报，并用 Open-Meteo 补小时风力；失败时自动降级。成功后缓存在本机。
                 {weatherSourceLabel && ` ${weatherSourceLabel}。`}
                 {weatherUpdatedAt && ` 最近更新 ${new Date(weatherUpdatedAt).toLocaleString('zh-CN', { hour12: false })}`}
               </p>
