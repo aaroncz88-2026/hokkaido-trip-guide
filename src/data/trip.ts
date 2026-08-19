@@ -157,12 +157,13 @@ const dayMeta: DayMeta[] = [
     pinnedDocs: [
       { label: 'DAY4 定山溪旅游指南', url: docUrl('day4-guide-script.pdf') },
       { label: '河童寻宝中文亲子版', url: docUrl('jozankei-kappa-rally-zh.pdf') },
+      { label: 'GAjA 预约凭证', url: docUrl('gaja-susukino-reservation.pdf') },
       { label: 'GAjA 烤肉自助菜单摘要', url: docUrl('gaja-susukino-menu-zh.pdf') },
     ],
     reminders: [
       '出发前完成垃圾分类和退房检查',
       '白色恋人公园预留约 3 小时',
-      '晚餐 GAjA 首选；停车可去すすきの5・2',
+      '晚餐 GAjA 已预约 18:45（#30633 · プレミア ×6）；停车すすきの5・2',
       '河童寻宝：孩子可玩；题板多为日语，大人用翻译拍题即可',
     ],
   },
@@ -490,6 +491,11 @@ const gajaMenuLink = {
   url: docUrl('gaja-susukino-menu-zh.pdf'),
 }
 
+const gajaReservationLink = {
+  label: '预约凭证（PDF）',
+  url: docUrl('gaja-susukino-reservation.pdf'),
+}
+
 const day1DinnerGuide: TimelineMaterial = {
   title: '留寿都晚餐 · 源べえ',
   body: '今晚首选源べえ；菜单挂在店名旁，可先打开对照点餐。',
@@ -752,15 +758,16 @@ const jozankeiLunchGuide: TimelineMaterial = {
 }
 
 const day4DinnerGuide: TimelineMaterial = {
-  title: '札幌晚餐备选 · 薄野',
-  body: '首选 GAjA すすきの店烤肉自助；备选和食铁板烧。停车可去トラストパークすすきの5・2。',
+  title: '札幌晚餐 · GAjA 已预约',
+  body: '已订 GAjA すすきの店：8/26 18:45 入店，プレミア食べ放題 ×6人，屏风隔间。预约编号 #30633。停车可去トラストパークすすきの5・2。',
   steps: [
     {
       id: 'gaja',
-      field: '1 GAjA すすきの店（首选 · 烤肉自助）',
-      how: '点餐式吃到饱；现场 App／二维码点餐。',
+      field: '1 GAjA すすきの店（已预约 · 烤肉自助）',
+      how: '18:45 到店；出示预约凭证／报编号 #30633。点餐式吃到饱。',
       kind: 'option',
       links: [
+        gajaReservationLink,
         gajaMenuLink,
         {
           label: '地图',
@@ -771,7 +778,7 @@ const day4DinnerGuide: TimelineMaterial = {
     {
       id: 'teppan',
       field: '2 和食と鉄板焼（备选）',
-      how: 'GAjA 排不上或想换口味时改这里。',
+      how: '仅当 GAjA 无法履约时再改；正常按预约去 GAjA。',
       kind: 'option',
       links: [
         {
@@ -1035,8 +1042,8 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       kids: '【吃饭】乖乖吃饭，别乱跑',
     },
     '18:00~19:00': {
-      dad: '【晚饭】GAjA 首选；停车トラストパークすすきの5・2。先看烤肉自助菜单摘要',
-      mom: '【晚饭】点餐照顾孩子；对照 PDF／店内 App',
+      dad: '【晚饭】GAjA 已预约 18:45；停车トラストパークすすきの5・2。出示预约凭证／报 #30633',
+      mom: '【晚饭】点餐照顾孩子；对照菜单摘要；核对 6 人プレミア套餐',
       kids: '【吃饭】跟大人点肉，注意别烫到手',
     },
     '17:00~18:00': {
@@ -1168,7 +1175,7 @@ export const guideSections = [
     items: [
       { title: '留寿都一日券', detail: '建议提前网上购买，包含游乐园、羊蹄缆车等；现场购票更贵。', badge: '待购票' },
       { title: '龙宫 Blue Cave', detail: '目标 8 月 28 日 10:30 船班；出发前再次确认海况与集合时间。', badge: '重点确认' },
-      { title: 'GAjA すすきの店', detail: 'DAY4 札幌晚餐首选，按在线文档中的预约状态执行。', badge: '已安排' },
+      { title: 'GAjA すすきの店', detail: 'DAY4 18:45 已预约：プレミア食べ放題 ×6人，屏风隔间，编号 #30633。', badge: '已预约' },
       { title: '洞爷湖晚餐', detail: '首选 Restaurant & Flowers KARZZ；备选アペコロ、洋食屋 Fuji、焼肉 金城、OMOYA。', badge: '已纠正' },
       { title: '大地のテラス', detail: 'DAY7 主方案需提前确认 8 月 29 日晚餐开放，并预约 18:00。', badge: '重点确认' },
     ],
