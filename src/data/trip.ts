@@ -504,6 +504,9 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
       '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
     '20:00~21:00': '【便利店采购】Seicomart Rusutsu\n买好 DAY2 游乐园补给（水、运动饮料、小食）',
   },
+  3: {
+    '18:00~19:00': '【逛纪念品】+【晚饭可开始】\n首选 KARZZ；备选アペコロ / Fuji / 金城 / OMOYA',
+  },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
     '15:00~16:00': '【堺町通亲子任务】【小店】16:00前结束主街段',
@@ -553,7 +556,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '12:00~13:00': [lakeHillTeaGuide],
     // 湖畔：可逛店铺清单
     '17:00~18:00': [toyaBrowseShopsGuide],
-    // 晚饭：KARZZ 首选，其余备选
+    // 晚饭：18:00 起可看；KARZZ 首选，其余备选
+    '18:00~19:00': [toyaDinnerGuide],
     '19:00~20:00': [toyaDinnerGuide],
   },
 }
@@ -632,6 +636,28 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
     ],
   },
   3: {
+    '18:00~19:00': [
+      {
+        label: 'Restaurant & Flowers KARZZ | Google Maps',
+        url: 'https://maps.google.com/?q=Restaurant%20%26%20Flowers%20KARZZ%20Toyako',
+      },
+      {
+        label: '炭火ダイニング アペコロ | Google Maps',
+        url: 'https://maps.google.com/?q=%E7%82%AD%E7%81%AB%E3%83%80%E3%82%A4%E3%83%8B%E3%83%B3%E3%82%B0%20%E3%82%A2%E3%83%9A%E3%82%B3%E3%83%AD',
+      },
+      {
+        label: '洋食屋 Fuji | Google Maps',
+        url: 'https://maps.google.com/?q=%E6%B4%8B%E9%A3%9F%E5%B1%8BFuji%20%E6%B4%9E%E7%88%BA%E6%B9%96',
+      },
+      {
+        label: '焼肉 金城 | Google Maps',
+        url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%20%E9%87%91%E5%9F%8E%20%E6%B4%9E%E7%88%BA',
+      },
+      {
+        label: 'OMOYA | Google Maps',
+        url: 'https://maps.google.com/?q=OMOYA%20Toyako',
+      },
+    ],
     '19:00~20:00': [
       {
         label: 'Restaurant & Flowers KARZZ | Google Maps',
