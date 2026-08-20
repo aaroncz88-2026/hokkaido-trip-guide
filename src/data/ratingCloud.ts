@@ -1,5 +1,5 @@
 import { isFirebaseConfigured, readFirebaseConfig } from '../lib/firebaseConfig'
-import type { RatingRecord, RatingScores } from './ratings'
+import { rateableTargets, type RatingRecord, type RatingScores } from './ratings'
 
 export const deviceIdStorageKey = 'hokkaido-device-id'
 export const nicknameStorageKey = 'hokkaido-trip-nickname'
@@ -167,6 +167,48 @@ export const fetchCloudRatings = async (): Promise<
   } catch {
     return { ok: false, message: '网络异常，暂时只显示本机评分', ratings: [] }
   }
+}
+
+export const deleteCloudRating = async (
+  deviceId: string,
+  targetId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> => {
+  const url = documentsUrl(`${ratingsCollection}/${ratingDocId(deviceId, targetId)}`)
+  if (!url) return { ok: false, message: '云端未配置' }
+  try {
+    const response = await fetch(url, { method: 'DELETE' })
+    if (!response.ok && response.status !== 404) {
+      return { ok: false, message: `云端删除失败（${response.status}）` }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, message: '网络异常，云端未能删除' }
+  }
+}
+
+export const deleteCloudRatingsForTraveler = async (
+  travelerName: string,
+  day?: number,
+): Promise<{ ok: true; removed: number } | { ok: false; message: string; removed: number }> => {
+  const listed = await fetchCloudRatings()
+  if (!listed.ok && listed.ratings.length === 0) {
+    return { ok: false, message: listed.message, removed: 0 }
+  }
+  const name = travelerName.trim()
+  const allowedIds = new Set(
+    rateableTargets.filter((t) => (day == null ? true : t.day === day)).map((t) => t.id),
+  )
+  const mine = listed.ratings.filter(
+    (item) => item.travelerName === name && allowedIds.has(item.targetId),
+  )
+  let removed = 0
+  for (const item of mine) {
+    const result = await deleteCloudRating(item.deviceId, item.targetId)
+    if (result.ok) removed += 1
+  }
+  return removed === mine.length
+    ? { ok: true, removed }
+    : { ok: false, message: '部分云端记录未能删除，可到 Firebase 控制台再清一次', removed }
 }
 
 export const averageOfRecords = (records: CloudRatingRecord[]) => {
