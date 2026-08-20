@@ -71,6 +71,8 @@ type JourneyPhase = 'before' | 'during' | 'after'
 const SHOW_JAPANESE_LESSON = false
 /** 成团后首页不再展示对号入座；更换身份仍在「更多」 */
 const SHOW_HOME_PARTY_SEAT = false
+/** 旅行者选名入座暂时关闭；打分改用本机记录，日后可再开 */
+const SHOW_PARTY_FEATURES = false
 
 type JourneyState = {
   phase: JourneyPhase
@@ -862,24 +864,25 @@ function App() {
     : ''
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
   const isPartyMember = travelerConfirmed && isFixedTravelerName(travelerName)
+  const ratingAuthor = (travelerName.trim() || packingOwner.trim() || '本机').trim()
   const pendingRatingCount = useMemo(
-    () => (isPartyMember ? countPendingRatings(ratings, travelerName, now) : 0),
-    [isPartyMember, now, ratings, travelerName],
+    () => countPendingRatings(ratings, ratingAuthor, now),
+    [now, ratingAuthor, ratings],
   )
   const ratingBuckets = useMemo(() => {
-    const name = travelerName.trim()
+    const name = ratingAuthor
     const open: RateableTarget[] = []
     const locked: RateableTarget[] = []
     const done: RateableTarget[] = []
     for (const target of rateableTargets) {
       const unlocked = isTargetUnlocked(target, now)
-      const existing = name ? getTravelerRating(ratings, target.id, name) : undefined
+      const existing = getTravelerRating(ratings, target.id, name)
       if (!unlocked) locked.push(target)
       else if (existing) done.push(target)
       else open.push(target)
     }
     return { open, locked, done }
-  }, [now, ratings, travelerName])
+  }, [now, ratingAuthor, ratings])
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -949,19 +952,17 @@ function App() {
   }
 
   const openRatingsPanel = () => {
-    const name = travelerName.trim()
-    if (name) {
-      const stars: Record<string, number> = {}
-      const comments: Record<string, string> = {}
-      for (const record of ratings) {
-        if (record.travelerName === name) {
-          stars[record.targetId] = record.stars
-          comments[record.targetId] = record.comment
-        }
+    const name = ratingAuthor
+    const stars: Record<string, number> = {}
+    const comments: Record<string, string> = {}
+    for (const record of ratings) {
+      if (record.travelerName === name) {
+        stars[record.targetId] = record.stars
+        comments[record.targetId] = record.comment
       }
-      setRatingDraftStars((prev) => ({ ...stars, ...prev }))
-      setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     }
+    setRatingDraftStars((prev) => ({ ...stars, ...prev }))
+    setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     setRatingFilter('open')
     setRatingMessage('')
     setMorePanel('ratings')
@@ -1006,13 +1007,9 @@ function App() {
   }
 
   const saveRating = (target: RateableTarget) => {
-    const name = travelerName.trim()
-    if (!name || !isPartyMember) {
-      setRatingMessage('请先在首页确认加入旅行名单')
-      return
-    }
+    const name = ratingAuthor
     if (!isTargetUnlocked(target, now)) {
-      setRatingMessage('还没到开放时间，玩完再来打分哦')
+      setRatingMessage('当天 20:00 以后才开放打分')
       return
     }
     const existing = getTravelerRating(ratings, target.id, name)
@@ -1030,13 +1027,12 @@ function App() {
         comment,
       }),
     )
-    setRatingMessage('已保存到本机，后续可同步到后台数据库')
+    setRatingMessage('已保存到本机，后续可汇总大家的总评')
   }
 
-  const ratingPrompt = (target: RateableTarget, index: number) => {
-    const name = travelerName.trim() || '旅行者'
+  const ratingPrompt = (target: RateableTarget, _index: number) => {
     const kind = kindLabel(target.kind)
-    return `${name}，你评价下这个${index === 0 ? '第一个' : ''}${kind}吧：${target.title}`
+    return `请评价这项${kind}：${target.title}`
   }
 
   const renderStarPicker = (
@@ -1065,8 +1061,8 @@ function App() {
   )
 
   const renderRatingCard = (target: RateableTarget, index: number, mode: 'open' | 'locked' | 'done') => {
-    const name = travelerName.trim()
-    const existing = name ? getTravelerRating(ratings, target.id, name) : undefined
+    const name = ratingAuthor
+    const existing = getTravelerRating(ratings, target.id, name)
     const stars = ratingDraftStars[target.id] ?? existing?.stars ?? 0
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
     const unlockLabel = new Date(target.unlockAt).toLocaleString('zh-CN', {
@@ -1090,7 +1086,7 @@ function App() {
         </header>
         <p className="rating-prompt">{ratingPrompt(target, index)}</p>
         {mode === 'locked' ? (
-          <p className="rating-lock-note">行程时段结束后开放 · 预计 {unlockLabel}</p>
+          <p className="rating-lock-note">当天 20:00 后开放 · {unlockLabel}</p>
         ) : (
           <>
             {renderStarPicker(target.id, stars, false)}
@@ -1521,7 +1517,7 @@ function App() {
           </section>
         )}
 
-        {SHOW_HOME_PARTY_SEAT && (
+        {SHOW_PARTY_FEATURES && SHOW_HOME_PARTY_SEAT && (
         <section className={`traveler-identity ${isPartyMember ? 'traveler-identity--launched' : ''}`}>
           <div className="section-heading">
             <div>
@@ -1717,7 +1713,7 @@ function App() {
               <Icon name="star" />
               <span>
                 <strong>景点打分</strong>
-                <small>{pendingRatingCount > 0 ? `${pendingRatingCount} 条待评` : '玩完再评'}</small>
+                <small>{pendingRatingCount > 0 ? `${pendingRatingCount} 条待评` : '20:00 后开放'}</small>
               </span>
               {pendingRatingCount > 0 && (
                 <em className="count-badge" aria-hidden="true">
@@ -2130,7 +2126,7 @@ function App() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">RATE THE DAY</span>
-            <h2>{travelerName.trim() ? `${travelerName.trim()}的打分` : '旅行打分'}</h2>
+            <h2>旅行打分</h2>
           </div>
           {pendingRatingCount > 0 && (
             <span className="count-badge count-badge--inline" aria-label={`${pendingRatingCount} 条待评价`}>
@@ -2139,11 +2135,8 @@ function App() {
           )}
         </div>
         <p className="ratings-lead">
-          景点 / 晚餐结束后才会开放。评分先存在本机，结构已预留后续写入数据库。
+          不是每个景点／每顿都要评。当天 20:00 后开放；未评完红点会一直留着。记录先存本机，方便后天汇总总评。
         </p>
-        {!isPartyMember && (
-          <p className="ratings-warn">请先回首页确认加入旅行名单，评分才会记到你名下。</p>
-        )}
         <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
           {(
             [
@@ -2194,7 +2187,7 @@ function App() {
             <span className="more-feature-card__icon"><Icon name="star" size={22} /></span>
             <span>
               <strong>打分</strong>
-              <small>景点 / 晚餐结束后评价</small>
+              <small>每晚 20:00 后 · 未评常驻红点</small>
             </span>
             {pendingRatingCount > 0 && (
               <em className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
@@ -2204,6 +2197,7 @@ function App() {
           </button>
         </section>
 
+        {SHOW_PARTY_FEATURES && (
         <section className="party-manage">
           <div className="section-heading">
             <div>
@@ -2234,6 +2228,7 @@ function App() {
           <small className="party-footnote">名单固定为四位大人，无需联网；身份只保存在这台手机。</small>
           {partyMessage && <p className="ratings-message">{partyMessage}</p>}
         </section>
+        )}
 
         {!packingClosed && renderWeatherDesk()}
 
