@@ -38,8 +38,10 @@ import {
   writeTravelerConfirmed,
 } from './data/party'
 import {
+  averageStars,
   countPendingRatings,
   getTravelerRating,
+  isCompleteScores,
   isTargetUnlocked,
   kindLabel,
   rateableTargets,
@@ -49,6 +51,7 @@ import {
   writeRatings,
   type RateableTarget,
   type RatingRecord,
+  type RatingScores,
 } from './data/ratings'
 import {
   formatSimClock,
@@ -687,7 +690,7 @@ function App() {
   const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
   const [morePanel, setMorePanel] = useState<MorePanel>('hub')
   const [ratings, setRatings] = useState<RatingRecord[]>(() => readRatings())
-  const [ratingDraftStars, setRatingDraftStars] = useState<Record<string, number>>({})
+  const [ratingDraftScores, setRatingDraftScores] = useState<Record<string, RatingScores>>({})
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
   const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
   const [ratingMessage, setRatingMessage] = useState('')
@@ -953,15 +956,15 @@ function App() {
 
   const openRatingsPanel = () => {
     const name = ratingAuthor
-    const stars: Record<string, number> = {}
+    const scores: Record<string, RatingScores> = {}
     const comments: Record<string, string> = {}
     for (const record of ratings) {
       if (record.travelerName === name) {
-        stars[record.targetId] = record.stars
+        scores[record.targetId] = { ...record.scores }
         comments[record.targetId] = record.comment
       }
     }
-    setRatingDraftStars((prev) => ({ ...stars, ...prev }))
+    setRatingDraftScores((prev) => ({ ...scores, ...prev }))
     setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     setRatingFilter('open')
     setRatingMessage('')
@@ -1013,16 +1016,21 @@ function App() {
       return
     }
     const existing = getTravelerRating(ratings, target.id, name)
-    const stars = ratingDraftStars[target.id] ?? existing?.stars ?? 0
-    if (stars < 1 || stars > 5) {
-      setRatingMessage('请先点选 1–5 颗星')
+    const scores = {
+      ...(existing?.scores ?? {}),
+      ...(ratingDraftScores[target.id] ?? {}),
+    }
+    if (!isCompleteScores(scores, target.dimensions)) {
+      setRatingMessage('请给三个分项都点上 1–5 星')
       return
     }
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
+    const stars = averageStars(scores, target.dimensions)
     setRatings((prev) =>
       upsertRating(prev, {
         targetId: target.id,
         travelerName: name,
+        scores,
         stars,
         comment,
       }),
@@ -1030,17 +1038,19 @@ function App() {
     setRatingMessage('已保存到本机，后续可汇总大家的总评')
   }
 
-  const ratingPrompt = (target: RateableTarget, _index: number) => {
-    const kind = kindLabel(target.kind)
-    return `请评价这项${kind}：${target.title}`
+  const ratingPrompt = (target: RateableTarget) => {
+    const labels = target.dimensions.map((dim) => dim.label).join(' / ')
+    return `${kindLabel(target.kind)}三项：${labels}`
   }
 
   const renderStarPicker = (
     targetId: string,
+    dimId: string,
     value: number,
     disabled = false,
+    ariaLabel = '星级评分',
   ) => (
-    <div className="star-picker" role="radiogroup" aria-label="星级评分">
+    <div className="star-picker" role="radiogroup" aria-label={ariaLabel}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           aria-checked={value === star}
@@ -1048,7 +1058,10 @@ function App() {
           disabled={disabled}
           key={star}
           onClick={() => {
-            setRatingDraftStars((prev) => ({ ...prev, [targetId]: star }))
+            setRatingDraftScores((prev) => ({
+              ...prev,
+              [targetId]: { ...(prev[targetId] ?? {}), [dimId]: star },
+            }))
             setRatingMessage('')
           }}
           role="radio"
@@ -1060,11 +1073,13 @@ function App() {
     </div>
   )
 
-  const renderRatingCard = (target: RateableTarget, index: number, mode: 'open' | 'locked' | 'done') => {
+  const renderRatingCard = (target: RateableTarget, mode: 'open' | 'locked' | 'done') => {
     const name = ratingAuthor
     const existing = getTravelerRating(ratings, target.id, name)
-    const stars = ratingDraftStars[target.id] ?? existing?.stars ?? 0
+    const draft = ratingDraftScores[target.id] ?? {}
+    const scores: RatingScores = { ...(existing?.scores ?? {}), ...draft }
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
+    const avg = averageStars(scores, target.dimensions) || existing?.stars || 0
     const unlockLabel = new Date(target.unlockAt).toLocaleString('zh-CN', {
       month: 'numeric',
       day: 'numeric',
@@ -1082,14 +1097,27 @@ function App() {
             </span>
             <h3>{target.title}</h3>
           </div>
-          <em>{mode === 'locked' ? '未开放' : mode === 'done' ? `${existing?.stars ?? stars}★` : '待评价'}</em>
+          <em>{mode === 'locked' ? '未开放' : mode === 'done' ? `均 ${avg}★` : '待评价'}</em>
         </header>
-        <p className="rating-prompt">{ratingPrompt(target, index)}</p>
+        <p className="rating-prompt">{ratingPrompt(target)}</p>
         {mode === 'locked' ? (
           <p className="rating-lock-note">当天 20:00 后开放 · {unlockLabel}</p>
         ) : (
           <>
-            {renderStarPicker(target.id, stars, false)}
+            <div className="rating-dimensions">
+              {target.dimensions.map((dim) => (
+                <div className="rating-dimension" key={dim.id}>
+                  <span>{dim.label}</span>
+                  {renderStarPicker(
+                    target.id,
+                    dim.id,
+                    Number(scores[dim.id]) || 0,
+                    false,
+                    `${dim.label}评分`,
+                  )}
+                </div>
+              ))}
+            </div>
             <label className="rating-comment">
               <span>评语（可选）</span>
               <textarea
@@ -2135,7 +2163,7 @@ function App() {
           )}
         </div>
         <p className="ratings-lead">
-          不是每个景点／每顿都要评。当天 20:00 后开放；未评完红点会一直留着。记录先存本机，方便后天汇总总评。
+          不是每个景点／每顿都要评。景点评景色／游玩／氛围，吃饭评服务／环境／味道。当天 20:00 后开放；未评完红点常驻。
         </p>
         <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
           {(
@@ -2168,7 +2196,7 @@ function App() {
                   : '没有锁定中的项目'}
             </p>
           )}
-          {list.map((target, index) => renderRatingCard(target, index, ratingFilter))}
+          {list.map((target) => renderRatingCard(target, ratingFilter))}
         </div>
       </section>
     )

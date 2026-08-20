@@ -3618,6 +3618,23 @@ label:has(input:focus-visible) {
   font-size: 0.74rem;
 }
 
+.rating-dimensions {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.rating-dimension {
+  display: grid;
+  gap: 4px;
+}
+
+.rating-dimension > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
 .star-picker {
   display: flex;
   gap: 4px;
