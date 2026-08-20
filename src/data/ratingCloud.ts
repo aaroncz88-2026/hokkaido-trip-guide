@@ -112,6 +112,13 @@ export const pushRatingToCloud = async (
     })
     if (!response.ok) {
       const text = await response.text()
+      const denied = response.status === 403 || /PERMISSION_DENIED/i.test(text)
+      if (denied) {
+        return {
+          ok: false,
+          message: '云端规则还停在 5 星上限，8/9 分写不进去。请到 Firebase → Firestore → 规则，把 stars <= 5 改成 stars <= 10 后发布，再重新提交。',
+        }
+      }
       return { ok: false, message: `云端写入失败（${response.status}）` + (text ? `：${text.slice(0, 120)}` : '') }
     }
     return { ok: true }

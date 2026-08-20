@@ -1137,10 +1137,10 @@ function App() {
       deviceId: getDeviceId(),
     })
     if (!cloudResult.ok) {
-      setRatingMessage(`本机已保存；${cloudResult.message}`)
+      setRatingMessage(`本机已保存 ${stars} 星；${cloudResult.message}`)
       return
     }
-    setRatingMessage('已同步到云端，大家都能在汇总里看到')
+    setRatingMessage(`已同步到云端：${target.title} ${stars} / ${MAX_STARS} 星`)
     await refreshCloudRatings(true)
   }
 
@@ -1166,7 +1166,7 @@ function App() {
           role="radio"
           type="button"
         >
-          ★
+          {star}
         </button>
       ))}
       <em className="star-picker__value">{value > 0 ? `${value}/${MAX_STARS}` : `选 1–${MAX_STARS}`}</em>

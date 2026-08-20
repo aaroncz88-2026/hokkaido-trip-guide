@@ -139,16 +139,23 @@
           if (!res.ok) throw new Error(data.error?.message || `读取失败 ${res.status}`)
           const rows = (data.documents || []).map((doc) => {
             const f = doc.fields || {}
+            const scores = decode(f.scores) || {}
+            const rawStars = Number(decode(f.stars) || 0)
+            const overall = Number(scores.overall || 0)
             return {
               name: String(decode(f.travelerName) || '?'),
               targetId: String(decode(f.targetId) || '?'),
-              stars: Number(decode(f.stars) || 0),
+              stars: overall || rawStars,
+              rawStars,
               comment: String(decode(f.comment) || ''),
               updatedAt: String(decode(f.updatedAt) || ''),
             }
           }).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
-          stat.textContent = rows.length ? `云端共 ${rows.length} 条` : '云端还没有评分'
+          const looksLikeOldFive = rows.length > 0 && rows.every((r) => r.rawStars > 0 && r.rawStars <= 5 && r.rawStars === r.stars)
+          stat.textContent = rows.length
+            ? `云端共 ${rows.length} 条${looksLikeOldFive ? ' · 这些还是旧的 5 星记录，8/9 没写进去' : ''}`
+            : '云端还没有评分'
           if (rows.length === 0) {
             board.innerHTML = '<p class="empty">还没有人提交。手机打分并提示「已同步到云端」后，再点刷新。</p>'
             return
