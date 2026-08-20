@@ -66,8 +66,7 @@ import {
 } from './lib/clock'
 import './App.css'
 
-type View = 'home' | 'days' | 'guide' | 'more'
-type MorePanel = 'hub' | 'ratings'
+type View = 'home' | 'days' | 'ratings' | 'guide' | 'more'
 type JourneyPhase = 'before' | 'during' | 'after'
 
 /** 临时功能开关：需要时改回 true 即可恢复首页「出发前学几句」 */
@@ -688,7 +687,6 @@ function App() {
   const [japaneseLessonIndex, setJapaneseLessonIndex] = useState(0)
   const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
   const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
-  const [morePanel, setMorePanel] = useState<MorePanel>('hub')
   const [ratings, setRatings] = useState<RatingRecord[]>(() => readRatings())
   const [ratingDraftScores, setRatingDraftScores] = useState<Record<string, RatingScores>>({})
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
@@ -829,7 +827,6 @@ function App() {
     else if (!live) setWeatherLocationId('sapporo')
     if (date) setWeatherDate(date)
     else if (!live) setWeatherDate('2026-08-23')
-    setMorePanel('hub')
     setView(packingClosed ? 'guide' : 'more')
     setSearch('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -872,6 +869,15 @@ function App() {
     () => countPendingRatings(ratings, ratingAuthor, now),
     [now, ratingAuthor, ratings],
   )
+  const ratingsTabUnlocked = useMemo(
+    () => rateableTargets.some((target) => isTargetUnlocked(target, now)),
+    [now],
+  )
+  useEffect(() => {
+    if (view === 'ratings' && !ratingsTabUnlocked) {
+      setView('days')
+    }
+  }, [ratingsTabUnlocked, view])
   const ratingBuckets = useMemo(() => {
     const name = ratingAuthor
     const open: RateableTarget[] = []
@@ -950,7 +956,6 @@ function App() {
     setSelectedDay(day)
     setView('days')
     setSearch('')
-    setMorePanel('hub')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -968,8 +973,7 @@ function App() {
     setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     setRatingFilter('open')
     setRatingMessage('')
-    setMorePanel('ratings')
-    setView('more')
+    setView('ratings')
     setSearch('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -1440,12 +1444,12 @@ function App() {
             ? journey.phase === 'after' ? '北行珍藏' : journey.phase === 'during' ? '正在北行' : '夏日北行'
             : view === 'days'
               ? `DAY ${selectedDay}`
-              : view === 'guide'
-                ? packingClosed
-                  ? '北海道天气'
-                  : `${packingOwner.trim() || travelerName.trim() || '我的'}的旅行清单`
-                : morePanel === 'ratings'
-                  ? '打分'
+              : view === 'ratings'
+                ? '评分'
+                : view === 'guide'
+                  ? packingClosed
+                    ? '北海道天气'
+                    : `${packingOwner.trim() || travelerName.trim() || '我的'}的旅行清单`
                   : '更多'}
         </h1>
       </div>
@@ -1740,8 +1744,14 @@ function App() {
             <button onClick={openRatingsPanel}>
               <Icon name="star" />
               <span>
-                <strong>景点打分</strong>
-                <small>{pendingRatingCount > 0 ? `${pendingRatingCount} 条待评` : '20:00 后开放'}</small>
+                <strong>评分</strong>
+                <small>
+                  {ratingsTabUnlocked
+                    ? pendingRatingCount > 0
+                      ? `${pendingRatingCount} 条待评`
+                      : '底栏「评分」'
+                    : 'DAY1 · 20:00 后开放'}
+                </small>
               </span>
               {pendingRatingCount > 0 && (
                 <em className="count-badge" aria-hidden="true">
@@ -2148,9 +2158,6 @@ function App() {
 
     return (
       <section className="ratings-panel">
-        <button className="text-button ratings-back" onClick={() => setMorePanel('hub')} type="button">
-          ← 返回更多
-        </button>
         <div className="section-heading">
           <div>
             <span className="eyebrow">RATE THE DAY</span>
@@ -2163,7 +2170,7 @@ function App() {
           )}
         </div>
         <p className="ratings-lead">
-          不是每个景点／每顿都要评。景点评景色／游玩／氛围，吃饭评服务／环境／味道。当天 20:00 后开放；未评完红点常驻。
+          景点评景色／游玩／氛围，吃饭评服务／环境／味道。第一天 20:00 后开放；未评完红点在「评分」页签常驻。
         </p>
         <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
           {(
@@ -2202,20 +2209,25 @@ function App() {
     )
   }
 
+  const renderRatings = () => (
+    <>
+      {renderHeader()}
+      <main>{renderRatingsPanel()}</main>
+    </>
+  )
+
   const renderMore = () => (
     <>
       {renderHeader()}
       <main>
-        {morePanel === 'ratings' ? (
-          renderRatingsPanel()
-        ) : (
           <>
+        {ratingsTabUnlocked && (
         <section className="more-feature-grid">
           <button className="more-feature-card" onClick={openRatingsPanel} type="button">
             <span className="more-feature-card__icon"><Icon name="star" size={22} /></span>
             <span>
-              <strong>打分</strong>
-              <small>每晚 20:00 后 · 未评常驻红点</small>
+              <strong>评分</strong>
+              <small>底栏也可进入 · 未评常驻红点</small>
             </span>
             {pendingRatingCount > 0 && (
               <em className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
@@ -2224,6 +2236,7 @@ function App() {
             )}
           </button>
         </section>
+        )}
 
         {SHOW_PARTY_FEATURES && (
         <section className="party-manage">
@@ -2339,7 +2352,6 @@ function App() {
           <p>为两家人的夏日北行而作</p>
         </section>
           </>
-        )}
       </main>
     </>
   )
@@ -2360,6 +2372,7 @@ function App() {
       </div>
       {view === 'home' && renderHome()}
       {view === 'days' && renderDays()}
+      {view === 'ratings' && renderRatings()}
       {view === 'guide' && renderGuide()}
       {view === 'more' && renderMore()}
       {timePanelOpen && (
@@ -2475,13 +2488,16 @@ function App() {
           </div>
         </div>
       )}
-      <nav className="bottom-nav" aria-label="主要导航">
-        {([
-          ['home', '首页', 'home'],
-          ['days', '行程', 'calendar'],
-          packingClosed ? (['guide', '天气', 'weather'] as const) : (['guide', '清单', 'guide'] as const),
-          ['more', '更多', 'more'],
-        ] as const).map(([id, label, icon]) => (
+      <nav className={`bottom-nav${ratingsTabUnlocked ? ' bottom-nav--with-ratings' : ''}`} aria-label="主要导航">
+        {(
+          [
+            ['home', '首页', 'home'] as const,
+            ['days', '行程', 'calendar'] as const,
+            ...(ratingsTabUnlocked ? ([['ratings', '评分', 'star']] as const) : ([] as const)),
+            packingClosed ? (['guide', '天气', 'weather'] as const) : (['guide', '清单', 'guide'] as const),
+            ['more', '更多', 'more'] as const,
+          ] as ReadonlyArray<readonly [View, string, string]>
+        ).map(([id, label, icon]) => (
           <button
             aria-current={view === id ? 'page' : undefined}
             className={view === id ? 'active' : ''}
@@ -2489,25 +2505,27 @@ function App() {
             onClick={() => {
               if (id === 'days') {
                 syncViewsToLiveDay()
-                setMorePanel('hub')
                 setView(id)
                 setSearch('')
                 if (resolveLiveDayNumber()) scrollToLiveTimeline()
                 else window.scrollTo({ top: 0, behavior: 'smooth' })
                 return
               }
+              if (id === 'ratings') {
+                openRatingsPanel()
+                return
+              }
               if (id === 'guide' && packingClosed) {
                 syncViewsToLiveDay()
               }
-              if (id !== 'more') setMorePanel('hub')
               setView(id)
               setSearch('')
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           >
             <span className="bottom-nav__icon">
-              <Icon name={icon} size={21} />
-              {id === 'more' && pendingRatingCount > 0 && (
+              <Icon name={icon} size={24} />
+              {id === 'ratings' && pendingRatingCount > 0 && (
                 <em className="count-badge" aria-label={`${pendingRatingCount} 条待评价`}>
                   {pendingRatingCount > 99 ? '99+' : pendingRatingCount}
                 </em>
