@@ -96,8 +96,9 @@ export const pushRatingToCloud = async (
       targetId: encodeString(record.targetId),
       travelerName: encodeString(record.travelerName),
       scores: encodeScores({ ...(record.scores ?? {}), overall: record.stars }),
-      // Live console rules still cap `stars` at 5; the real 1–10 score lives in scores.overall.
+      // Live console rules still cap `stars` at 5; real 1–10 score is score10 + scores.overall.
       stars: encodeNumber(Math.min(5, Math.max(1, Number(record.stars) || 1))),
+      score10: encodeNumber(Math.max(1, Math.min(10, Number(record.stars) || 1))),
       comment: encodeString(record.comment ?? ''),
       createdAt: encodeString(record.createdAt),
       updatedAt: encodeString(record.updatedAt),
@@ -143,7 +144,7 @@ const parseCloudRecord = (fields: Record<string, FirestoreValue> | undefined): C
     travelerName,
     deviceId,
     scores,
-    stars: Number(scores.overall || decodeValue(fields.stars) || 0),
+    stars: Number(decodeValue(fields.score10) || scores.overall || decodeValue(fields.stars) || 0),
     comment: String(decodeValue(fields.comment) ?? ''),
     createdAt: String(decodeValue(fields.createdAt) ?? new Date().toISOString()),
     updatedAt: String(decodeValue(fields.updatedAt) ?? new Date().toISOString()),

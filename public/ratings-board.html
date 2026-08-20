@@ -47,6 +47,7 @@
         font-weight: 700;
         cursor: pointer;
       }
+      #fixOnion { background: #b42318; }
       .stat {
         color: var(--muted);
         font-size: 0.88rem;
@@ -92,6 +93,7 @@
     <main>
       <div class="toolbar">
         <button id="reload" type="button">刷新云端</button>
+        <button id="fixOnion" type="button">写入洋葱：湖 8 / 晚餐 9</button>
         <span class="stat" id="stat">正在读取…</span>
       </div>
       <div class="grid" id="board"></div>
@@ -142,10 +144,11 @@
             const scores = decode(f.scores) || {}
             const rawStars = Number(decode(f.stars) || 0)
             const overall = Number(scores.overall || 0)
+            const score10 = Number(decode(f.score10) || 0)
             return {
               name: String(decode(f.travelerName) || '?'),
               targetId: String(decode(f.targetId) || '?'),
-              stars: overall || rawStars,
+              stars: score10 || overall || rawStars,
               rawStars,
               comment: String(decode(f.comment) || ''),
               updatedAt: String(decode(f.updatedAt) || ''),
@@ -196,7 +199,61 @@
         }
       }
 
+      const encodeString = (value) => ({ stringValue: String(value ?? '') })
+      const encodeNumber = (value) => ({ integerValue: String(Math.round(Number(value) || 0)) })
+
+      const fixOnion = async () => {
+        const stat = document.getElementById('stat')
+        stat.textContent = '正在写入洋葱的 8 / 9…'
+        try {
+          const key = await findKey()
+          const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/tripRatings?key=${encodeURIComponent(key)}`
+          const listRes = await fetch(listUrl)
+          const listData = await listRes.json()
+          if (!listRes.ok) throw new Error(listData.error?.message || '读取失败')
+          const wanted = {
+            'day1-shikotsu-lake': 8,
+            'day1-dinner-genbee': 9,
+          }
+          let updated = 0
+          for (const doc of listData.documents || []) {
+            const f = doc.fields || {}
+            const name = String(decode(f.travelerName) || '')
+            const targetId = String(decode(f.targetId) || '')
+            const score = wanted[targetId]
+            if (name !== '洋葱' || !score) continue
+            const body = {
+              fields: {
+                deviceId: f.deviceId || encodeString('onion-fix'),
+                targetId: encodeString(targetId),
+                travelerName: encodeString('洋葱'),
+                scores: { mapValue: { fields: { overall: encodeNumber(score) } } },
+                stars: encodeNumber(5),
+                score10: encodeNumber(score),
+                comment: f.comment || encodeString(''),
+                createdAt: f.createdAt || encodeString(new Date().toISOString()),
+                updatedAt: encodeString(new Date().toISOString()),
+              },
+            }
+            const patchRes = await fetch(`https://firestore.googleapis.com/v1/${doc.name}?key=${encodeURIComponent(key)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const patchText = await patchRes.text()
+            if (!patchRes.ok) throw new Error(`写入 ${targetId} 失败：${patchText.slice(0, 180)}`)
+            updated += 1
+          }
+          if (!updated) throw new Error('没有找到洋葱的记录，请先在 App 里用这个昵称提交一次')
+          stat.textContent = `已写入 ${updated} 条，正在刷新…`
+          await load()
+        } catch (error) {
+          stat.textContent = error.message || String(error)
+        }
+      }
+
       document.getElementById('reload').addEventListener('click', load)
+      document.getElementById('fixOnion').addEventListener('click', fixOnion)
       load()
     </script>
   </body>
