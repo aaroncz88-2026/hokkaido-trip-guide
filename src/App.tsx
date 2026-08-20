@@ -54,6 +54,16 @@ import {
   type RatingScores,
 } from './data/ratings'
 import {
+  averageOfRecords,
+  fetchCloudRatings,
+  getDeviceId,
+  isRatingCloudConfigured,
+  pushRatingToCloud,
+  readNickname,
+  writeNickname,
+  type CloudRatingRecord,
+} from './data/ratingCloud'
+import {
   formatSimClock,
   getAppNow,
   getCurrentActivity,
@@ -668,11 +678,16 @@ function App() {
       return createDefaultPackingLists()
     }
   })
-  const [travelerName, setTravelerName] = useState(() => readClaimedTravelerName())
+  const [travelerName, setTravelerName] = useState(() => readClaimedTravelerName() || readNickname())
   const [travelerConfirmed, setTravelerConfirmed] = useState(() => {
     const claimed = readClaimedTravelerName()
     return Boolean(claimed) && readTravelerConfirmed()
   })
+  const [nicknameDraft, setNicknameDraft] = useState(() => readNickname() || readClaimedTravelerName() || '')
+  const [nicknameMessage, setNicknameMessage] = useState('')
+  const [cloudRatings, setCloudRatings] = useState<CloudRatingRecord[]>([])
+  const [ratingsBoard, setRatingsBoard] = useState<'mine' | 'spots' | 'people'>('mine')
+  const [cloudBusy, setCloudBusy] = useState(false)
   const [partyBusy, setPartyBusy] = useState(false)
   const [partyMessage, setPartyMessage] = useState('')
   const [confirmDialog, setConfirmDialog] = useState<null | { mode: 'join' | 'rename'; name: string }>(
@@ -726,6 +741,22 @@ function App() {
   useEffect(() => {
     writeRatings(ratings)
   }, [ratings])
+
+  const refreshCloudRatings = async (silent = false) => {
+    if (!isRatingCloudConfigured()) {
+      if (!silent) setRatingMessage('云端未配置：评分目前只保存在本机')
+      return
+    }
+    setCloudBusy(true)
+    const result = await fetchCloudRatings()
+    setCloudBusy(false)
+    setCloudRatings(result.ratings)
+    if (!result.ok && !silent) setRatingMessage(result.message)
+  }
+
+  useEffect(() => {
+    void refreshCloudRatings(true)
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('hokkaido-show-packed', String(showPacked))
@@ -864,7 +895,8 @@ function App() {
     : ''
   const japaneseLesson = japaneseLessons[japaneseLessonIndex]
   const isPartyMember = travelerConfirmed && isFixedTravelerName(travelerName)
-  const ratingAuthor = (travelerName.trim() || packingOwner.trim() || '本机').trim()
+  const tripNickname = (nicknameDraft.trim() || travelerName.trim() || packingOwner.trim()).trim()
+  const ratingAuthor = tripNickname || '本机'
   const pendingRatingCount = useMemo(
     () => countPendingRatings(ratings, ratingAuthor, now),
     [now, ratingAuthor, ratings],
@@ -973,9 +1005,11 @@ function App() {
     setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     setRatingFilter('open')
     setRatingMessage('')
+    setRatingsBoard('mine')
     setView('ratings')
     setSearch('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    void refreshCloudRatings(true)
   }
 
   const requestClaimSeat = (name: string, mode: 'join' | 'rename' = 'join') => {
@@ -1013,8 +1047,29 @@ function App() {
     setConfirmDialog(null)
   }
 
-  const saveRating = (target: RateableTarget) => {
+  const saveNickname = () => {
+    const next = nicknameDraft.trim()
+    if (!next) {
+      setNicknameMessage('请先填写一个昵称，打分时会用它称呼你')
+      return
+    }
+    if (next.length > 24) {
+      setNicknameMessage('昵称请控制在 24 字以内')
+      return
+    }
+    writeNickname(next)
+    localStorage.setItem(travelerStorageKey, next)
+    setTravelerName(next)
+    if (!packingOwner.trim()) setPackingOwner(next)
+    setNicknameMessage(`已保存：${next}。打分时会问「${next}，你对这个景点的评价？」`)
+  }
+
+  const saveRating = async (target: RateableTarget) => {
     const name = ratingAuthor
+    if (!name || name === '本机') {
+      setRatingMessage('请先到「更多 → 本次旅行的昵称」取个名字，再来打分')
+      return
+    }
     if (!isTargetUnlocked(target, now)) {
       setRatingMessage('当天 20:00 以后才开放打分')
       return
@@ -1030,21 +1085,41 @@ function App() {
     }
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
     const stars = averageStars(scores, target.dimensions)
-    setRatings((prev) =>
-      upsertRating(prev, {
-        targetId: target.id,
-        travelerName: name,
-        scores,
-        stars,
-        comment,
-      }),
-    )
-    setRatingMessage('已保存到本机，后续可汇总大家的总评')
+    const nextLocal = upsertRating(ratings, {
+      targetId: target.id,
+      travelerName: name,
+      scores,
+      stars,
+      comment,
+    })
+    setRatings(nextLocal)
+    const saved = getTravelerRating(nextLocal, target.id, name)
+    if (!saved) return
+
+    if (!isRatingCloudConfigured()) {
+      setRatingMessage('已保存到本机（云端未配置，其他人还看不到）')
+      return
+    }
+
+    setRatingMessage('正在同步到云端…')
+    const cloudResult = await pushRatingToCloud({
+      ...saved,
+      deviceId: getDeviceId(),
+    })
+    if (!cloudResult.ok) {
+      setRatingMessage(`本机已保存；${cloudResult.message}`)
+      return
+    }
+    setRatingMessage('已同步到云端，大家都能在汇总里看到')
+    await refreshCloudRatings(true)
   }
 
   const ratingPrompt = (target: RateableTarget) => {
     const labels = target.dimensions.map((dim) => dim.label).join(' / ')
-    return `${kindLabel(target.kind)}三项：${labels}`
+    if (tripNickname) {
+      return `${tripNickname}，你对「${target.title}」的评价？三项：${labels}`
+    }
+    return `你对「${target.title}」的评价？三项：${labels}（请先设置昵称）`
   }
 
   const renderStarPicker = (
@@ -2156,6 +2231,17 @@ function App() {
           ? ratingBuckets.locked
           : ratingBuckets.done
 
+    const bySpot = rateableTargets
+      .map((target) => {
+        const rows = cloudRatings.filter((item) => item.targetId === target.id)
+        return { target, rows, avg: averageOfRecords(rows) }
+      })
+      .filter((item) => item.rows.length > 0 || isTargetUnlocked(item.target, now))
+
+    const peopleNames = Array.from(
+      new Set(cloudRatings.map((item) => item.travelerName.trim()).filter(Boolean)),
+    ).sort((a, b) => a.localeCompare(b, 'zh-CN'))
+
     return (
       <section className="ratings-panel">
         <div className="section-heading">
@@ -2170,21 +2256,27 @@ function App() {
           )}
         </div>
         <p className="ratings-lead">
-          景点评景色／游玩／氛围，吃饭评服务／环境／味道。第一天 20:00 后开放；未评完红点在「评分」页签常驻。
+          {tripNickname
+            ? `当前昵称：${tripNickname}。提交后会同步云端，可看各景点与每人汇总。`
+            : '请先到「更多」设置「本次旅行的昵称」，再来打分。'}
         </p>
-        <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
+
+        <div className="rating-filter-tabs" role="tablist" aria-label="评分视图">
           {(
             [
-              ['open', `待评价 ${ratingBuckets.open.length}`],
-              ['done', `已评价 ${ratingBuckets.done.length}`],
-              ['locked', `未开放 ${ratingBuckets.locked.length}`],
+              ['mine', '我的打分'],
+              ['spots', '景点汇总'],
+              ['people', '按昵称'],
             ] as const
           ).map(([id, label]) => (
             <button
-              aria-selected={ratingFilter === id}
-              className={ratingFilter === id ? 'active' : ''}
+              aria-selected={ratingsBoard === id}
+              className={ratingsBoard === id ? 'active' : ''}
               key={id}
-              onClick={() => setRatingFilter(id)}
+              onClick={() => {
+                setRatingsBoard(id)
+                if (id !== 'mine') void refreshCloudRatings(true)
+              }}
               role="tab"
               type="button"
             >
@@ -2192,19 +2284,126 @@ function App() {
             </button>
           ))}
         </div>
-        {ratingMessage && <p className="ratings-message">{ratingMessage}</p>}
-        <div className="rating-list">
-          {list.length === 0 && (
-            <p className="empty-state">
-              {ratingFilter === 'open'
-                ? '太棒了，当前没有待评价项目'
-                : ratingFilter === 'done'
-                  ? '还没有已保存的评分'
-                  : '没有锁定中的项目'}
-            </p>
-          )}
-          {list.map((target) => renderRatingCard(target, ratingFilter))}
+
+        <div className="ratings-cloud-bar">
+          <button className="text-button" disabled={cloudBusy} onClick={() => void refreshCloudRatings()} type="button">
+            {cloudBusy ? '同步中…' : '刷新云端'}
+          </button>
+          <small>
+            {isRatingCloudConfigured()
+              ? `云端 ${cloudRatings.length} 条`
+              : '云端未配置（仅本机）'}
+          </small>
         </div>
+
+        {ratingMessage && <p className="ratings-message">{ratingMessage}</p>}
+
+        {ratingsBoard === 'mine' && (
+          <>
+            <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
+              {(
+                [
+                  ['open', `待评价 ${ratingBuckets.open.length}`],
+                  ['done', `已评价 ${ratingBuckets.done.length}`],
+                  ['locked', `未开放 ${ratingBuckets.locked.length}`],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  aria-selected={ratingFilter === id}
+                  className={ratingFilter === id ? 'active' : ''}
+                  key={id}
+                  onClick={() => setRatingFilter(id)}
+                  role="tab"
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="rating-list">
+              {list.length === 0 && (
+                <p className="empty-state">
+                  {ratingFilter === 'open'
+                    ? '太棒了，当前没有待评价项目'
+                    : ratingFilter === 'done'
+                      ? '还没有已保存的评分'
+                      : '没有锁定中的项目'}
+                </p>
+              )}
+              {list.map((target) => renderRatingCard(target, ratingFilter))}
+            </div>
+          </>
+        )}
+
+        {ratingsBoard === 'spots' && (
+          <div className="rating-summary-list">
+            {bySpot.length === 0 && <p className="empty-state">还没有可展示的景点评分</p>}
+            {bySpot.map(({ target, rows, avg }) => (
+              <article className="rating-summary-card" key={target.id}>
+                <header>
+                  <div>
+                    <span>
+                      DAY {target.day} · {kindLabel(target.kind)}
+                    </span>
+                    <h3>{target.title}</h3>
+                  </div>
+                  <em>{rows.length ? `均 ${avg}★ · ${rows.length} 人` : '暂无人评'}</em>
+                </header>
+                {rows.length === 0 ? (
+                  <p className="rating-lock-note">开放后大家提交即可汇总在这里</p>
+                ) : (
+                  <ul className="rating-person-rows">
+                    {rows
+                      .slice()
+                      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+                      .map((row) => (
+                        <li key={`${row.deviceId}-${row.targetId}`}>
+                          <strong>{row.travelerName}</strong>
+                          <span>{row.stars}★</span>
+                          {row.comment ? <small>{row.comment}</small> : null}
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {ratingsBoard === 'people' && (
+          <div className="rating-summary-list">
+            {peopleNames.length === 0 && <p className="empty-state">还没有人的云端评分</p>}
+            {peopleNames.map((person) => {
+              const rows = cloudRatings.filter((item) => item.travelerName === person)
+              const avg = averageOfRecords(rows)
+              return (
+                <article className="rating-summary-card" key={person}>
+                  <header>
+                    <div>
+                      <span>旅行昵称</span>
+                      <h3>{person}</h3>
+                    </div>
+                    <em>
+                      均 {avg}★ · {rows.length} 条
+                    </em>
+                  </header>
+                  <ul className="rating-person-rows">
+                    {rows.map((row) => {
+                      const target = rateableTargets.find((item) => item.id === row.targetId)
+                      return (
+                        <li key={`${row.deviceId}-${row.targetId}`}>
+                          <strong>{target?.title ?? row.targetId}</strong>
+                          <span>{row.stars}★</span>
+                          {row.comment ? <small>{row.comment}</small> : null}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </section>
     )
   }
@@ -2221,6 +2420,32 @@ function App() {
       {renderHeader()}
       <main>
           <>
+        <section className="nickname-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">TRIP NICKNAME</span>
+              <h2>本次旅行的昵称</h2>
+            </div>
+          </div>
+          <p className="party-lead">打分时会用这个称呼提问，例如「洋葱，你对支笏湖的评价？」</p>
+          <label className="nickname-field">
+            <span>你的昵称</span>
+            <input
+              maxLength={24}
+              onChange={(event) => {
+                setNicknameDraft(event.target.value)
+                setNicknameMessage('')
+              }}
+              placeholder="例如：洋葱"
+              value={nicknameDraft}
+            />
+          </label>
+          <button className="rating-save" onClick={saveNickname} type="button">
+            保存昵称
+          </button>
+          {nicknameMessage && <p className="ratings-message">{nicknameMessage}</p>}
+        </section>
+
         {ratingsTabUnlocked && (
         <section className="more-feature-grid">
           <button className="more-feature-card" onClick={openRatingsPanel} type="button">

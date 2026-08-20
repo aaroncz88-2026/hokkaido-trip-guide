@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /trips/{tripId} {
+      allow read: if true;
+      allow create, update: if
+        tripId == 'hokkaido-2026'
+        && request.resource.data.keys().hasOnly(['travelers'])
+        && request.resource.data.travelers is list
+        && request.resource.data.travelers.size() <= 4
+        && request.resource.data.travelers.size() >= 0;
+      allow delete: if false;
+    }
+
+    match /tripRatings/{ratingId} {
+      allow read: if true;
+      allow create, update: if
+        request.resource.data.keys().hasAll([
+          'deviceId', 'targetId', 'travelerName', 'scores', 'stars', 'comment', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.deviceId is string
+        && request.resource.data.deviceId.size() > 0
+        && request.resource.data.deviceId.size() <= 80
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() <= 80
+        && request.resource.data.travelerName is string
+        && request.resource.data.travelerName.size() > 0
+        && request.resource.data.travelerName.size() <= 24
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 200
+        && request.resource.data.stars is number
+        && request.resource.data.stars >= 1
+        && request.resource.data.stars <= 5;
+      allow delete: if false;
+    }
+  }
+}
