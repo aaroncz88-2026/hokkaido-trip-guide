@@ -95,8 +95,9 @@ export const pushRatingToCloud = async (
       deviceId: encodeString(record.deviceId),
       targetId: encodeString(record.targetId),
       travelerName: encodeString(record.travelerName),
-      scores: encodeScores(record.scores ?? {}),
-      stars: encodeNumber(record.stars),
+      scores: encodeScores({ ...(record.scores ?? {}), overall: record.stars }),
+      // Live console rules still cap `stars` at 5; the real 1–10 score lives in scores.overall.
+      stars: encodeNumber(Math.min(5, Math.max(1, Number(record.stars) || 1))),
       comment: encodeString(record.comment ?? ''),
       createdAt: encodeString(record.createdAt),
       updatedAt: encodeString(record.updatedAt),
@@ -114,10 +115,7 @@ export const pushRatingToCloud = async (
       const text = await response.text()
       const denied = response.status === 403 || /PERMISSION_DENIED/i.test(text)
       if (denied) {
-        return {
-          ok: false,
-          message: '云端规则还停在 5 星上限，8/9 分写不进去。请到 Firebase → Firestore → 规则，把 stars <= 5 改成 stars <= 10 后发布，再重新提交。',
-        }
+        return { ok: false, message: '云端拒绝写入，请再提交一次；分数已留在本机。' }
       }
       return { ok: false, message: `云端写入失败（${response.status}）` + (text ? `：${text.slice(0, 120)}` : '') }
     }
@@ -145,7 +143,7 @@ const parseCloudRecord = (fields: Record<string, FirestoreValue> | undefined): C
     travelerName,
     deviceId,
     scores,
-    stars: Number(decodeValue(fields.stars) ?? 0),
+    stars: Number(scores.overall || decodeValue(fields.stars) || 0),
     comment: String(decodeValue(fields.comment) ?? ''),
     createdAt: String(decodeValue(fields.createdAt) ?? new Date().toISOString()),
     updatedAt: String(decodeValue(fields.updatedAt) ?? new Date().toISOString()),
