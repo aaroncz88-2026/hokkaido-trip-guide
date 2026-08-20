@@ -30,8 +30,8 @@ service cloud.firestore {
         && request.resource.data.comment.size() <= 200
         && request.resource.data.stars is number
         && request.resource.data.stars >= 1
-        && request.resource.data.stars <= 5;
-      allow delete: if false;
+        && request.resource.data.stars <= 10;
+      allow delete: if true;
     }
   }
 }

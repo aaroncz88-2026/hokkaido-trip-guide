@@ -38,12 +38,13 @@ import {
   writeTravelerConfirmed,
 } from './data/party'
 import {
-  averageStars,
+  clampStars,
   countPendingRatings,
   getTravelerRating,
-  isCompleteScores,
   isTargetUnlocked,
+  isValidStars,
   kindLabel,
+  MAX_STARS,
   rateableTargets,
   readRatings,
   travelerStorageKey,
@@ -51,10 +52,10 @@ import {
   writeRatings,
   type RateableTarget,
   type RatingRecord,
-  type RatingScores,
 } from './data/ratings'
 import {
   averageOfRecords,
+  deleteCloudRatingsForTraveler,
   fetchCloudRatings,
   getDeviceId,
   isRatingCloudConfigured,
@@ -703,7 +704,7 @@ function App() {
   const [revealedPhrases, setRevealedPhrases] = useState<Record<string, boolean>>({})
   const [speakingPhraseKey, setSpeakingPhraseKey] = useState<string | null>(null)
   const [ratings, setRatings] = useState<RatingRecord[]>(() => readRatings())
-  const [ratingDraftScores, setRatingDraftScores] = useState<Record<string, RatingScores>>({})
+  const [ratingDraftStars, setRatingDraftStars] = useState<Record<string, number>>({})
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
   const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
   const [ratingMessage, setRatingMessage] = useState('')
@@ -993,15 +994,15 @@ function App() {
 
   const openRatingsPanel = () => {
     const name = ratingAuthor
-    const scores: Record<string, RatingScores> = {}
+    const stars: Record<string, number> = {}
     const comments: Record<string, string> = {}
     for (const record of ratings) {
       if (record.travelerName === name) {
-        scores[record.targetId] = { ...record.scores }
+        stars[record.targetId] = record.stars
         comments[record.targetId] = record.comment
       }
     }
-    setRatingDraftScores((prev) => ({ ...scores, ...prev }))
+    setRatingDraftStars((prev) => ({ ...stars, ...prev }))
     setRatingDraftComments((prev) => ({ ...comments, ...prev }))
     setRatingFilter('open')
     setRatingMessage('')
@@ -1064,6 +1065,40 @@ function App() {
     setNicknameMessage(`已保存：${next}。打分时会问「${next}，你对这个景点的评价？」`)
   }
 
+  const clearMyDay1Ratings = async () => {
+    const name = ratingAuthor
+    if (!name || name === '本机') {
+      setRatingMessage('请先设置昵称')
+      return
+    }
+    const day1Ids = new Set(rateableTargets.filter((t) => t.day === 1).map((t) => t.id))
+    setRatings((prev) => prev.filter((item) => !(item.travelerName === name && day1Ids.has(item.targetId))))
+    setRatingDraftStars((prev) => {
+      const next = { ...prev }
+      for (const id of day1Ids) delete next[id]
+      return next
+    })
+    setRatingDraftComments((prev) => {
+      const next = { ...prev }
+      for (const id of day1Ids) delete next[id]
+      return next
+    })
+    setRatingFilter('open')
+    setRatingsBoard('mine')
+    if (!isRatingCloudConfigured()) {
+      setRatingMessage('本机 DAY1 评分已清空，可重新评价')
+      return
+    }
+    setRatingMessage('正在清空云端 DAY1 评分…')
+    const result = await deleteCloudRatingsForTraveler(name, 1)
+    await refreshCloudRatings(true)
+    setRatingMessage(
+      result.ok
+        ? `已清空「${name}」的 DAY1 评分（${result.removed} 条），可以重新评价了`
+        : `本机已清空；云端：${result.message}（已删 ${result.removed} 条）`,
+    )
+  }
+
   const saveRating = async (target: RateableTarget) => {
     const name = ratingAuthor
     if (!name || name === '本机') {
@@ -1075,20 +1110,15 @@ function App() {
       return
     }
     const existing = getTravelerRating(ratings, target.id, name)
-    const scores = {
-      ...(existing?.scores ?? {}),
-      ...(ratingDraftScores[target.id] ?? {}),
-    }
-    if (!isCompleteScores(scores, target.dimensions)) {
-      setRatingMessage('请给三个分项都点上 1–5 星')
+    const stars = clampStars(ratingDraftStars[target.id] ?? existing?.stars ?? 0)
+    if (!isValidStars(stars)) {
+      setRatingMessage(`请点选 1–${MAX_STARS} 星`)
       return
     }
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
-    const stars = averageStars(scores, target.dimensions)
     const nextLocal = upsertRating(ratings, {
       targetId: target.id,
       travelerName: name,
-      scores,
       stars,
       comment,
     })
@@ -1115,32 +1145,22 @@ function App() {
   }
 
   const ratingPrompt = (target: RateableTarget) => {
-    const labels = target.dimensions.map((dim) => dim.label).join(' / ')
     if (tripNickname) {
-      return `${tripNickname}，你对「${target.title}」的评价？三项：${labels}`
+      return `${tripNickname}，你给「${target.title}」打几星？（满分 ${MAX_STARS} 星）`
     }
-    return `你对「${target.title}」的评价？三项：${labels}（请先设置昵称）`
+    return `你给「${target.title}」打几星？（满分 ${MAX_STARS} 星；请先设置昵称）`
   }
 
-  const renderStarPicker = (
-    targetId: string,
-    dimId: string,
-    value: number,
-    disabled = false,
-    ariaLabel = '星级评分',
-  ) => (
-    <div className="star-picker" role="radiogroup" aria-label={ariaLabel}>
-      {[1, 2, 3, 4, 5].map((star) => (
+  const renderStarPicker = (targetId: string, value: number, disabled = false) => (
+    <div className="star-picker star-picker--ten" role="radiogroup" aria-label={`1到${MAX_STARS}星`}>
+      {Array.from({ length: MAX_STARS }, (_, index) => index + 1).map((star) => (
         <button
           aria-checked={value === star}
           className={star <= value ? 'active' : ''}
           disabled={disabled}
           key={star}
           onClick={() => {
-            setRatingDraftScores((prev) => ({
-              ...prev,
-              [targetId]: { ...(prev[targetId] ?? {}), [dimId]: star },
-            }))
+            setRatingDraftStars((prev) => ({ ...prev, [targetId]: star }))
             setRatingMessage('')
           }}
           role="radio"
@@ -1149,16 +1169,15 @@ function App() {
           ★
         </button>
       ))}
+      <em className="star-picker__value">{value > 0 ? `${value}/${MAX_STARS}` : `选 1–${MAX_STARS}`}</em>
     </div>
   )
 
   const renderRatingCard = (target: RateableTarget, mode: 'open' | 'locked' | 'done') => {
     const name = ratingAuthor
     const existing = getTravelerRating(ratings, target.id, name)
-    const draft = ratingDraftScores[target.id] ?? {}
-    const scores: RatingScores = { ...(existing?.scores ?? {}), ...draft }
+    const stars = clampStars(ratingDraftStars[target.id] ?? existing?.stars ?? 0)
     const comment = ratingDraftComments[target.id] ?? existing?.comment ?? ''
-    const avg = averageStars(scores, target.dimensions) || existing?.stars || 0
     const unlockLabel = new Date(target.unlockAt).toLocaleString('zh-CN', {
       month: 'numeric',
       day: 'numeric',
@@ -1176,27 +1195,14 @@ function App() {
             </span>
             <h3>{target.title}</h3>
           </div>
-          <em>{mode === 'locked' ? '未开放' : mode === 'done' ? `均 ${avg}★` : '待评价'}</em>
+          <em>{mode === 'locked' ? '未开放' : mode === 'done' ? `${stars || existing?.stars || 0}★` : '待评价'}</em>
         </header>
         <p className="rating-prompt">{ratingPrompt(target)}</p>
         {mode === 'locked' ? (
           <p className="rating-lock-note">当天 20:00 后开放 · {unlockLabel}</p>
         ) : (
           <>
-            <div className="rating-dimensions">
-              {target.dimensions.map((dim) => (
-                <div className="rating-dimension" key={dim.id}>
-                  <span>{dim.label}</span>
-                  {renderStarPicker(
-                    target.id,
-                    dim.id,
-                    Number(scores[dim.id]) || 0,
-                    false,
-                    `${dim.label}评分`,
-                  )}
-                </div>
-              ))}
-            </div>
+            {renderStarPicker(target.id, stars, false)}
             <label className="rating-comment">
               <span>评语（可选）</span>
               <textarea
@@ -1207,12 +1213,12 @@ function App() {
                     [target.id]: event.target.value,
                   }))
                 }
-                placeholder="写下这一刻的感受…"
+                placeholder="一句话就好…"
                 rows={2}
                 value={comment}
               />
             </label>
-            <button className="rating-save" onClick={() => saveRating(target)} type="button">
+            <button className="rating-save" onClick={() => void saveRating(target)} type="button">
               {existing ? '更新评分' : '提交评分'}
             </button>
           </>
@@ -2257,7 +2263,7 @@ function App() {
         </div>
         <p className="ratings-lead">
           {tripNickname
-            ? `当前昵称：${tripNickname}。提交后会同步云端，可看各景点与每人汇总。`
+            ? `当前昵称：${tripNickname}。每个项目笼统打 1–${MAX_STARS} 星即可，提交后同步云端。`
             : '请先到「更多」设置「本次旅行的昵称」，再来打分。'}
         </p>
 
@@ -2288,6 +2294,9 @@ function App() {
         <div className="ratings-cloud-bar">
           <button className="text-button" disabled={cloudBusy} onClick={() => void refreshCloudRatings()} type="button">
             {cloudBusy ? '同步中…' : '刷新云端'}
+          </button>
+          <button className="text-button text-button--danger" onClick={() => void clearMyDay1Ratings()} type="button">
+            清空我的 DAY1
           </button>
           <small>
             {isRatingCloudConfigured()

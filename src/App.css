@@ -476,6 +476,10 @@
   font-weight: 750;
 }
 
+.text-button--danger {
+  color: #b42318;
+}
+
 .japanese-lesson {
   padding-top: 28px;
 }
@@ -3765,7 +3769,24 @@ label:has(input:focus-visible) {
 
 .star-picker {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  align-items: center;
+}
+
+.star-picker--ten button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.star-picker__value {
+  margin-left: 4px;
+  color: var(--brand, #6b4d78);
+  font-style: normal;
+  font-size: 0.82rem;
+  font-weight: 750;
 }
 
 .star-picker button {
