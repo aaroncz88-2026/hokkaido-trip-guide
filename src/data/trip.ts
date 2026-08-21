@@ -1045,6 +1045,26 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       mom: '【晚饭】点餐照顾孩子；核对 Oktoberfest 早餐已预订',
       kids: '【吃】乖乖吃饭',
     },
+    '6:00~7:00': {
+      dad: '【起床】准备早餐和出门',
+      mom: '【早餐】带孩子起床吃饭',
+      kids: '【起床】吃早餐，跟大人洗漱',
+    },
+    '7:00~8:00': {
+      dad: '【早餐】吃完准备进园',
+      mom: '【洗漱】带孩子吃完洗漱',
+      kids: '【吃饭】吃早餐，准备出门玩',
+    },
+    '8:00~9:00': {
+      dad: '【整装】检查门票、水、防晒',
+      mom: '【整装】带好孩子雨衣和换洗衣物',
+      kids: '【整装】穿好鞋，准备进游乐园',
+    },
+    '22:00~23:00': {
+      dad: '【回家】回酒店洗漱',
+      mom: '【洗漱】带孩子洗澡睡觉',
+      kids: '【洗漱】洗澡刷牙准备睡觉',
+    },
   },
   4: {
     '10:00~11:00': {
@@ -1082,7 +1102,243 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       mom: '【饭后逛】文具／玩具可再看一轮，别太晚',
       kids: '【逛】累了就跟大人说要回酒店',
     },
+    '8:00~9:00': {
+      dad: '【退房】垃圾分类、检查房间和后备箱',
+      mom: '【退房】带孩子收拾，核对证件和充电线',
+      kids: '【收拾】把自己的玩具和小包收好',
+    },
+    '21:00~22:00': {
+      dad: '【回家】回公寓，准备睡觉',
+      mom: '【回家】带孩子洗漱',
+      kids: '【洗漱】刷牙洗脸准备睡觉',
+    },
   },
+  3: {
+    '10:00~11:00': {
+      dad: '【玩】有珠山缆车和两个展望台，看时间排队',
+      mom: '【玩】带娃上车，风大时加衣服',
+      kids: '【玩】坐缆车看火山，跟紧大人',
+    },
+    '11:00~12:00': {
+      dad: '【玩】火山村体验区，控制纪念品预算',
+      mom: '【逛】带娃看体验区，想买再举手',
+      kids: '【玩】跟大人逛，想买纪念品就说',
+    },
+    '12:00~13:00': {
+      dad: '【开车】去 Lake Hill Farm，到了再点冰淇淋',
+      mom: '【下午茶】带孩子点冰淇淋，看好过敏',
+      kids: '【吃】吃冰淇淋，听大人安排',
+    },
+    '13:00~14:00': {
+      dad: '【玩】草地和花园，看好集合时间',
+      mom: '【玩】带娃看动物拍照',
+      kids: '【玩】看动物、在草地玩',
+    },
+    '16:00~17:00': {
+      dad: '【玩】游客中心和火山科学馆，控制停留',
+      mom: '【玩】带娃看展览，别走散',
+      kids: '【玩】看火山展览，跟大人走',
+    },
+    '17:00~18:00': {
+      dad: '【逛】湖畔、TOYA DOORS、雕塑公园',
+      mom: '【逛】带娃沿湖走，注意落水',
+      kids: '【逛】沿湖走走，想拍照就说',
+    },
+    '18:00~19:00': {
+      dad: '【逛】纪念品，晚饭可开始看菜单',
+      mom: '【逛】带娃，别买太多',
+      kids: '【逛】跟大人走，想买再举手',
+    },
+    '19:00~20:00': {
+      dad: '【晚饭】首选 KARZZ；备选アペコロ / Fuji / 金城 / OMOYA',
+      mom: '【晚饭】点餐照顾孩子',
+      kids: '【吃饭】乖乖吃饭',
+    },
+    '20:00~21:00': {
+      dad: '【烟花】20:25 前到湖边占位置',
+      mom: '【烟花】给孩子加衣服，站稳',
+      kids: '【看】跟大人等烟花，别乱跑',
+    },
+    '21:00~22:00': {
+      dad: '【散场】看完开车回留寿都',
+      mom: '【散场】带孩子上车休息',
+      kids: '【回家】车上睡觉也可以',
+    },
+  },
+  5: {
+    '8:00~9:00': {
+      dad: '【开车】出发去青池，中途注意休息',
+      mom: '【车上】照顾孩子，备水和小食',
+      kids: '【车上】系好安全带，可以睡觉',
+    },
+    '9:00~10:00': {
+      dad: '【开车】继续往青池，目标 10:30–10:45 到',
+      mom: '【车上】照顾孩子',
+      kids: '【车上】坐好休息',
+    },
+    '10:00~11:00': {
+      dad: '【玩】青池停车拍照，看停留时间',
+      mom: '【玩】带娃走栈道拍照',
+      kids: '【玩】看蓝蓝的池水，跟大人走',
+    },
+    '11:00~12:00': {
+      dad: '【玩】12 点前结束青池，准备去白须瀑布',
+      mom: '【玩】带娃收尾拍照，别掉队',
+      kids: '【玩】再看一眼就上车',
+    },
+    '12:00~13:00': {
+      dad: '【开车】白须瀑布快看，12:45 前启程去四季彩之丘',
+      mom: '【玩】瀑布边看好孩子，别靠近水',
+      kids: '【玩】看瀑布，听大人招呼上车',
+    },
+    '17:00~18:00': {
+      dad: '【开车】去精灵露台，目标 17:45 到',
+      mom: '【车上】照顾孩子，到了再下去逛',
+      kids: '【车上】坐好，到了再玩',
+    },
+    '18:00~19:00': {
+      dad: '【玩】精灵露台小店，控制时间和预算',
+      mom: '【玩】带娃逛小木屋，别走散',
+      kids: '【玩】看小店和灯，想买再举手',
+    },
+    '19:00~20:00': {
+      dad: '【离场】19:30 离开，开车去くまげら吃饭',
+      mom: '【带娃】收东西上车，准备吃饭',
+      kids: '【跟上】跟大人上车去吃饭',
+    },
+    '20:00~21:00': {
+      dad: '【晚饭】くまげら点餐买单，吃完返程',
+      mom: '【晚饭】点餐照顾孩子',
+      kids: '【吃饭】乖乖吃饭',
+    },
+    '21:00~22:00': {
+      dad: '【开车】返程札幌，注意疲劳',
+      mom: '【车上】让孩子休息',
+      kids: '【车上】可以睡觉',
+    },
+    '22:00~23:00': {
+      dad: '【开车】争取 23:00 前到家',
+      mom: '【车上】照顾孩子，到家再洗漱',
+      kids: '【车上】睡觉，到家再醒',
+    },
+  },
+  6: {
+    '10:00~11:00': {
+      dad: '【出发】去龙宫 Cruise，对准船班',
+      mom: '【带娃】晕船药和外套带上',
+      kids: '【车上】坐好，准备坐船',
+    },
+    '11:00~12:00': {
+      dad: '【玩】龙宫 Cruise，看好孩子别靠船边',
+      mom: '【玩】带娃看海，注意风浪',
+      kids: '【玩】看海，抓紧大人',
+    },
+    '12:00~13:00': {
+      dad: '【开车】下船后去吃午餐',
+      mom: '【带娃】收拾上船用品，准备吃饭',
+      kids: '【跟上】跟大人去吃饭',
+    },
+    '13:00~14:00': {
+      dad: '【午饭】点餐买单',
+      mom: '【午饭】点餐照顾孩子',
+      kids: '【吃饭】乖乖吃饭',
+    },
+  },
+  7: {
+    '8:00~9:00': {
+      dad: '【开车】出发去 Greenland',
+      mom: '【车上】照顾孩子，备野餐和水',
+      kids: '【车上】坐好，准备去游乐园',
+    },
+    '9:00~10:00': {
+      dad: '【玩】进园先排热门项目',
+      mom: '【玩】带娃按身高分组',
+      kids: '【玩】排队坐项目',
+    },
+    '10:00~11:00': {
+      dad: '【玩】继续热门项目，看集合点',
+      mom: '【玩】带娃，注意防晒补水',
+      kids: '【玩】跟大人排队玩',
+    },
+    '21:00~22:00': {
+      dad: '【回家】回公寓，开始收拾',
+      mom: '【整理】带孩子收拾明天返程的东西',
+      kids: '【收拾】把自己的玩具收好',
+    },
+    '22:00~23:00': {
+      dad: '【整理】行李和证件再核对一遍',
+      mom: '【整理】带孩子洗漱，收换洗衣物',
+      kids: '【收拾】听大人安排，准备睡觉',
+    },
+  },
+}
+
+const guessFamilyRoles = (title: string, detail: string, tags: string[]) => {
+  const hay = `${title}\n${detail}\n${tags.join(' ')}`
+  if (/睡觉/.test(hay) && /洗漱/.test(hay)) {
+    return { dad: '【洗漱】准备睡觉', mom: '【洗漱】带孩子洗漱睡觉', kids: '【洗漱】刷牙洗脸准备睡觉' }
+  }
+  if (/睡觉/.test(hay) && !/出发|景点|游乐|吃饭|晚餐|午餐/.test(hay)) {
+    return { dad: '【睡觉】休息', mom: '【睡觉】休息', kids: '【睡觉】休息' }
+  }
+  if (/回家睡觉|回家整理|整理行李|退房|垃圾分类/.test(hay)) {
+    return {
+      dad: '【整理】检查退房、行李和垃圾分类',
+      mom: '【整理】带孩子收拾，核对随身物品',
+      kids: '【收拾】把自己的小包和玩具收好',
+    }
+  }
+  if (/起床|洗漱|早餐/.test(hay) && /早餐/.test(hay)) {
+    return { dad: '【早餐】吃饭，准备出门', mom: '【早餐】带孩子吃饭穿衣', kids: '【吃饭】吃早餐，跟大人洗漱' }
+  }
+  if (/起床|洗漱/.test(hay) && !/出发|景点/.test(hay)) {
+    return { dad: '【起床】洗漱，准备出门', mom: '【起床】带孩子洗漱穿衣', kids: '【起床】跟着洗漱穿衣服' }
+  }
+  if (/整装待发/.test(hay)) {
+    return { dad: '【整装】检查导航、门票和水', mom: '【整装】带好孩子用品和防晒', kids: '【整装】穿好鞋，准备出门' }
+  }
+  if (/看烟花/.test(hay)) {
+    return { dad: '【看烟花】占位置，看散场路线', mom: '【看烟花】带孩子站稳，注意风凉', kids: '【看烟花】跟大人看烟花，别乱跑' }
+  }
+  if (/午餐|晚饭|晚餐|下午茶|吃饭/.test(hay) && !/出发|前往|返程/.test(hay)) {
+    return { dad: '【吃饭】点餐买单，看时间', mom: '【吃饭】点餐照顾孩子', kids: '【吃饭】乖乖吃饭' }
+  }
+  if (/返程|开车回家|回家/.test(hay) && !/景点|游乐|逛街/.test(hay)) {
+    return { dad: '【开车】安全返程', mom: '【车上】照顾孩子休息', kids: '【车上】系好安全带，休息' }
+  }
+  if (/出发|前往|开车/.test(hay) && !/景点|玩|午餐|吃饭/.test(hay)) {
+    return { dad: '【开车】按导航出发', mom: '【车上】照顾孩子，备水备零食', kids: '【车上】系好安全带坐好' }
+  }
+  if (/出发|前往/.test(hay) && /景点|玩/.test(hay)) {
+    return { dad: '【开车】去下一个点，注意停车', mom: '【车上】照顾孩子，到了再带下去玩', kids: '【车上】坐好，到了再玩' }
+  }
+  if (/逛|纪念品|步行街|夜市/.test(hay) && !/景点/.test(hay)) {
+    return { dad: '【逛】带队，看关门时间', mom: '【逛】带娃，别走散', kids: '【逛】跟大人走，想进店就举手' }
+  }
+  if (/景点|玩|游玩|开玩|缆车|展望|花园|花田|运河|Cruise|游乐园/.test(hay)) {
+    return { dad: '【玩】带队看时间、停车和集合点', mom: '【玩】带娃拍照，看孩子别走散', kids: '【玩】跟大人一起玩' }
+  }
+  if (/整理/.test(hay)) {
+    return { dad: '【整理】收拾行李和明天要用的东西', mom: '【整理】带孩子收拾', kids: '【收拾】把自己的东西放好' }
+  }
+  return { dad: '【跟上】看时间和集合', mom: '【带娃】照顾孩子节奏', kids: '【跟上】跟大人走' }
+}
+
+const fillMissingRoles = (input: {
+  title: string
+  detail: string
+  tags: string[]
+  dad: string
+  mom: string
+  kids: string
+}) => {
+  if (input.dad && input.mom && input.kids) return input
+  const guessed = guessFamilyRoles(input.title, input.detail, input.tags)
+  return {
+    dad: input.dad || guessed.dad,
+    mom: input.mom || guessed.mom,
+    kids: input.kids || guessed.kids,
+  }
 }
 
 const toCny = (value: string) => {
@@ -1108,15 +1364,23 @@ const buildTimeline = () => {
     const context = [detail, getText(row, 3), getText(row, 4), getText(row, 5)].join(' ')
     const tags = [...detail.matchAll(/【([^】]+)】/g)].map((match) => match[1])
     const roleFix = roleCorrections[currentDay]?.[time]
-    const item: TimelineItem = {
-      id: `day-${currentDay}-row-${rowIndex}`,
-      time,
+    const filled = fillMissingRoles({
       title: titleCorrections[currentDay]?.[time] ?? getTitle(detail),
       detail,
       tags,
       dad: roleFix?.dad ?? getText(row, 3),
       mom: roleFix?.mom ?? getText(row, 4),
       kids: roleFix?.kids ?? getText(row, 5),
+    })
+    const item: TimelineItem = {
+      id: `day-${currentDay}-row-${rowIndex}`,
+      time,
+      title: titleCorrections[currentDay]?.[time] ?? getTitle(detail),
+      detail,
+      tags,
+      dad: filled.dad,
+      mom: filled.mom,
+      kids: filled.kids,
       links: linkCorrections[currentDay]?.[time] ?? getLinks(row, context),
       materials: materialCorrections[currentDay]?.[time] ?? getMaterials(row),
       costJpy: costCorrections[currentDay]?.[time] ?? getText(row, 8),
