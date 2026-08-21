@@ -4,6 +4,8 @@ import { rateableTargets, type RatingRecord, type RatingScores } from './ratings
 export const deviceIdStorageKey = 'hokkaido-device-id'
 export const nicknameStorageKey = 'hokkaido-trip-nickname'
 export const ratingsCollection = 'tripRatings'
+/** 线上规则若禁止 DELETE，就用这个昵称把记录藏起来（PATCH 仍可用） */
+export const withdrawnTravelerName = '__deleted__'
 
 export type CloudRatingRecord = RatingRecord & {
   deviceId: string
@@ -126,12 +128,16 @@ export const pushRatingToCloud = async (
   }
 }
 
+const commentLooksWithdrawn = (fields: Record<string, FirestoreValue> | undefined) =>
+  String(decodeValue(fields?.comment) ?? '') === withdrawnTravelerName
+
 const parseCloudRecord = (fields: Record<string, FirestoreValue> | undefined): CloudRatingRecord | null => {
   if (!fields) return null
   const targetId = String(decodeValue(fields.targetId) ?? '')
   const travelerName = String(decodeValue(fields.travelerName) ?? '').trim()
   const deviceId = String(decodeValue(fields.deviceId) ?? '').trim()
   if (!targetId || !travelerName || !deviceId) return null
+  if (travelerName === withdrawnTravelerName || commentLooksWithdrawn(fields)) return null
   const scoresRaw = decodeValue(fields.scores)
   const scores =
     scoresRaw && typeof scoresRaw === 'object'
@@ -183,13 +189,30 @@ export const deleteCloudRating = async (
   if (!url) return { ok: false, message: '云端未配置' }
   try {
     const response = await fetch(url, { method: 'DELETE' })
-    if (!response.ok && response.status !== 404) {
-      return { ok: false, message: `云端删除失败（${response.status}）` }
-    }
-    return { ok: true }
+    if (response.ok || response.status === 404) return { ok: true }
+    const text = await response.text()
+    return { ok: false, message: `云端删除失败（${response.status}）${text ? `：${text.slice(0, 80)}` : ''}` }
   } catch {
     return { ok: false, message: '网络异常，云端未能删除' }
   }
+}
+
+/** 真删；规则拒绝删除时改为撤回（景点汇总不再显示，可重新打分覆盖） */
+export const withdrawCloudRating = async (
+  record: CloudRatingRecord,
+): Promise<{ ok: true; mode: 'delete' | 'withdraw' } | { ok: false; message: string }> => {
+  const removed = await deleteCloudRating(record.deviceId, record.targetId)
+  if (removed.ok) return { ok: true, mode: 'delete' }
+  const hidden = await pushRatingToCloud({
+    ...record,
+    travelerName: withdrawnTravelerName,
+    comment: withdrawnTravelerName,
+    stars: 1,
+    scores: { overall: 1 },
+    updatedAt: new Date().toISOString(),
+  })
+  if (hidden.ok) return { ok: true, mode: 'withdraw' }
+  return { ok: false, message: hidden.message || removed.message }
 }
 
 export const deleteCloudRatingsForTraveler = async (
@@ -207,14 +230,19 @@ export const deleteCloudRatingsForTraveler = async (
   const mine = listed.ratings.filter(
     (item) => item.travelerName === name && allowedIds.has(item.targetId),
   )
+  if (mine.length === 0) {
+    return { ok: true, removed: 0 }
+  }
   let removed = 0
+  let lastError = ''
   for (const item of mine) {
-    const result = await deleteCloudRating(item.deviceId, item.targetId)
+    const result = await withdrawCloudRating(item)
     if (result.ok) removed += 1
+    else lastError = result.message
   }
   return removed === mine.length
     ? { ok: true, removed }
-    : { ok: false, message: '部分云端记录未能删除，可到 Firebase 控制台再清一次', removed }
+    : { ok: false, message: lastError || '部分云端记录未能清空', removed }
 }
 
 export const averageOfRecords = (records: CloudRatingRecord[]) => {

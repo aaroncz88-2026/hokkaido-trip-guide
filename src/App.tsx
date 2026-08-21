@@ -1077,8 +1077,10 @@ function App() {
     await refreshCloudRatings(true)
     setRatingMessage(
       result.ok
-        ? `已清空「${name}」的 DAY1 评分（${result.removed} 条），可以重新评价了`
-        : `本机已清空；云端：${result.message}（已删 ${result.removed} 条）`,
+        ? result.removed
+          ? `已清空「${name}」的 DAY1 评分（${result.removed} 条），可以重新评价了`
+          : `本机已清空。云端没有「${name}」的 DAY1 记录（现在看到的可能是别人的）`
+        : `本机已清空；云端：${result.message}（已处理 ${result.removed} 条）`,
     )
   }
 

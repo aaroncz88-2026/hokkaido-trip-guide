@@ -93,7 +93,7 @@
     <main>
       <div class="toolbar">
         <button id="reload" type="button">刷新云端</button>
-        <button id="fixOnion" type="button">写入洋葱：湖 8 / 晚餐 9</button>
+        <button id="fixOnion" type="button">清空洋葱 DAY1</button>
         <span class="stat" id="stat">正在读取…</span>
       </div>
       <div class="grid" id="board"></div>
@@ -154,15 +154,18 @@
             const rawStars = Number(decode(f.stars) || 0)
             const overall = Number(scores.overall || 0)
             const score10 = Number(decode(f.score10) || 0)
+            const name = String(decode(f.travelerName) || '?')
+            const comment = String(decode(f.comment) || '')
+            if (name === '__deleted__' || comment === '__deleted__') return null
             return {
-              name: String(decode(f.travelerName) || '?'),
+              name,
               targetId: String(decode(f.targetId) || '?'),
               stars: score10 || overall || rawStars,
               rawStars,
-              comment: String(decode(f.comment) || ''),
+              comment,
               updatedAt: String(decode(f.updatedAt) || ''),
             }
-          }).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          }).filter(Boolean).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
           const looksLikeOldFive = rows.length > 0 && rows.every((r) => r.rawStars > 0 && r.rawStars <= 5 && r.rawStars === r.stars)
           stat.textContent = rows.length
@@ -213,33 +216,36 @@
 
       const fixOnion = async () => {
         const stat = document.getElementById('stat')
-        stat.textContent = '正在写入洋葱的 8 / 9…'
+        stat.textContent = '正在清空洋葱的 DAY1…'
         try {
           const key = await findKey()
           const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/tripRatings?key=${encodeURIComponent(key)}`
           const listRes = await fetch(listUrl)
           const listData = await listRes.json()
           if (!listRes.ok) throw new Error(listData.error?.message || '读取失败')
-          const wanted = {
-            'day1-shikotsu-lake': 8,
-            'day1-dinner-genbee': 9,
-          }
+          const wanted = new Set(['day1-shikotsu-lake', 'day1-dinner-genbee'])
           let updated = 0
           for (const doc of listData.documents || []) {
             const f = doc.fields || {}
             const name = String(decode(f.travelerName) || '')
             const targetId = String(decode(f.targetId) || '')
-            const score = wanted[targetId]
-            if (name !== '洋葱' || !score) continue
+            if (name !== '洋葱' || !wanted.has(targetId)) continue
+            const delRes = await fetch(`https://firestore.googleapis.com/v1/${doc.name}?key=${encodeURIComponent(key)}`, {
+              method: 'DELETE',
+            })
+            if (delRes.ok || delRes.status === 404) {
+              updated += 1
+              continue
+            }
             const body = {
               fields: {
                 deviceId: f.deviceId || encodeString('onion-fix'),
                 targetId: encodeString(targetId),
-                travelerName: encodeString('洋葱'),
-                scores: { mapValue: { fields: { overall: encodeNumber(score) } } },
-                stars: encodeNumber(5),
-                score10: encodeNumber(score),
-                comment: f.comment || encodeString(''),
+                travelerName: encodeString('__deleted__'),
+                scores: { mapValue: { fields: { overall: encodeNumber(1) } } },
+                stars: encodeNumber(1),
+                score10: encodeNumber(1),
+                comment: encodeString('__deleted__'),
                 createdAt: f.createdAt || encodeString(new Date().toISOString()),
                 updatedAt: encodeString(new Date().toISOString()),
               },
@@ -250,11 +256,11 @@
               body: JSON.stringify(body),
             })
             const patchText = await patchRes.text()
-            if (!patchRes.ok) throw new Error(`写入 ${targetId} 失败：${patchText.slice(0, 180)}`)
+            if (!patchRes.ok) throw new Error(`清空 ${targetId} 失败：${patchText.slice(0, 180)}`)
             updated += 1
           }
-          if (!updated) throw new Error('没有找到洋葱的记录，请先在 App 里用这个昵称提交一次')
-          stat.textContent = `已写入 ${updated} 条，正在刷新…`
+          if (!updated) throw new Error('没有找到洋葱的 DAY1 记录')
+          stat.textContent = `已清空 ${updated} 条，正在刷新…`
           await load()
         } catch (error) {
           stat.textContent = error.message || String(error)
