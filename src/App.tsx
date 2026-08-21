@@ -706,7 +706,6 @@ function App() {
   const [ratings, setRatings] = useState<RatingRecord[]>(() => readRatings())
   const [ratingDraftStars, setRatingDraftStars] = useState<Record<string, number>>({})
   const [ratingDraftComments, setRatingDraftComments] = useState<Record<string, string>>({})
-  const [ratingFilter, setRatingFilter] = useState<'open' | 'locked' | 'done'>('open')
   const [ratingMessage, setRatingMessage] = useState('')
   const [weatherForecasts, setWeatherForecasts] = useState<LocationForecast[]>(() => readWeatherCache())
   const [weatherStatus, setWeatherStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -911,20 +910,6 @@ function App() {
       setView('days')
     }
   }, [ratingsTabUnlocked, view])
-  const ratingBuckets = useMemo(() => {
-    const name = ratingAuthor
-    const open: RateableTarget[] = []
-    const locked: RateableTarget[] = []
-    const done: RateableTarget[] = []
-    for (const target of rateableTargets) {
-      const unlocked = isTargetUnlocked(target, now)
-      const existing = getTravelerRating(ratings, target.id, name)
-      if (!unlocked) locked.push(target)
-      else if (existing) done.push(target)
-      else open.push(target)
-    }
-    return { open, locked, done }
-  }, [now, ratingAuthor, ratings])
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
@@ -1004,7 +989,6 @@ function App() {
     }
     setRatingDraftStars((prev) => ({ ...stars, ...prev }))
     setRatingDraftComments((prev) => ({ ...comments, ...prev }))
-    setRatingFilter('open')
     setRatingMessage('')
     setRatingsBoard('mine')
     setView('ratings')
@@ -1083,7 +1067,6 @@ function App() {
       for (const id of day1Ids) delete next[id]
       return next
     })
-    setRatingFilter('open')
     setRatingsBoard('mine')
     if (!isRatingCloudConfigured()) {
       setRatingMessage('本机 DAY1 评分已清空，可重新评价')
@@ -2230,19 +2213,10 @@ function App() {
   )
 
   const renderRatingsPanel = () => {
-    const list =
-      ratingFilter === 'open'
-        ? ratingBuckets.open
-        : ratingFilter === 'locked'
-          ? ratingBuckets.locked
-          : ratingBuckets.done
-
-    const bySpot = rateableTargets
-      .map((target) => {
-        const rows = cloudRatings.filter((item) => item.targetId === target.id)
-        return { target, rows, avg: averageOfRecords(rows) }
-      })
-      .filter((item) => item.rows.length > 0 || isTargetUnlocked(item.target, now))
+    const bySpot = rateableTargets.map((target) => {
+      const rows = cloudRatings.filter((item) => item.targetId === target.id)
+      return { target, rows, avg: averageOfRecords(rows) }
+    })
 
     const peopleNames = Array.from(
       new Set(cloudRatings.map((item) => item.travelerName.trim()).filter(Boolean)),
@@ -2308,40 +2282,26 @@ function App() {
         {ratingMessage && <p className="ratings-message">{ratingMessage}</p>}
 
         {ratingsBoard === 'mine' && (
-          <>
-            <div className="rating-filter-tabs" role="tablist" aria-label="打分筛选">
-              {(
-                [
-                  ['open', `待评价 ${ratingBuckets.open.length}`],
-                  ['done', `已评价 ${ratingBuckets.done.length}`],
-                  ['locked', `未开放 ${ratingBuckets.locked.length}`],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  aria-selected={ratingFilter === id}
-                  className={ratingFilter === id ? 'active' : ''}
-                  key={id}
-                  onClick={() => setRatingFilter(id)}
-                  role="tab"
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="rating-list">
-              {list.length === 0 && (
-                <p className="empty-state">
-                  {ratingFilter === 'open'
-                    ? '太棒了，当前没有待评价项目'
-                    : ratingFilter === 'done'
-                      ? '还没有已保存的评分'
-                      : '没有锁定中的项目'}
-                </p>
-              )}
-              {list.map((target) => renderRatingCard(target, ratingFilter))}
-            </div>
-          </>
+          <div className="rating-list">
+            {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((day) => {
+              const dayTargets = rateableTargets.filter((target) => target.day === day)
+              if (dayTargets.length === 0) return null
+              const unlocked = dayTargets.some((target) => isTargetUnlocked(target, now))
+              return (
+                <section className="rating-day-group" key={day}>
+                  <h3 className="rating-day-group__title">
+                    DAY {day}
+                    <small>{unlocked ? `当天 20:00 后可评 · ${dayTargets.length} 项` : `当天 20:00 后开放 · ${dayTargets.length} 项`}</small>
+                  </h3>
+                  {dayTargets.map((target) => {
+                    const existing = getTravelerRating(ratings, target.id, ratingAuthor)
+                    const mode = !isTargetUnlocked(target, now) ? 'locked' : existing ? 'done' : 'open'
+                    return renderRatingCard(target, mode)
+                  })}
+                </section>
+              )
+            })}
+          </div>
         )}
 
         {ratingsBoard === 'spots' && (

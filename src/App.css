@@ -3541,6 +3541,27 @@ label:has(input:focus-visible) {
   font-size: 0.78rem;
 }
 
+.rating-day-group {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rating-day-group__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 2px 0;
+  font-size: 0.95rem;
+}
+
+.rating-day-group__title small {
+  color: var(--muted, #7a7080);
+  font-weight: 650;
+  font-size: 0.74rem;
+}
+
 .rating-summary-list {
   display: grid;
   gap: 12px;
