@@ -1068,6 +1068,9 @@ function App() {
       return next
     })
     setRatingsBoard('mine')
+    setCloudRatings((prev) =>
+      prev.filter((item) => !(item.travelerName === name && day1Ids.has(item.targetId))),
+    )
     if (!isRatingCloudConfigured()) {
       setRatingMessage('本机 DAY1 评分已清空，可重新评价')
       return

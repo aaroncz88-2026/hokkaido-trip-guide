@@ -9,6 +9,8 @@ export const withdrawnTravelerName = '__deleted__'
 
 export type CloudRatingRecord = RatingRecord & {
   deviceId: string
+  /** Firestore 文档全名，清空时必须用这个，不能靠本地拼 ID */
+  docPath?: string
 }
 
 type FirestoreValue =
@@ -52,6 +54,15 @@ const documentsUrl = (path = '') => {
   const base = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents`
   const suffix = path ? `/${path}` : ''
   return `${base}${suffix}?key=${encodeURIComponent(config.apiKey)}`
+}
+
+const resourceUrl = (docPath: string) => {
+  const config = readFirebaseConfig()
+  if (!config || !docPath) return null
+  const name = docPath.startsWith('projects/')
+    ? docPath
+    : `projects/${config.projectId}/databases/(default)/documents/${docPath.replace(/^\/+/, '')}`
+  return `https://firestore.googleapis.com/v1/${name}?key=${encodeURIComponent(config.apiKey)}`
 }
 
 export const getDeviceId = () => {
@@ -131,12 +142,15 @@ export const pushRatingToCloud = async (
 const commentLooksWithdrawn = (fields: Record<string, FirestoreValue> | undefined) =>
   String(decodeValue(fields?.comment) ?? '') === withdrawnTravelerName
 
-const parseCloudRecord = (fields: Record<string, FirestoreValue> | undefined): CloudRatingRecord | null => {
+const parseCloudRecord = (
+  fields: Record<string, FirestoreValue> | undefined,
+  docPath?: string,
+): CloudRatingRecord | null => {
   if (!fields) return null
   const targetId = String(decodeValue(fields.targetId) ?? '')
   const travelerName = String(decodeValue(fields.travelerName) ?? '').trim()
   const deviceId = String(decodeValue(fields.deviceId) ?? '').trim()
-  if (!targetId || !travelerName || !deviceId) return null
+  if (!targetId || !travelerName) return null
   if (travelerName === withdrawnTravelerName || commentLooksWithdrawn(fields)) return null
   const scoresRaw = decodeValue(fields.scores)
   const scores =
@@ -149,6 +163,7 @@ const parseCloudRecord = (fields: Record<string, FirestoreValue> | undefined): C
     targetId,
     travelerName,
     deviceId,
+    docPath,
     scores,
     stars: Number(decodeValue(fields.score10) || scores.overall || decodeValue(fields.stars) || 0),
     comment: String(decodeValue(fields.comment) ?? ''),
@@ -170,10 +185,10 @@ export const fetchCloudRatings = async (): Promise<
       return { ok: false, message: `拉取失败（${response.status}）`, ratings: [] }
     }
     const payload = (await response.json()) as {
-      documents?: Array<{ fields?: Record<string, FirestoreValue> }>
+      documents?: Array<{ name?: string; fields?: Record<string, FirestoreValue> }>
     }
     const ratings = (payload.documents ?? [])
-      .map((doc) => parseCloudRecord(doc.fields))
+      .map((doc) => parseCloudRecord(doc.fields, doc.name))
       .filter((item): item is CloudRatingRecord => Boolean(item))
     return { ok: true, ratings }
   } catch {
@@ -181,29 +196,72 @@ export const fetchCloudRatings = async (): Promise<
   }
 }
 
-export const deleteCloudRating = async (
-  deviceId: string,
-  targetId: string,
-): Promise<{ ok: true } | { ok: false; message: string }> => {
-  const url = documentsUrl(`${ratingsCollection}/${ratingDocId(deviceId, targetId)}`)
-  if (!url) return { ok: false, message: '云端未配置' }
+const deleteCloudDocument = async (
+  docPath: string,
+): Promise<{ ok: true } | { ok: false; status: number; message: string }> => {
+  const url = resourceUrl(docPath)
+  if (!url) return { ok: false, status: 0, message: '云端未配置' }
   try {
     const response = await fetch(url, { method: 'DELETE' })
     if (response.ok || response.status === 404) return { ok: true }
     const text = await response.text()
-    return { ok: false, message: `云端删除失败（${response.status}）${text ? `：${text.slice(0, 80)}` : ''}` }
+    return {
+      ok: false,
+      status: response.status,
+      message: `云端删除失败（${response.status}）${text ? `：${text.slice(0, 80)}` : ''}`,
+    }
   } catch {
-    return { ok: false, message: '网络异常，云端未能删除' }
+    return { ok: false, status: 0, message: '网络异常，云端未能删除' }
   }
 }
 
-/** 真删；规则拒绝删除时改为撤回（景点汇总不再显示，可重新打分覆盖） */
+const patchCloudDocument = async (
+  docPath: string,
+  record: Omit<CloudRatingRecord, 'pendingSync'> & { pendingSync?: boolean },
+): Promise<{ ok: true } | { ok: false; message: string }> => {
+  const url = resourceUrl(docPath)
+  if (!url) return { ok: false, message: '云端未配置' }
+  const body = {
+    fields: {
+      deviceId: encodeString(record.deviceId || 'unknown'),
+      targetId: encodeString(record.targetId),
+      travelerName: encodeString(record.travelerName),
+      scores: encodeScores({ ...(record.scores ?? {}), overall: record.stars }),
+      stars: encodeNumber(Math.min(5, Math.max(1, Number(record.stars) || 1))),
+      score10: encodeNumber(Math.max(1, Math.min(10, Number(record.stars) || 1))),
+      comment: encodeString(record.comment ?? ''),
+      createdAt: encodeString(record.createdAt),
+      updatedAt: encodeString(record.updatedAt),
+      pendingSync: encodeBool(false),
+    },
+  }
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      return { ok: false, message: `云端撤回失败（${response.status}）${text ? `：${text.slice(0, 80)}` : ''}` }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, message: '网络异常，云端未能撤回' }
+  }
+}
+
+/** 按云端真实文档路径删除；规则拒绝删除时改为撤回 */
 export const withdrawCloudRating = async (
   record: CloudRatingRecord,
 ): Promise<{ ok: true; mode: 'delete' | 'withdraw' } | { ok: false; message: string }> => {
-  const removed = await deleteCloudRating(record.deviceId, record.targetId)
+  if (!record.docPath) {
+    return { ok: false, message: '找不到云端文档路径，无法清空' }
+  }
+  const docPath = record.docPath
+  const removed = await deleteCloudDocument(docPath)
   if (removed.ok) return { ok: true, mode: 'delete' }
-  const hidden = await pushRatingToCloud({
+  const hidden = await patchCloudDocument(docPath, {
     ...record,
     travelerName: withdrawnTravelerName,
     comment: withdrawnTravelerName,
