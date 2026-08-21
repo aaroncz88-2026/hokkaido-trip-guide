@@ -78,6 +78,13 @@ import {
 import './App.css'
 
 type View = 'home' | 'days' | 'ratings' | 'guide' | 'more'
+
+const mealPlaceLabel = (item: TimelineItem, material: TimelineMaterial) => {
+  const hay = `${item.title} ${item.detail} ${material.title} ${material.body}`
+  if (/午餐/.test(hay)) return '午餐地点'
+  if (/晚餐|晚饭/.test(hay)) return '晚餐地点'
+  return ''
+}
 type JourneyPhase = 'before' | 'during' | 'after'
 
 /** 临时功能开关：需要时改回 true 即可恢复首页「出发前学几句」 */
@@ -593,7 +600,7 @@ function TimelineCard({
         {item.materials.length > 0 && (
           <div className="material-preview">
             {item.materials.map((material) => (
-              <span key={material.title}>含{material.title}</span>
+              <span key={material.title}>{mealPlaceLabel(item, material) || `含${material.title}`}</span>
             ))}
           </div>
         )}
@@ -607,7 +614,7 @@ function TimelineCard({
           <div className="timeline-details">
             {item.materials.map((material) => (
               <div className="timeline-material" key={material.title}>
-                <span>资料</span>
+                <span>{mealPlaceLabel(item, material) || '资料'}</span>
                 <strong>{material.title}</strong>
                 <p>{material.body}</p>
                 {material.links && material.links.length > 0 && (
@@ -1421,8 +1428,11 @@ function App() {
           const hasOptions = material.steps?.some((step) => step.kind === 'option')
           const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
+          const mealLabel = mealPlaceLabel(item, material)
           const eyebrow = /预约凭证/.test(material.title)
             ? '入店出示 · 预约凭证'
+            : mealLabel
+              ? mealLabel
             : /【晚餐】/.test(material.title)
               ? '已预约'
             : /晚餐菜单|车上/.test(material.title + material.body)
@@ -1443,7 +1453,7 @@ function App() {
                         ? '填写攻略 · 可勾选'
                         : hasMaterialLinks
                           ? '重要资料'
-                          : '现场资料'
+                          : '地点'
           return (
             <article className="now-card__material" key={material.title}>
               <span className="eyebrow">{eyebrow}</span>

@@ -179,7 +179,7 @@ const dayMeta: DayMeta[] = [
     date: '2026-08-27',
     weekday: '周四',
     title: '美瑛与富良野',
-    route: '札幌 → 青池 → 白须瀑布 → 四季彩之丘 → 富田农场 → 精灵露台',
+    route: '札幌 → 青池 → 白须瀑布 → 四季彩之丘午餐 → 富田农场 → 精灵露台 → くまげら',
     summary: '全程最长的一天，花田、瀑布和森林夜景连续推进。',
     lodging: '札幌市区公寓',
     fallback: '天气差时缩短青池与花田停留，优先保证安全返程。',
@@ -191,8 +191,10 @@ const dayMeta: DayMeta[] = [
       { label: '青池停车场', query: 'Shirogane Blue Pond Parking' },
       { label: '白须瀑布', query: 'Shirahige Waterfall Parking' },
       { label: '四季彩之丘', query: 'Shikisai no Oka Parking' },
+      { label: '午餐 · フロックスホール', query: 'フロックスホール 四季彩之丘' },
       { label: '富田农场', query: 'Farm Tomita Parking' },
       { label: '精灵露台', query: 'Ningle Terrace Parking' },
+      { label: '晚餐 · くまげら', query: 'くまげら 富良野' },
     ],
     pinnedDocs: [
       { label: 'DAY5 导游发言稿', url: docUrl('day5-guide-script.pdf') },
@@ -293,9 +295,10 @@ const titleFromMaterialBody = (body: string, index: number) => {
   const firstLine = body.split(/\n/).map((line) => line.trim()).find(Boolean) ?? ''
   if (/攻略|清单|注意|填写|步骤/.test(firstLine) && firstLine.length <= 28) return firstLine
   if (firstLine.startsWith('【') && firstLine.length <= 24) {
-    return firstLine.replace(/【|】/g, '').split(/[·+／/]/)[0].trim() || `现场资料 ${index + 1}`
+    return firstLine.replace(/【|】/g, '').split(/[·+／/]/)[0].trim() || `地点 ${index + 1}`
   }
-  return `现场资料 ${index + 1}`
+  if (firstLine.length <= 28 && !/[。！？!?]/.test(firstLine)) return firstLine
+  return `地点 ${index + 1}`
 }
 
 /** 当天停车点已在顶部 ParkingBar，表格「停车点」列不要再变成现场资料。 */
@@ -838,6 +841,7 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
   },
   5: {
     '13:00~14:00': '【午餐】フロックスホール\n预计 13:45 前吃完，再开始玩',
+    '20:00~21:00': '【晚餐】くまげら\n富良野乡土料理，吃完再返程札幌',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -904,6 +908,32 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     // 饭后逛：纯 LIST，挂在 19–21
     '19:00~20:00': [day4NightBrowseGuide],
     '20:00~21:00': [day4NightBrowseGuide],
+  },
+  5: {
+    '13:00~14:00': [
+      {
+        title: 'フロックスホール',
+        body: '四季彩之丘园内的午餐店。预计 13:45 前吃完，再继续玩花田。',
+        links: [
+          {
+            label: '导航去 フロックスホール',
+            url: 'https://maps.google.com/?q=%E3%83%95%E3%83%AD%E3%83%83%E3%82%AF%E3%82%B9%E3%83%9B%E3%83%BC%E3%83%AB%20%E5%9B%9B%E5%AD%A3%E5%BD%A9%E4%B9%8B%E4%B8%98',
+          },
+        ],
+      },
+    ],
+    '20:00~21:00': [
+      {
+        title: 'くまげら',
+        body: '富良野乡土料理店。吃完再开车回札幌。',
+        links: [
+          {
+            label: '导航去 くまげら',
+            url: 'https://maps.google.com/?q=%E3%81%8F%E3%81%BE%E3%81%92%E3%82%89%20%E5%AF%8C%E8%89%AF%E9%87%8E',
+          },
+        ],
+      },
+    ],
   },
 }
 
@@ -1002,12 +1032,25 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: docUrl('day5-guide-script.pdf'),
       },
     ],
+    '13:00~14:00': [
+      {
+        label: 'フロックスホール | Google Maps',
+        url: 'https://maps.google.com/?q=%E3%83%95%E3%83%AD%E3%83%83%E3%82%AF%E3%82%B9%E3%83%9B%E3%83%BC%E3%83%AB%20%E5%9B%9B%E5%AD%A3%E5%BD%A9%E4%B9%8B%E4%B8%98',
+      },
+    ],
+    '20:00~21:00': [
+      {
+        label: 'くまげら | Google Maps',
+        url: 'https://maps.google.com/?q=%E3%81%8F%E3%81%BE%E3%81%92%E3%82%89%20%E5%AF%8C%E8%89%AF%E9%87%8E',
+      },
+    ],
   },
 }
 
 const titleCorrections: Record<number, Record<string, string>> = {
   5: {
     '13:00~14:00': '午餐',
+    '20:00~21:00': '晚餐',
   },
 }
 
