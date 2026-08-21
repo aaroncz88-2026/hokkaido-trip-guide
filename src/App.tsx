@@ -1447,7 +1447,9 @@ function App() {
           const hasPhrases = material.steps?.some((step) => step.kind === 'phrase')
           const hasTasks = material.steps?.some((step) => !step.kind || step.kind === 'task')
           const mealLabel = mealPlaceLabel(item, material)
-          const eyebrow = /预约凭证/.test(material.title)
+          const eyebrow = /龙宫|Cruise/.test(material.title)
+            ? '登船出示 · 预约凭证'
+            : /预约凭证/.test(material.title)
             ? '入店出示 · 预约凭证'
             : mealLabel
               ? mealLabel

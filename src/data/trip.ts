@@ -220,6 +220,9 @@ const dayMeta: DayMeta[] = [
       { label: '小樽运河', query: 'Otaru Canal Parking' },
       { label: '返程 · 札幌市区公寓', query: '札幌市区公寓' },
     ],
+    pinnedDocs: [
+      { label: '龙宫 Cruise 预约凭证', url: docUrl('ryugu-cruise-consent.pdf') },
+    ],
     reminders: ['提前吃晕船药并穿防风防水外套', '船班目标 10:30', '博物馆闭馆前预留完整参观时间'],
   },
   {
@@ -811,6 +814,19 @@ const day4NightBrowseGuide: TimelineMaterial = {
   ],
 }
 
+const asoviewRyuguUrl =
+  'https://www.asoview.com/channel/activities/ja/hokuo-marine/offices/569/courses/1877/calendars'
+
+/** 龙宫 Cruise 预约提交页确认事项：第1页日文，第2页中文 */
+const ryuguConsentGuide: TimelineMaterial = {
+  title: '龙宫 Cruise 预约凭证',
+  body: '预约提交前须点齐所有确认项。PDF 第1页日文原文，第2页中文对照。目标船班 10:30，开始前 15 分钟集合。',
+  links: [
+    { label: '预约确认事项 PDF', url: docUrl('ryugu-cruise-consent.pdf') },
+    { label: '龙洞预约（Asoview）', url: asoviewRyuguUrl },
+  ],
+}
+
 /** 小樽下午堺町通 / 运河一带可逛甜品店；不挂在早餐 */
 const otaruSnackGuide: TimelineMaterial = {
   title: '下午可逛小吃店',
@@ -928,7 +944,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '20:00~21:00': [],
   },
   6: {
-    '9:00~10:00': [],
+    '9:00~10:00': [ryuguConsentGuide],
+    '10:00~11:00': [ryuguConsentGuide],
+    '11:00~12:00': [ryuguConsentGuide],
     '14:00~15:00': [otaruSnackGuide],
     '15:00~16:00': [otaruSnackGuide],
   },
@@ -1029,6 +1047,9 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
         url: docUrl('day5-guide-script.pdf'),
       },
     ],
+  },
+  6: {
+    '9:00~10:00': [],
   },
 }
 
