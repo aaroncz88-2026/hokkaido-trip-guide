@@ -116,11 +116,11 @@ const matchNavigation = (day: DayPlan, item: TimelineItem) => {
 }
 
 /** Resolve the trip segment that should be active at `now` (foundation for live prompts). */
-export const getCurrentActivity = (now: Date): CurrentActivity | null => {
+export const getCurrentActivity = (now: Date, days: DayPlan[] = tripDays): CurrentActivity | null => {
   if (now < TRIP_START || now > TRIP_END) return null
 
   const day =
-    tripDays.find((candidate) => {
+    days.find((candidate) => {
       const start = dayStartMs(candidate)
       const end = start + 86_400_000
       return now.getTime() >= start && now.getTime() < end

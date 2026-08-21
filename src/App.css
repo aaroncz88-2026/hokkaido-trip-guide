@@ -1021,6 +1021,66 @@
   background: var(--ink);
 }
 
+.day-tabs button.is-swapped {
+  border-color: var(--brand);
+}
+
+.day-swap-bar {
+  margin: 0 0 14px;
+}
+
+.day-swap-bar > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.day-swap-bar > button > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.day-swap-bar > button > em {
+  font-style: normal;
+  font-weight: 750;
+  color: var(--brand);
+}
+
+.day-swap-bar > button > strong {
+  margin-left: 4px;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.day-swap-bar > button.is-swapped {
+  border-color: var(--brand);
+  background: #f4faf8;
+}
+
+.day-swap-bar p {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.day-swap-bar--card {
+  margin: 14px 0 0;
+}
+
 .day-tabs strong {
   font-family: var(--serif);
   font-size: 1.15rem;

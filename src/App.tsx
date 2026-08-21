@@ -18,9 +18,9 @@ import {
 } from './data/trip'
 import { japaneseLessons } from './data/japanese'
 import {
-  dayLocationHint,
   fetchAllForecasts,
   getDayWeather,
+  locationHintForPlan,
   readWeatherCache,
   tripDateSet,
   weatherLocations,
@@ -75,6 +75,12 @@ import {
   TRIP_START,
   writeSimOffset,
 } from './lib/clock'
+import {
+  isOperatorName,
+  readDay23Swapped,
+  withDay2Day3Swap,
+  writeDay23Swapped,
+} from './lib/itinerarySwap'
 import './App.css'
 
 type View = 'home' | 'days' | 'ratings' | 'guide' | 'more'
@@ -289,7 +295,7 @@ function PinnedDocDots({ docs }: { docs?: { label: string; url: string }[] }) {
   )
 }
 
-const getJourneyState = (now: Date): JourneyState => {
+const getJourneyState = (now: Date, plans: DayPlan[] = tripDays): JourneyState => {
   if (now > TRIP_END) {
     return {
       phase: 'after',
@@ -303,7 +309,7 @@ const getJourneyState = (now: Date): JourneyState => {
     return {
       phase: 'during',
       value: `DAY ${day}`,
-      label: `旅行第 ${day} 天 · ${tripDays[day - 1].title}`,
+      label: `旅行第 ${day} 天 · ${plans[day - 1]?.title ?? ''}`,
       day,
     }
   }
@@ -662,6 +668,7 @@ function App() {
   const [simMessage, setSimMessage] = useState('')
   const [timePanelOpen, setTimePanelOpen] = useState(false)
   const [timeDraftDay, setTimeDraftDay] = useState(1)
+  const [day23Swapped, setDay23Swapped] = useState(() => readDay23Swapped())
   const [fillChecks, setFillChecks] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem('hokkaido-fill-checks') ?? '{}')
@@ -824,13 +831,19 @@ function App() {
     return () => window.clearInterval(timer)
   }, [])
 
+  const isOperator =
+    isOperatorName(travelerName) || isOperatorName(packingOwner) || isOperatorName(nicknameDraft)
   const now = useMemo(() => {
     void clockTick
-    return getAppNow(simOffsetMs)
-  }, [simOffsetMs, clockTick])
-  const isSimulating = simOffsetMs != null
-  const currentDay = tripDays.find((day) => day.day === selectedDay) ?? tripDays[0]
-  const journey = getJourneyState(now)
+    return getAppNow(isOperator ? simOffsetMs : null)
+  }, [simOffsetMs, clockTick, isOperator])
+  const isSimulating = isOperator && simOffsetMs != null
+  const visibleDays = useMemo(
+    () => withDay2Day3Swap(tripDays, isOperator && day23Swapped),
+    [isOperator, day23Swapped],
+  )
+  const currentDay = visibleDays.find((day) => day.day === selectedDay) ?? visibleDays[0]
+  const journey = getJourneyState(now, visibleDays)
   /** 8 月 23 日行程日起关闭行李清单，底栏改天气预报 */
   const packingClosed = now >= TRIP_START
   const resolveLiveDayNumber = () => {
@@ -843,16 +856,16 @@ function App() {
   const syncViewsToLiveDay = () => {
     const dayNum = resolveLiveDayNumber()
     if (!dayNum) return null
-    const day = tripDays[dayNum - 1]
+    const day = visibleDays[dayNum - 1]
     if (!day) return null
     setSelectedDay(dayNum)
     setWeatherDate(day.date)
-    setWeatherLocationId(dayLocationHint[dayNum] ?? 'sapporo')
+    setWeatherLocationId(locationHintForPlan(day))
     return day
   }
   const scrollToLiveTimeline = () => {
     window.setTimeout(() => {
-      const activity = getCurrentActivity(getAppNow(simOffsetMs))
+      const activity = getCurrentActivity(getAppNow(isOperator ? simOffsetMs : null), visibleDays)
       if (!activity) return
       document
         .getElementById(`timeline-${activity.item.id}`)
@@ -862,14 +875,15 @@ function App() {
   const openWeatherDesk = (locationId?: string, date?: string) => {
     const live = syncViewsToLiveDay()
     if (locationId) setWeatherLocationId(locationId)
-    else if (!live) setWeatherLocationId('sapporo')
+    else if (live) setWeatherLocationId(locationHintForPlan(live))
+    else setWeatherLocationId('sapporo')
     if (date) setWeatherDate(date)
     else if (!live) setWeatherDate('2026-08-23')
     setView(packingClosed ? 'guide' : 'more')
     setSearch('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-  const currentActivity = useMemo(() => getCurrentActivity(now), [now])
+  const currentActivity = useMemo(() => getCurrentActivity(now, visibleDays), [now, visibleDays])
   const visibleTimeline = currentDay.timeline.filter((item) => showRest || !item.isRest)
   const totalPackingItems = packingLists.reduce((total, list) => total + list.items.length, 0)
   const packedItems = packingLists.reduce(
@@ -883,19 +897,20 @@ function App() {
   const selectedWeatherDay = selectedWeatherForecast?.daily.find((day) => day.date === weatherDate)
   const selectedHourly = selectedWeatherForecast?.hourlyByDate[weatherDate] ?? []
   const tripWeatherStrip = useMemo(() => {
-    return tripDays.map((day) => ({
+    return visibleDays.map((day) => ({
       day,
-      weather: getDayWeather(weatherForecasts, day.date, dayLocationHint[day.day]),
+      weather: getDayWeather(weatherForecasts, day.date, locationHintForPlan(day)),
     }))
-  }, [weatherForecasts])
+  }, [weatherForecasts, visibleDays])
+  const liveDay = journey.day ? visibleDays[journey.day - 1] : undefined
   const homeWeather =
-    journey.phase === 'during' && journey.day
-      ? getDayWeather(weatherForecasts, tripDays[journey.day - 1]?.date ?? '', dayLocationHint[journey.day])
+    journey.phase === 'during' && liveDay
+      ? getDayWeather(weatherForecasts, liveDay.date, locationHintForPlan(liveDay))
       : getDayWeather(weatherForecasts, '2026-08-23', 'sapporo')
   const currentDayWeather = getDayWeather(
     weatherForecasts,
     currentDay.date,
-    dayLocationHint[currentDay.day],
+    locationHintForPlan(currentDay),
   )
   const weatherSourceLabel = selectedWeatherForecast?.source
     ? `数据源 ${selectedWeatherForecast.source}`
@@ -920,7 +935,7 @@ function App() {
   const searchResults = useMemo<SearchResult[]>(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return []
-    const dayMatches = tripDays
+    const dayMatches = visibleDays
       .filter((day) =>
         [day.title, day.route, day.summary, ...day.highlights, ...day.reminders]
           .join(' ')
@@ -934,7 +949,7 @@ function App() {
         dayNumber: day.day,
         target: 'days' as const,
       }))
-    const timelineMatches = tripDays.flatMap((day) =>
+    const timelineMatches = visibleDays.flatMap((day) =>
       day.timeline
         .filter((item) =>
           [item.title, item.detail, item.dad, item.mom, item.kids]
@@ -975,7 +990,7 @@ function App() {
             })),
         )
     return [...dayMatches, ...timelineMatches, ...guideMatches, ...packingMatches].slice(0, 20)
-  }, [search, packingClosed])
+  }, [search, packingClosed, visibleDays])
 
   const openDay = (day: number) => {
     setSelectedDay(day)
@@ -1308,6 +1323,7 @@ function App() {
   const TIME_HOUR_PRESETS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20] as const
 
   const openTimePanel = () => {
+    if (!isOperator) return
     setSimDraft(toDatetimeLocalValue(now))
     const dayFromNow =
       now >= TRIP_START && now <= TRIP_END
@@ -1318,7 +1334,19 @@ function App() {
     setTimePanelOpen(true)
   }
 
+  const toggleDay23Swap = () => {
+    if (!isOperator) return
+    const next = !day23Swapped
+    writeDay23Swapped(next)
+    setDay23Swapped(next)
+  }
+
+  useEffect(() => {
+    if (!isOperator) setTimePanelOpen(false)
+  }, [isOperator])
+
   const applySimulatedTime = (target: Date, message?: string) => {
+    if (!isOperator) return
     const offset = target.getTime() - Date.now()
     writeSimOffset(offset)
     setSimOffsetMs(offset)
@@ -1329,10 +1357,10 @@ function App() {
       const day = Math.min(8, Math.floor((target.getTime() - TRIP_START.getTime()) / 86_400_000) + 1)
       setSelectedDay(day)
       setTimeDraftDay(day)
-      const plan = tripDays[day - 1]
+      const plan = visibleDays[day - 1]
       if (plan) {
         setWeatherDate(plan.date)
-        setWeatherLocationId(dayLocationHint[day] ?? 'sapporo')
+        setWeatherLocationId(locationHintForPlan(plan))
       }
     }
   }
@@ -1571,23 +1599,24 @@ function App() {
         {journey.phase === 'during' ? (
           <>
             {(() => {
-              const liveDay = tripDays[(journey.day ?? 1) - 1]
+              const live = liveDay ?? visibleDays[(journey.day ?? 1) - 1]
+              if (!live) return null
               return (
                 <section
                   className="day-hero day-hero--live"
                   style={
                     {
-                      '--day-accent': liveDay.accent,
-                      backgroundImage: `url(${liveDay.cover})`,
+                      '--day-accent': live.accent,
+                      backgroundImage: `url(${live.cover})`,
                     } as CSSProperties
                   }
                 >
                   <div className="day-hero__live-top">
-                    <span>正在北行 · {liveDay.weekday} · {formatDate(liveDay.date)}</span>
+                    <span>正在北行 · {live.weekday} · {formatDate(live.date)}</span>
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedDay(liveDay.day)
+                        setSelectedDay(live.day)
                         setView('days')
                         window.scrollTo({ top: 0, behavior: 'smooth' })
                       }}
@@ -1595,24 +1624,24 @@ function App() {
                       全天行程
                     </button>
                   </div>
-                  <h2>{liveDay.title}</h2>
-                  <p>{liveDay.route}</p>
-                  <small className="day-hero__place">{liveDay.coverLabel}</small>
+                  <h2>{live.title}</h2>
+                  <p>{live.route}</p>
+                  <small className="day-hero__place">{live.coverLabel}</small>
                   {homeWeather && (
-                    <button className="day-weather-chip" onClick={() => openWeatherDesk(dayLocationHint[journey.day!] ?? 'sapporo', tripDays[journey.day! - 1]?.date)} type="button">
+                    <button className="day-weather-chip" onClick={() => openWeatherDesk(locationHintForPlan(live), live.date)} type="button">
                       <span>{homeWeather.icon} {homeWeather.label}</span>
                       <strong>{homeWeather.tempMin}–{homeWeather.tempMax}°C</strong>
                       <small>降雨 {homeWeather.precipProb}%</small>
                     </button>
                   )}
                   <div className="highlight-row">
-                    {liveDay.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
-                    <PinnedDocDots docs={liveDay.pinnedDocs} />
+                    {live.highlights.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+                    <PinnedDocDots docs={live.pinnedDocs} />
                   </div>
                 </section>
               )
             })()}
-            {journey.day && <ParkingBar day={tripDays[journey.day - 1]} />}
+            {liveDay && <ParkingBar day={liveDay} />}
             {renderNowCard()}
           </>
         ) : (
@@ -1827,7 +1856,7 @@ function App() {
             }}>展开全部</button>
           </div>
           <div className="day-scroller">
-            {tripDays.map((day) => <DayCard day={day} key={day.day} onOpen={() => openDay(day.day)} />)}
+            {visibleDays.map((day) => <DayCard day={day} key={day.day} onOpen={() => openDay(day.day)} />)}
           </div>
           </section>
 
@@ -1878,10 +1907,10 @@ function App() {
       {renderHeader()}
       <main>
         <div className="day-tabs" role="tablist">
-          {tripDays.map((day) => (
+          {visibleDays.map((day) => (
             <button
               aria-selected={day.day === selectedDay}
-              className={day.day === selectedDay ? 'active' : ''}
+              className={`${day.day === selectedDay ? 'active' : ''}${isOperator && day23Swapped && (day.day === 2 || day.day === 3) ? ' is-swapped' : ''}`}
               key={day.day}
               onClick={() => setSelectedDay(day.day)}
               role="tab"
@@ -1891,6 +1920,23 @@ function App() {
             </button>
           ))}
         </div>
+        {isOperator && (
+          <div className="day-swap-bar">
+            <button
+              className={day23Swapped ? 'is-swapped' : ''}
+              onClick={toggleDay23Swap}
+              type="button"
+            >
+              <span>2</span>
+              <em>↔</em>
+              <span>3</span>
+              <strong>{day23Swapped ? '已对调 · 再点换回' : '对调这两天'}</strong>
+            </button>
+            {day23Swapped && (
+              <p>8月24日走洞爷湖，8月25日走留寿都。其他人仍看原行程。</p>
+            )}
+          </div>
+        )}
 
         <section
           className="day-hero"
@@ -1902,7 +1948,7 @@ function App() {
           <small className="day-hero__place">{currentDay.coverLabel}</small>
           {currentDayWeather && (
             <button className="day-weather-chip" onClick={() => {
-              openWeatherDesk(dayLocationHint[currentDay.day] ?? 'sapporo', currentDay.date)
+              openWeatherDesk(locationHintForPlan(currentDay), currentDay.date)
             }} type="button">
               <span>{currentDayWeather.icon} {currentDayWeather.label}</span>
               <strong>{currentDayWeather.tempMin}–{currentDayWeather.tempMax}°C</strong>
@@ -2017,7 +2063,7 @@ function App() {
               key={day.date}
               onClick={() => {
                 setWeatherDate(day.date)
-                setWeatherLocationId(dayLocationHint[day.day] ?? 'sapporo')
+                setWeatherLocationId(locationHintForPlan(day))
               }}
               type="button"
             >
@@ -2546,6 +2592,28 @@ function App() {
             ))}
           </div>
         </section>
+        {isOperator && (
+        <section className="preview-card debug-time-card">
+          <div>
+            <span className="eyebrow">OPERATOR · 洋葱</span>
+            <h2>DAY2 / DAY3 对调</h2>
+            <p>只换两天的行程内容，日期仍是 24 / 25。再点一次换回。其他人看不到这个开关，也仍看原行程。</p>
+          </div>
+          <div className="day-swap-bar day-swap-bar--card">
+            <button
+              className={day23Swapped ? 'is-swapped' : ''}
+              onClick={toggleDay23Swap}
+              type="button"
+            >
+              <span>2</span>
+              <em>↔</em>
+              <span>3</span>
+              <strong>{day23Swapped ? '已对调 · 再点换回' : '对调这两天'}</strong>
+            </button>
+          </div>
+        </section>
+        )}
+        {isOperator && (
         <section className="preview-card debug-time-card">
           <div>
             <span className="eyebrow">DEBUG · TIME MACHINE</span>
@@ -2565,6 +2633,7 @@ function App() {
             </button>
           </div>
         </section>
+        )}
         <section className="preview-card">
           <div>
             <span className="eyebrow">REPAIR</span>
@@ -2607,7 +2676,8 @@ function App() {
   )
 
   return (
-    <div className="app-shell app-shell--simulating">
+    <div className={`app-shell ${isOperator ? 'app-shell--simulating' : ''}`}>
+      {isOperator && (
       <div className={`sim-banner ${isSimulating ? 'sim-banner--active' : ''}`} role="status">
         <button className="sim-banner__clock" type="button" onClick={openTimePanel}>
           <span>{isSimulating ? '模拟时间 · 点此调整' : '测试时钟 · 点此调时间'}</span>
@@ -2620,12 +2690,13 @@ function App() {
           )}
         </div>
       </div>
+      )}
       {view === 'home' && renderHome()}
       {view === 'days' && renderDays()}
       {view === 'ratings' && renderRatings()}
       {view === 'guide' && renderGuide()}
       {view === 'more' && renderMore()}
-      {timePanelOpen && (
+      {isOperator && timePanelOpen && (
         <div className="time-sheet" role="dialog" aria-modal="true" aria-labelledby="time-sheet-title">
           <button className="time-sheet__backdrop" aria-label="关闭" type="button" onClick={() => setTimePanelOpen(false)} />
           <div className="time-sheet__panel">

@@ -767,3 +767,11 @@ export const dayLocationHint: Record<number, string> = {
   7: 'sapporo',
   8: 'chitose',
 }
+
+/** Prefer the day's actual itinerary (after DAY2/DAY3 swap) over the original day number. */
+export const locationHintForPlan = (day: { day: number; title: string; route: string }) => {
+  const hay = `${day.title} ${day.route}`
+  if (/有珠|洞爷|Lake Hill/i.test(hay)) return 'toya'
+  if (/留寿都/.test(hay)) return 'rusutsu'
+  return dayLocationHint[day.day] ?? 'sapporo'
+}
