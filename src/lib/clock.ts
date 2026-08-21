@@ -97,6 +97,14 @@ const matchNavigation = (day: DayPlan, item: TimelineItem) => {
     const nintendo = day.navigation.find((nav) => /Nintendo|大丸/.test(nav.label))
     if (nintendo) return nintendo
   }
+  if (/还车/.test(haystack)) {
+    const ret = day.navigation.find((nav) => /还车/.test(nav.label))
+    if (ret) return ret
+  }
+  if (/机场|B停车|B 停车/.test(haystack)) {
+    const park = day.navigation.find((nav) => /B 停车场|B停车场/.test(nav.label))
+    if (park) return park
+  }
   return (
     day.navigation.find((nav) => haystack.includes(nav.label) || item.detail.includes(nav.query)) ??
     day.navigation.find((nav) =>
