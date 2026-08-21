@@ -219,6 +219,16 @@ const curatedSeeds: CuratedSeed[] = [
     kind: 'experience',
     cover: coverUrl('rating-tanukikoji.jpg'),
   },
+  {
+    id: 'day5-dinner-kumagera',
+    day: 5,
+    date: '2026-08-27',
+    weekday: '周四',
+    title: '晚餐 · くまげら',
+    detail: '富良野乡土料理整体打个分就好',
+    kind: 'meal',
+    cover: coverUrl('rating-kumagera.jpg'),
+  },
 ]
 
 export const buildRateableTargets = (): RateableTarget[] =>
