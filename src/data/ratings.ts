@@ -40,8 +40,14 @@ const dayUnlockAt20 = (date: string) => {
   return new Date(year, month - 1, day, 20, 0, 0, 0).toISOString()
 }
 
+const dayUnlockAtHour = (date: string, hour: number) => {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day, hour, 0, 0, 0).toISOString()
+}
+
 type CuratedSeed = Omit<RateableTarget, 'unlockAt' | 'time'> & {
   time?: string
+  unlockAt?: string
 }
 
 /**
@@ -329,13 +335,64 @@ const curatedSeeds: CuratedSeed[] = [
     kind: 'meal',
     cover: coverUrl('rating-otaru-dinner.jpg'),
   },
+  {
+    id: 'day7-greenland',
+    day: 7,
+    date: '2026-08-29',
+    weekday: '周六',
+    title: '游乐园',
+    detail: '北海道 Greenland 整体感受',
+    kind: 'spot',
+    cover: coverUrl('day7-greenland.jpg'),
+  },
+  {
+    id: 'day7-picnic',
+    day: 7,
+    date: '2026-08-29',
+    weekday: '周六',
+    title: '野餐',
+    detail: '草坪野餐整体打个分就好',
+    kind: 'experience',
+    cover: coverUrl('rating-picnic.jpg'),
+  },
+  {
+    id: 'day7-night-shop',
+    day: 7,
+    date: '2026-08-29',
+    weekday: '周六',
+    title: '晚上商店',
+    detail: '唐吉诃德 / Nintendo POP-UP 一带整体感受',
+    kind: 'experience',
+    cover: coverUrl('rating-night-shop.jpg'),
+  },
+  {
+    id: 'day7-dinner',
+    day: 7,
+    date: '2026-08-29',
+    weekday: '周六',
+    title: '晚餐',
+    detail: '大地のテラス或回城晚餐整体打个分就好',
+    kind: 'meal',
+    cover: coverUrl('rating-day7-dinner.jpg'),
+  },
+  {
+    id: 'day8-final',
+    day: 8,
+    date: '2026-08-30',
+    weekday: '周日',
+    title: '最后的总评',
+    detail: '整趟北海道行程整体打个分',
+    kind: 'experience',
+    cover: coverUrl('furano-lavender-cover.jpg'),
+    unlockAt: dayUnlockAtHour('2026-08-30', 8),
+  },
 ]
 
 export const buildRateableTargets = (): RateableTarget[] =>
   curatedSeeds.map((seed) => ({
     ...seed,
     time: seed.time ?? '20:00',
-    unlockAt: dayUnlockAt20(seed.date),
+    unlockAt: seed.unlockAt ?? dayUnlockAt20(seed.date),
   }))
 
 export const rateableTargets = buildRateableTargets()
