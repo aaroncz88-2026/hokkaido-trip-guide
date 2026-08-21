@@ -297,7 +297,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '龙宫',
     detail: 'Blue Cave Cruise 出海整体感受',
     kind: 'experience',
-    cover: coverUrl('day6-otaru.jpg'),
+    cover: coverUrl('rating-ryugu.jpg'),
   },
   {
     id: 'day6-lunch',
@@ -307,7 +307,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '午餐',
     detail: '小樽午餐整体打个分就好',
     kind: 'meal',
-    cover: coverUrl('day6-otaru.jpg'),
+    cover: coverUrl('rating-otaru-lunch.jpg'),
   },
   {
     id: 'day6-otaru-canal-market',
@@ -317,7 +317,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '小樽运河和市集',
     detail: '运河、仓库群和市集一带整体感受',
     kind: 'spot',
-    cover: coverUrl('day6-otaru.jpg'),
+    cover: coverUrl('rating-otaru-canal.jpg'),
   },
   {
     id: 'day6-dinner',
@@ -327,7 +327,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚餐',
     detail: '小樽晚餐整体打个分就好',
     kind: 'meal',
-    cover: coverUrl('day6-otaru.jpg'),
+    cover: coverUrl('rating-otaru-dinner.jpg'),
   },
 ]
 
