@@ -3568,7 +3568,8 @@ label:has(input:focus-visible) {
 }
 
 .rating-summary-card {
-  padding: 14px 14px 12px;
+  overflow: hidden;
+  padding: 0 14px 12px;
   border: 1px solid rgba(226, 216, 228, 0.95);
   border-radius: 16px;
   background: rgba(255, 252, 254, 0.92);
@@ -3718,10 +3719,21 @@ label:has(input:focus-visible) {
 .rating-card {
   display: grid;
   gap: 10px;
-  padding: 14px;
+  padding: 0 14px 14px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--paper);
+}
+
+.rating-card__cover {
+  height: 118px;
+  margin: 0 -14px 2px;
+  background: #d8cfe0 center / cover no-repeat;
+}
+
+.rating-card__cover--compact {
+  height: 88px;
 }
 
 .rating-card header {

@@ -9,8 +9,14 @@ export type RateableTarget = {
   title: string
   detail: string
   kind: RateableKind
+  cover: string
   unlockAt: string
 }
+
+const coverUrl = (file: string) => `${import.meta.env.BASE_URL}covers/${file}`
+const COVER_SHIKOTSU = coverUrl('day1-shikotsu.jpg')
+const COVER_RUSUTSU = coverUrl('day2-rusutsu.jpg')
+const COVER_TOYA = coverUrl('day3-toya.jpg')
 
 /** 兼容旧分项字段；新版只用 overall */
 export type RatingScores = Record<string, number>
@@ -54,6 +60,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '支笏湖',
     detail: '整体感受打个分就好',
     kind: 'spot',
+    cover: COVER_SHIKOTSU,
   },
   {
     id: 'day1-dinner-genbee',
@@ -63,6 +70,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚餐 · 源べえ',
     detail: '这顿饭整体打个分就好',
     kind: 'meal',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day2-rusutsu-park',
@@ -72,6 +80,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '留寿都游乐园',
     detail: '过山车、骑行、卡丁车等园区整体感受',
     kind: 'spot',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day2-lunch',
@@ -81,6 +90,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '午餐 · Barbecue / Country House',
     detail: '园区午餐整体打个分就好',
     kind: 'meal',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day2-dinner-kakashi',
@@ -90,6 +100,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚餐 · かかし',
     detail: '园区居酒屋整体打个分就好',
     kind: 'meal',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day2-night-play',
@@ -99,6 +110,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚上的游乐区',
     detail: '旋转木马、光之迷宫、Game World、星尘大道',
     kind: 'experience',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day3-breakfast-oktoberfest',
@@ -108,6 +120,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '早餐 · Oktoberfest',
     detail: '酒店早餐整体打个分就好',
     kind: 'meal',
+    cover: COVER_RUSUTSU,
   },
   {
     id: 'day3-usuzan',
@@ -117,6 +130,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '有珠山',
     detail: '缆车和展望台整体感受',
     kind: 'spot',
+    cover: COVER_TOYA,
   },
   {
     id: 'day3-lake-hill-farm',
@@ -126,6 +140,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '下午茶 · Lake Hill Farm',
     detail: '冰淇淋和牧场轻食整体打个分就好',
     kind: 'meal',
+    cover: COVER_TOYA,
   },
   {
     id: 'day3-toya-area',
@@ -135,6 +150,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '洞爷湖区域',
     detail: '湖畔、温泉街、烟花一带整体感受',
     kind: 'spot',
+    cover: COVER_TOYA,
   },
   {
     id: 'day3-dinner-karzz',
@@ -144,6 +160,7 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚餐 · KARZZ',
     detail: 'Restaurant & Flowers KARZZ 整体打个分就好',
     kind: 'meal',
+    cover: COVER_TOYA,
   },
 ]
 

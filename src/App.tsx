@@ -1171,6 +1171,11 @@ function App() {
 
     return (
       <article className={`rating-card rating-card--${mode}`} key={target.id}>
+        <div
+          aria-hidden="true"
+          className="rating-card__cover"
+          style={{ backgroundImage: `url(${target.cover})` }}
+        />
         <header>
           <div>
             <span>
@@ -2309,6 +2314,11 @@ function App() {
             {bySpot.length === 0 && <p className="empty-state">还没有可展示的景点评分</p>}
             {bySpot.map(({ target, rows, avg }) => (
               <article className="rating-summary-card" key={target.id}>
+                <div
+                  aria-hidden="true"
+                  className="rating-card__cover rating-card__cover--compact"
+                  style={{ backgroundImage: `url(${target.cover})` }}
+                />
                 <header>
                   <div>
                     <span>
