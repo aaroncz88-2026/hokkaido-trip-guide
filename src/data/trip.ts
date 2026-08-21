@@ -811,6 +811,18 @@ const day4NightBrowseGuide: TimelineMaterial = {
   ],
 }
 
+/** 小樽下午堺町通 / 运河一带可逛甜品店；不挂在早餐 */
+const otaruSnackGuide: TimelineMaterial = {
+  title: '下午可逛小吃店',
+  body: '堺町通和运河一带顺路买。不必全逛，排队长就换下一家。',
+  list: [
+    'かま栄工場直売店 — 鱼板、炸物，可现吃也可带走',
+    'LeTAO 本店 — 芝士蛋糕，现吃或冷藏带走',
+    '六花亭 小樽运河店 — マルセイバターサンド等伴手礼',
+    '北菓楼 小樽本馆 — 奶油三明治、泡芙，可现吃',
+  ],
+}
+
 const finalTimelineCorrections: Record<number, Record<string, string>> = {
   1: {
     '12:00~13:00':
@@ -914,6 +926,11 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
   5: {
     '13:00~14:00': [],
     '20:00~21:00': [],
+  },
+  6: {
+    '9:00~10:00': [],
+    '14:00~15:00': [otaruSnackGuide],
+    '15:00~16:00': [otaruSnackGuide],
   },
 }
 
