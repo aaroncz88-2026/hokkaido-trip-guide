@@ -194,6 +194,9 @@ const dayMeta: DayMeta[] = [
       { label: '富田农场', query: 'Farm Tomita Parking' },
       { label: '精灵露台', query: 'Ningle Terrace Parking' },
     ],
+    pinnedDocs: [
+      { label: 'DAY5 导游发言稿', url: docUrl('day5-guide-script.pdf') },
+    ],
     reminders: ['这是最长车程日，唯一司机必须安排中途休息', '诺ロッコ号和羊驼在四季彩之丘', '23:00 前回到札幌为目标'],
   },
   {
@@ -986,6 +989,14 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       {
         label: '定山溪游客中心 | Google Maps',
         url: 'https://maps.google.com/?q=Jozankei%20Tourist%20Information%20Center',
+      },
+    ],
+  },
+  5: {
+    '8:00~9:00': [
+      {
+        label: 'DAY5 美瑛富良野导游词（PDF）',
+        url: docUrl('day5-guide-script.pdf'),
       },
     ],
   },
