@@ -1101,7 +1101,8 @@ function App() {
       return
     }
     if (!isTargetUnlocked(target, now)) {
-      setRatingMessage('当天 20:00 以后才开放打分')
+      const unlockHour = new Date(target.unlockAt).getHours()
+      setRatingMessage(`当天 ${String(unlockHour).padStart(2, '0')}:00 以后才开放打分`)
       return
     }
     const existing = getTravelerRating(ratings, target.id, name)
@@ -1199,7 +1200,9 @@ function App() {
         </header>
         <p className="rating-prompt">{ratingPrompt(target)}</p>
         {mode === 'locked' ? (
-          <p className="rating-lock-note">当天 20:00 后开放 · {unlockLabel}</p>
+          <p className="rating-lock-note">
+            当天 {String(new Date(target.unlockAt).getHours()).padStart(2, '0')}:00 后开放 · {unlockLabel}
+          </p>
         ) : (
           <>
             {renderStarPicker(target.id, stars, false)}
@@ -2331,7 +2334,15 @@ function App() {
                 <section className="rating-day-group" key={day}>
                   <h3 className="rating-day-group__title">
                     DAY {day}
-                    <small>{unlocked ? `当天 20:00 后可评 · ${dayTargets.length} 项` : `当天 20:00 后开放 · ${dayTargets.length} 项`}</small>
+                    <small>
+                      {(() => {
+                        const hour = new Date(dayTargets[0].unlockAt).getHours()
+                        const label = `当天 ${String(hour).padStart(2, '0')}:00`
+                        return unlocked
+                          ? `${label} 后可评 · ${dayTargets.length} 项`
+                          : `${label} 后开放 · ${dayTargets.length} 项`
+                      })()}
+                    </small>
                   </h3>
                   {dayTargets.map((target) => {
                     const existing = getTravelerRating(ratings, target.id, ratingAuthor)
