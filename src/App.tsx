@@ -1422,7 +1422,9 @@ function App() {
                 ? '午餐地点'
                 : /晚餐/.test(item.title)
                   ? '晚餐地点'
-                  : '导航点'}
+                  : /返程|回家/.test(`${item.title} ${item.detail}`)
+                    ? '住宿点'
+                    : '导航点'}
             </span>
             <strong>{currentActivity.navigation.label.replace(/^(午餐|晚餐)\s*·\s*/, '')}</strong>
             <MapsLink query={currentActivity.navigation.query}>
