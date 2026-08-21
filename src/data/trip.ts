@@ -836,6 +836,9 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '19:00~20:00': '【饭后逛街】狸小路一带 · 按关门时间逛',
     '20:00~21:00': '【饭后逛街】继续逛店；文具／玩具可顺路看',
   },
+  5: {
+    '13:00~14:00': '【午餐】フロックスホール\n预计 13:45 前吃完，再开始玩',
+  },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
     '15:00~16:00': '【堺町通亲子任务】【小店】16:00前结束主街段',
@@ -1002,6 +1005,12 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
   },
 }
 
+const titleCorrections: Record<number, Record<string, string>> = {
+  5: {
+    '13:00~14:00': '午餐',
+  },
+}
+
 const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 'dad' | 'mom' | 'kids'>>>> = {
   1: {
     '8:00~12:00': {
@@ -1102,7 +1111,7 @@ const buildTimeline = () => {
     const item: TimelineItem = {
       id: `day-${currentDay}-row-${rowIndex}`,
       time,
-      title: getTitle(detail),
+      title: titleCorrections[currentDay]?.[time] ?? getTitle(detail),
       detail,
       tags,
       dad: roleFix?.dad ?? getText(row, 3),
