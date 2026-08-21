@@ -93,6 +93,10 @@ const matchNavigation = (day: DayPlan, item: TimelineItem) => {
     const lodging = day.navigation.find((nav) => /返程|公寓|回酒店/.test(nav.label))
     if (lodging) return lodging
   }
+  if (/Nintendo|大丸/.test(haystack)) {
+    const nintendo = day.navigation.find((nav) => /Nintendo|大丸/.test(nav.label))
+    if (nintendo) return nintendo
+  }
   return (
     day.navigation.find((nav) => haystack.includes(nav.label) || item.detail.includes(nav.query)) ??
     day.navigation.find((nav) =>

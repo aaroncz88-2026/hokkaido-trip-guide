@@ -237,12 +237,19 @@ const dayMeta: DayMeta[] = [
     accent: '#c26b2b',
     cover: coverUrl('day7-greenland.jpg'),
     coverLabel: '北海道 Greenland',
-    highlights: ['Greenland', '草坪野餐', '大地のテラス', '最后采购'],
+    highlights: ['Greenland', '草坪野餐', '大地のテラス', 'Nintendo POP-UP'],
     navigation: [
       { label: '北海道 Greenland', query: 'Hokkaido Greenland Parking' },
       { label: '大地のテラス', query: '大地のテラス 岩見沢' },
+      { label: 'Nintendo POP-UP · 大丸札幌 7F', query: '札幌市中央区北5条西4丁目7 大丸札幌店' },
+      { label: '返程 · 札幌市区公寓', query: '札幌市区公寓' },
     ],
-    reminders: ['早餐和野餐食物提前准备', '提前确认并预约大地のテラス 18:00 晚餐', '晚上整理行李与次日返程物品'],
+    reminders: [
+      '早餐和野餐食物提前准备',
+      '提前确认并预约大地のテラス 18:00 晚餐',
+      '备选：Nintendo POP-UP 在大丸札幌店 7 楼催事场（北5条西4丁目7），10:00–20:00',
+      '晚上整理行李与次日返程物品',
+    ],
   },
   {
     day: 8,
