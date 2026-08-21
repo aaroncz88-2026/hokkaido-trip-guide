@@ -43,7 +43,7 @@ type CuratedSeed = Omit<RateableTarget, 'unlockAt' | 'time'> & {
 
 /**
  * 手工维护：不是每个景点/每顿饭都要评。
- * DAY1：湖 + 晚饭，各给一个 1–10 笼统分即可。
+ * 笼统 1–10 星；当天 20:00 后开放该日全部项。
  */
 const curatedSeeds: CuratedSeed[] = [
   {
@@ -63,6 +63,42 @@ const curatedSeeds: CuratedSeed[] = [
     title: '晚餐 · 源べえ',
     detail: '这顿饭整体打个分就好',
     kind: 'meal',
+  },
+  {
+    id: 'day2-rusutsu-park',
+    day: 2,
+    date: '2026-08-24',
+    weekday: '周一',
+    title: '留寿都游乐园',
+    detail: '过山车、骑行、卡丁车等园区整体感受',
+    kind: 'spot',
+  },
+  {
+    id: 'day2-lunch',
+    day: 2,
+    date: '2026-08-24',
+    weekday: '周一',
+    title: '午餐 · Barbecue / Country House',
+    detail: '园区午餐整体打个分就好',
+    kind: 'meal',
+  },
+  {
+    id: 'day2-dinner-kakashi',
+    day: 2,
+    date: '2026-08-24',
+    weekday: '周一',
+    title: '晚餐 · かかし',
+    detail: '园区居酒屋整体打个分就好',
+    kind: 'meal',
+  },
+  {
+    id: 'day2-night-play',
+    day: 2,
+    date: '2026-08-24',
+    weekday: '周一',
+    title: '晚上的游乐区',
+    detail: '旋转木马、光之迷宫、Game World、星尘大道',
+    kind: 'experience',
   },
 ]
 
