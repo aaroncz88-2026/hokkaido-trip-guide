@@ -468,6 +468,34 @@ const airportFoodGuide: TimelineMaterial = {
   ],
 }
 
+/** DAY8 机场：第一天那些店再列一遍，吃 / 逛分开 */
+const day8AirportEatGuide: TimelineMaterial = {
+  title: '机场可吃',
+  body: '还车会合后按喜好点，不必全吃。先填饱再逛店。',
+  list: [
+    'かま栄 — 鱼浆包面包后油炸，咸香顶饿，适合当正餐',
+    '十勝VALLEYs — 芝士包＋玉米可乐饼，带娃分着吃',
+    'きのとや — 现烤芝士挞，热的最好吃',
+    'Calbee+ — 现做薯条，孩子友好',
+    'ROYCE 巧克力世界 — 可试吃／现做，也能顺手买',
+  ],
+}
+
+const day8AirportBrowseGuide: TimelineMaterial = {
+  title: '机场可逛',
+  body: '过安检前按兴趣逛。时间紧就只去标了优先的。',
+  list: [
+    'Hello Kitty Happy Flight — DAY8 亲子玩，优先',
+    'Pokémon Store — 孩子优先',
+    '伊東屋 新千歳空港店 — 文具、本子',
+    '北菓楼 — 铜锣烧、泡芙，礼盒或现吃',
+    'LeTAO — 芝士蛋糕，冷藏可带走',
+    '北海道牛乳カステラ — 瑞士卷、蛋糕',
+    'Snow Cheese — 排队长就跳过',
+    'ROYCE — 巧克力伴手礼',
+  ],
+}
+
 const shikotsuBoatGuide: TimelineMaterial = {
   title: '观光船 · 末班 17:00',
   body: '水中观光船约 30 分钟。2026 季末班 17:00；到湖先问下一班。赶不上或风大，改天鹅船或湖边走走。',
@@ -964,6 +992,11 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '14:00~15:00': [otaruSnackGuide],
     '15:00~16:00': [otaruSnackGuide],
   },
+  8: {
+    '11:00~12:00': [day8AirportEatGuide, day8AirportBrowseGuide],
+    '12:00~13:00': [day8AirportEatGuide, day8AirportBrowseGuide],
+    '15:00~16:00': [day8AirportEatGuide, day8AirportBrowseGuide],
+  },
 }
 
 const costCorrections: Record<number, Record<string, string>> = {
@@ -1071,6 +1104,11 @@ const titleCorrections: Record<number, Record<string, string>> = {
   5: {
     '13:00~14:00': '午餐',
     '20:00~21:00': '晚餐',
+  },
+  8: {
+    '11:00~12:00': '最后游玩',
+    '12:00~13:00': '最后游玩',
+    '15:00~16:00': '机场午餐＋最后采购',
   },
 }
 
