@@ -526,9 +526,10 @@ export const countPendingRatings = (
   ratings: RatingRecord[],
   travelerName: string,
   now: Date,
+  targets: RateableTarget[] = rateableTargets,
 ) => {
   const name = travelerName.trim() || '本机'
-  return rateableTargets.filter(
+  return targets.filter(
     (target) => isTargetUnlocked(target, now) && !getTravelerRating(ratings, target.id, name),
   ).length
 }

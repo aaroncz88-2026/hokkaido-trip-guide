@@ -33,5 +33,16 @@ service cloud.firestore {
         && request.resource.data.stars <= 10;
       allow delete: if true;
     }
+
+    match /tripSettings/{docId} {
+      allow read: if true;
+      allow create, update: if
+        docId == 'itinerary'
+        && request.resource.data.keys().hasOnly(['day23Swapped', 'updatedAt', 'updatedBy'])
+        && request.resource.data.day23Swapped is bool
+        && request.resource.data.updatedAt is string
+        && request.resource.data.updatedBy == '洋葱';
+      allow delete: if false;
+    }
   }
 }

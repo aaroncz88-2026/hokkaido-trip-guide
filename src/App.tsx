@@ -57,8 +57,10 @@ import {
   averageOfRecords,
   deleteCloudRatingsForTraveler,
   fetchCloudRatings,
+  fetchDay23SwapFlag,
   getDeviceId,
   isRatingCloudConfigured,
+  pushDay23SwapFlag,
   pushRatingToCloud,
   readNickname,
   writeNickname,
@@ -79,6 +81,7 @@ import {
   isOperatorName,
   readDay23Swapped,
   withDay2Day3Swap,
+  withSwappedRateableTargets,
   writeDay23Swapped,
 } from './lib/itinerarySwap'
 import './App.css'
@@ -669,6 +672,7 @@ function App() {
   const [timePanelOpen, setTimePanelOpen] = useState(false)
   const [timeDraftDay, setTimeDraftDay] = useState(1)
   const [day23Swapped, setDay23Swapped] = useState(() => readDay23Swapped())
+  const [swapMessage, setSwapMessage] = useState('')
   const [fillChecks, setFillChecks] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem('hokkaido-fill-checks') ?? '{}')
@@ -831,6 +835,22 @@ function App() {
     return () => window.clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const loadSwap = async () => {
+      const result = await fetchDay23SwapFlag()
+      if (cancelled || !result.ok) return
+      setDay23Swapped(result.swapped)
+      writeDay23Swapped(result.swapped)
+    }
+    void loadSwap()
+    const timer = window.setInterval(() => void loadSwap(), 20_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
   const isOperator =
     isOperatorName(travelerName) || isOperatorName(packingOwner) || isOperatorName(nicknameDraft)
   const now = useMemo(() => {
@@ -839,8 +859,12 @@ function App() {
   }, [simOffsetMs, clockTick, isOperator])
   const isSimulating = isOperator && simOffsetMs != null
   const visibleDays = useMemo(
-    () => withDay2Day3Swap(tripDays, isOperator && day23Swapped),
-    [isOperator, day23Swapped],
+    () => withDay2Day3Swap(tripDays, day23Swapped),
+    [day23Swapped],
+  )
+  const visibleTargets = useMemo(
+    () => withSwappedRateableTargets(rateableTargets, day23Swapped),
+    [day23Swapped],
   )
   const currentDay = visibleDays.find((day) => day.day === selectedDay) ?? visibleDays[0]
   const journey = getJourneyState(now, visibleDays)
@@ -920,12 +944,12 @@ function App() {
   const tripNickname = (nicknameDraft.trim() || travelerName.trim() || packingOwner.trim()).trim()
   const ratingAuthor = tripNickname || '本机'
   const pendingRatingCount = useMemo(
-    () => countPendingRatings(ratings, ratingAuthor, now),
-    [now, ratingAuthor, ratings],
+    () => countPendingRatings(ratings, ratingAuthor, now, visibleTargets),
+    [now, ratingAuthor, ratings, visibleTargets],
   )
   const ratingsTabUnlocked = useMemo(
-    () => rateableTargets.some((target) => isTargetUnlocked(target, now)),
-    [now],
+    () => visibleTargets.some((target) => isTargetUnlocked(target, now)),
+    [now, visibleTargets],
   )
   useEffect(() => {
     if (view === 'ratings' && !ratingsTabUnlocked) {
@@ -1334,11 +1358,20 @@ function App() {
     setTimePanelOpen(true)
   }
 
-  const toggleDay23Swap = () => {
+  const toggleDay23Swap = async () => {
     if (!isOperator) return
     const next = !day23Swapped
-    writeDay23Swapped(next)
     setDay23Swapped(next)
+    writeDay23Swapped(next)
+    setSwapMessage(next ? '正在同步给全员…' : '正在恢复原行程并同步…')
+    const result = await pushDay23SwapFlag(next, '洋葱')
+    setSwapMessage(
+      result.ok
+        ? next
+          ? '已同步：所有人的行程和评分都是 8/24 洞爷湖、8/25 留寿都'
+          : '已同步：所有人恢复原来的 DAY2 留寿都、DAY3 洞爷湖'
+        : `本机已对调，但还没同步到其他人：${result.message}`,
+    )
   }
 
   useEffect(() => {
@@ -1910,7 +1943,7 @@ function App() {
           {visibleDays.map((day) => (
             <button
               aria-selected={day.day === selectedDay}
-              className={`${day.day === selectedDay ? 'active' : ''}${isOperator && day23Swapped && (day.day === 2 || day.day === 3) ? ' is-swapped' : ''}`}
+              className={`${day.day === selectedDay ? 'active' : ''}${day23Swapped && (day.day === 2 || day.day === 3) ? ' is-swapped' : ''}`}
               key={day.day}
               onClick={() => setSelectedDay(day.day)}
               role="tab"
@@ -1924,7 +1957,7 @@ function App() {
           <div className="day-swap-bar">
             <button
               className={day23Swapped ? 'is-swapped' : ''}
-              onClick={toggleDay23Swap}
+              onClick={() => void toggleDay23Swap()}
               type="button"
             >
               <span>2</span>
@@ -1932,10 +1965,16 @@ function App() {
               <span>3</span>
               <strong>{day23Swapped ? '已对调 · 再点换回' : '对调这两天'}</strong>
             </button>
-            {day23Swapped && (
-              <p>8月24日走洞爷湖，8月25日走留寿都。其他人仍看原行程。</p>
-            )}
+            <p>
+              {day23Swapped
+                ? '全员生效：8月24日走洞爷湖，8月25日走留寿都。评分也跟这一天走。'
+                : '对调后所有人的行程和评分都会一起换。'}
+            </p>
+            {swapMessage && <p>{swapMessage}</p>}
           </div>
+        )}
+        {!isOperator && day23Swapped && (
+          <p className="day-swap-note">行程已对调：8月24日洞爷湖，8月25日留寿都。</p>
         )}
 
         <section
@@ -2302,7 +2341,7 @@ function App() {
   )
 
   const renderRatingsPanel = () => {
-    const bySpot = rateableTargets.map((target) => {
+    const bySpot = visibleTargets.map((target) => {
       const rows = cloudRatings.filter((item) => item.targetId === target.id)
       return { target, rows, avg: averageOfRecords(rows) }
     })
@@ -2373,7 +2412,7 @@ function App() {
         {ratingsBoard === 'mine' && (
           <div className="rating-list">
             {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((day) => {
-              const dayTargets = rateableTargets.filter((target) => target.day === day)
+              const dayTargets = visibleTargets.filter((target) => target.day === day)
               if (dayTargets.length === 0) return null
               const unlocked = dayTargets.some((target) => isTargetUnlocked(target, now))
               return (
@@ -2460,7 +2499,7 @@ function App() {
                   </header>
                   <ul className="rating-person-rows">
                     {rows.map((row) => {
-                      const target = rateableTargets.find((item) => item.id === row.targetId)
+                      const target = visibleTargets.find((item) => item.id === row.targetId)
                       return (
                         <li key={`${row.deviceId}-${row.targetId}`}>
                           <strong>{target?.title ?? row.targetId}</strong>
@@ -2597,12 +2636,12 @@ function App() {
           <div>
             <span className="eyebrow">OPERATOR · 洋葱</span>
             <h2>DAY2 / DAY3 对调</h2>
-            <p>只换两天的行程内容，日期仍是 24 / 25。再点一次换回。其他人看不到这个开关，也仍看原行程。</p>
+            <p>只换两天的行程内容，日期仍是 24 / 25。再点一次换回。对调后所有人的行程和评分都会一起变成新安排。</p>
           </div>
           <div className="day-swap-bar day-swap-bar--card">
             <button
               className={day23Swapped ? 'is-swapped' : ''}
-              onClick={toggleDay23Swap}
+              onClick={() => void toggleDay23Swap()}
               type="button"
             >
               <span>2</span>
@@ -2610,6 +2649,7 @@ function App() {
               <span>3</span>
               <strong>{day23Swapped ? '已对调 · 再点换回' : '对调这两天'}</strong>
             </button>
+            {swapMessage && <p className="debug-time-message">{swapMessage}</p>}
           </div>
         </section>
         )}

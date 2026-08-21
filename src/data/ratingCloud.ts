@@ -190,6 +190,7 @@ export const fetchCloudRatings = async (): Promise<
     const ratings = (payload.documents ?? [])
       .map((doc) => parseCloudRecord(doc.fields, doc.name))
       .filter((item): item is CloudRatingRecord => Boolean(item))
+      .filter((item) => !item.targetId.startsWith('__'))
     return { ok: true, ratings }
   } catch {
     return { ok: false, message: '网络异常，暂时只显示本机评分', ratings: [] }
@@ -307,4 +308,60 @@ export const averageOfRecords = (records: CloudRatingRecord[]) => {
   if (records.length === 0) return 0
   const sum = records.reduce((total, item) => total + (Number(item.stars) || 0), 0)
   return Math.round((sum / records.length) * 10) / 10
+}
+
+/** Shared itinerary flag, stored as a hidden ratings document so existing Firestore rules work. */
+export const SWAP_FLAG_DOC_ID = 'itinerary_swap_day23'
+export const SWAP_FLAG_TARGET_ID = '__swap_day23__'
+
+export const fetchDay23SwapFlag = async (): Promise<
+  { ok: true; swapped: boolean } | { ok: false; message: string; swapped: boolean | null }
+> => {
+  const url = documentsUrl(`${ratingsCollection}/${SWAP_FLAG_DOC_ID}`)
+  if (!url) return { ok: false, message: '云端未配置', swapped: null }
+  try {
+    const response = await fetch(url)
+    if (response.status === 404) return { ok: true, swapped: false }
+    if (!response.ok) return { ok: false, message: `读取对调状态失败（${response.status}）`, swapped: null }
+    const payload = (await response.json()) as { fields?: Record<string, FirestoreValue> }
+    const comment = String(decodeValue(payload.fields?.comment) ?? '')
+    const stars = Number(decodeValue(payload.fields?.stars) ?? 0)
+    return { ok: true, swapped: comment === 'SWAP' || stars === 2 }
+  } catch {
+    return { ok: false, message: '网络异常，暂时用本机对调状态', swapped: null }
+  }
+}
+
+export const pushDay23SwapFlag = async (swapped: boolean, operatorName: string) => {
+  const url = documentsUrl(`${ratingsCollection}/${SWAP_FLAG_DOC_ID}`)
+  if (!url) return { ok: false as const, message: '云端未配置' }
+  const now = new Date().toISOString()
+  const body = {
+    fields: {
+      deviceId: encodeString('trip-settings'),
+      targetId: encodeString(SWAP_FLAG_TARGET_ID),
+      travelerName: encodeString((operatorName || '洋葱').slice(0, 24)),
+      scores: encodeScores({ overall: swapped ? 2 : 1 }),
+      stars: encodeNumber(swapped ? 2 : 1),
+      score10: encodeNumber(swapped ? 2 : 1),
+      comment: encodeString(swapped ? 'SWAP' : 'NORMAL'),
+      createdAt: encodeString(now),
+      updatedAt: encodeString(now),
+      pendingSync: encodeBool(false),
+    },
+  }
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      return { ok: false as const, message: `云端写入失败（${response.status}）${text ? `：${text.slice(0, 80)}` : ''}` }
+    }
+    return { ok: true as const }
+  } catch {
+    return { ok: false as const, message: '网络异常，对调未同步到其他人的手机' }
+  }
 }

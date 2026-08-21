@@ -1077,8 +1077,11 @@
   font-size: 0.72rem;
 }
 
-.day-swap-bar--card {
-  margin: 14px 0 0;
+.day-swap-note {
+  margin: 0 2px 14px;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 650;
 }
 
 .day-tabs strong {
