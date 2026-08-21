@@ -179,7 +179,7 @@ const dayMeta: DayMeta[] = [
     date: '2026-08-27',
     weekday: '周四',
     title: '美瑛与富良野',
-    route: '札幌 → 青池 → 白须瀑布 → 四季彩之丘午餐 → 富田农场 → 精灵露台 → くまげら',
+    route: '札幌 → 青池 → 白须瀑布 → 四季彩之丘午餐 → 富田农场 → 精灵露台 → くまげら → 回公寓',
     summary: '全程最长的一天，花田、瀑布和森林夜景连续推进。',
     lodging: '札幌市区公寓',
     fallback: '天气差时缩短青池与花田停留，优先保证安全返程。',
@@ -195,6 +195,7 @@ const dayMeta: DayMeta[] = [
       { label: '富田农场', query: 'Farm Tomita Parking' },
       { label: '精灵露台', query: 'Ningle Terrace Parking' },
       { label: '晚餐 · くまげら', query: 'くまげら 富良野' },
+      { label: '返程 · 札幌市区公寓', query: '札幌市区公寓' },
     ],
     pinnedDocs: [
       { label: 'DAY5 导游发言稿', url: docUrl('day5-guide-script.pdf') },
@@ -206,7 +207,7 @@ const dayMeta: DayMeta[] = [
     date: '2026-08-28',
     weekday: '周五',
     title: '小樽海陆探险',
-    route: '札幌 → 龙宫 Cruise → 堺町通 → 小型场馆 → 小樽运河',
+    route: '札幌 → 龙宫 Cruise → 堺町通 → 小型场馆 → 小樽运河 → 回公寓',
     summary: '上午出海，下午做亲子任务，傍晚在运河收尾。',
     lodging: '札幌市区公寓',
     fallback: '海况不佳取消 Cruise，改为小樽博物馆、堺町通和运河慢游。',
@@ -217,6 +218,7 @@ const dayMeta: DayMeta[] = [
     navigation: [
       { label: '龙宫 Cruise', query: 'Ryugu Cruise Otaru' },
       { label: '小樽运河', query: 'Otaru Canal Parking' },
+      { label: '返程 · 札幌市区公寓', query: '札幌市区公寓' },
     ],
     reminders: ['提前吃晕船药并穿防风防水外套', '船班目标 10:30', '博物馆闭馆前预留完整参观时间'],
   },
