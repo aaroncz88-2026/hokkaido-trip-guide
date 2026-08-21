@@ -81,6 +81,14 @@ const dayStartMs = (day: DayPlan) => {
 
 const matchNavigation = (day: DayPlan, item: TimelineItem) => {
   const haystack = `${item.title} ${item.detail} ${item.tags.join(' ')}`
+  if (/午餐/.test(haystack)) {
+    const lunch = day.navigation.find((nav) => nav.label.includes('午餐'))
+    if (lunch) return lunch
+  }
+  if (/晚餐|晚饭/.test(haystack)) {
+    const dinner = day.navigation.find((nav) => nav.label.includes('晚餐'))
+    if (dinner) return dinner
+  }
   return (
     day.navigation.find((nav) => haystack.includes(nav.label) || item.detail.includes(nav.query)) ??
     day.navigation.find((nav) =>

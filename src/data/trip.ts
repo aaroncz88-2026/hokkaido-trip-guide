@@ -840,8 +840,8 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '20:00~21:00': '【饭后逛街】继续逛店；文具／玩具可顺路看',
   },
   5: {
-    '13:00~14:00': '【午餐】フロックスホール\n预计 13:45 前吃完，再开始玩',
-    '20:00~21:00': '【晚餐】くまげら\n富良野乡土料理，吃完再返程札幌',
+    '13:00~14:00': '预计 13:45 前吃完，再开始玩',
+    '20:00~21:00': '富良野乡土料理，吃完再返程札幌',
   },
   6: {
     '14:00~15:00': '【堺町通纯观光】【亲子任务卡】音乐盒堂、LeTAO、北一硝子',
@@ -910,30 +910,8 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '20:00~21:00': [day4NightBrowseGuide],
   },
   5: {
-    '13:00~14:00': [
-      {
-        title: 'フロックスホール',
-        body: '四季彩之丘园内的午餐店。预计 13:45 前吃完，再继续玩花田。',
-        links: [
-          {
-            label: '导航去 フロックスホール',
-            url: 'https://maps.google.com/?q=%E3%83%95%E3%83%AD%E3%83%83%E3%82%AF%E3%82%B9%E3%83%9B%E3%83%BC%E3%83%AB%20%E5%9B%9B%E5%AD%A3%E5%BD%A9%E4%B9%8B%E4%B8%98',
-          },
-        ],
-      },
-    ],
-    '20:00~21:00': [
-      {
-        title: 'くまげら',
-        body: '富良野乡土料理店。吃完再开车回札幌。',
-        links: [
-          {
-            label: '导航去 くまげら',
-            url: 'https://maps.google.com/?q=%E3%81%8F%E3%81%BE%E3%81%92%E3%82%89%20%E5%AF%8C%E8%89%AF%E9%87%8E',
-          },
-        ],
-      },
-    ],
+    '13:00~14:00': [],
+    '20:00~21:00': [],
   },
 }
 
@@ -1030,18 +1008,6 @@ const linkCorrections: Record<number, Record<string, { label: string; url: strin
       {
         label: 'DAY5 美瑛富良野导游词（PDF）',
         url: docUrl('day5-guide-script.pdf'),
-      },
-    ],
-    '13:00~14:00': [
-      {
-        label: 'フロックスホール | Google Maps',
-        url: 'https://maps.google.com/?q=%E3%83%95%E3%83%AD%E3%83%83%E3%82%AF%E3%82%B9%E3%83%9B%E3%83%BC%E3%83%AB%20%E5%9B%9B%E5%AD%A3%E5%BD%A9%E4%B9%8B%E4%B8%98',
-      },
-    ],
-    '20:00~21:00': [
-      {
-        label: 'くまげら | Google Maps',
-        url: 'https://maps.google.com/?q=%E3%81%8F%E3%81%BE%E3%81%92%E3%82%89%20%E5%AF%8C%E8%89%AF%E9%87%8E',
       },
     ],
   },
@@ -1233,6 +1199,11 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
       dad: '【开车】白须瀑布快看，12:45 前启程去四季彩之丘',
       mom: '【玩】瀑布边看好孩子，别靠近水',
       kids: '【玩】看瀑布，听大人招呼上车',
+    },
+    '13:00~14:00': {
+      dad: '【午餐】点餐买单，看 13:45 收队',
+      mom: '【午餐】点餐照顾孩子',
+      kids: '【吃饭】乖乖吃饭',
     },
     '17:00~18:00': {
       dad: '【开车】去精灵露台，目标 17:45 到',

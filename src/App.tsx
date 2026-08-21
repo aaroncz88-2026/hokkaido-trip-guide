@@ -1415,6 +1415,22 @@ function App() {
         <h2>{item.title}</h2>
         <p>{item.detail}</p>
 
+        {currentActivity.navigation && (
+          <article className="now-card__material">
+            <span className="eyebrow">
+              {/午餐/.test(item.title)
+                ? '午餐地点'
+                : /晚餐/.test(item.title)
+                  ? '晚餐地点'
+                  : '导航点'}
+            </span>
+            <strong>{currentActivity.navigation.label.replace(/^(午餐|晚餐)\s*·\s*/, '')}</strong>
+            <MapsLink query={currentActivity.navigation.query}>
+              <Icon name="map" size={15} /> 导航前往
+            </MapsLink>
+          </article>
+        )}
+
         <div className="now-card__tasks">
           <span className="eyebrow">家庭分工</span>
           <div><em>爸爸</em><p>{item.dad || '本时段无额外任务'}</p></div>
