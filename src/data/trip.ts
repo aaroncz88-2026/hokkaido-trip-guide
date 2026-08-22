@@ -112,7 +112,7 @@ const dayMeta: DayMeta[] = [
     accent: '#dc6b45',
     cover: coverUrl('day2-rusutsu.jpg'),
     coverLabel: '留寿都 · 羊蹄山',
-    highlights: ['游乐园', '羊蹄山缆车', '亲子项目', '园区晚餐'],
+    highlights: ['游乐园', '羊蹄山缆车', '魔术博物馆', '园区晚餐'],
     navigation: [
       { label: '留寿都度假村', query: 'Rusutsu Resort' },
     ],
@@ -660,6 +660,70 @@ const day1DinnerGuide: TimelineMaterial = {
   ],
 }
 
+const day2LunchGuide: TimelineMaterial = {
+  title: '园区午餐 · 11:30 前后',
+  body: '园内就近吃，别出园。Barbecue House 想吃肉就去；排队或带娃求快改 Country House。',
+  steps: [
+    {
+      id: 'bbq-house',
+      field: '1 Barbecue House（特别）',
+      how: '摩天轮底下室内烧烤，自己烤。午餐约 11:00–15:00，最后点餐 14:30。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Barbecue%20House%20Rusutsu' }],
+    },
+    {
+      id: 'country-house',
+      field: '2 Country House（保底）',
+      how: '园正中食堂：咖喱、面、饭。室内外都有座，带娃更快。午餐约 11:00–15:30。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Country%20House%20Rusutsu%20Resort' }],
+    },
+  ],
+}
+
+/** 原表 17:00 只写了魔术博物馆；南翼 1F 纪念品店漏记 */
+const day2BrowseShopsGuide: TimelineMaterial = {
+  title: '闭园后可逛 · 酒店南翼',
+  body: '游乐园约 16:30 闭园。先去魔术博物馆，再下到南翼 1F 三家店。Burton / North Face 等滑雪品牌店路过即可，不必专门逛。晚饭后还能再进，约 21:00 关。',
+  steps: [
+    {
+      id: 'magic-museum',
+      field: '魔术博物馆（优先）',
+      how: 'Highland Lodge 2F；约 11:00–20:00。看魔术道具和表演区，孩子友好。',
+      kind: 'option',
+      links: [{ label: '介绍', url: 'https://rusutsu.com/news-and-topics/magic-museum/' }],
+    },
+    {
+      id: 'tiny-bear',
+      field: 'Tiny Bear タイニーベア',
+      how: '南翼 1F。玩偶、角色周边、瓶装球藻、留寿都雪花球；约 9:00–21:00。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Tiny%20Bear%20Rusutsu' }],
+    },
+    {
+      id: 'premier-neige',
+      field: 'Premier Neige プルミエネージュ',
+      how: '南翼 1F。童装、玩偶、拼图粘土；约 12:00–21:00。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Premier%20Neige%20Rusutsu' }],
+    },
+    {
+      id: 'kurofuneya',
+      field: '黒船屋',
+      how: '南翼 1F。原创 T 恤、帽子雨伞；约 9:00–21:00。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E9%BB%92%E8%88%B9%E5%B1%8B%20%E3%83%AB%E3%82%B9%E3%83%84' }],
+    },
+    {
+      id: 'edelweiss',
+      field: 'Edelweiss（可选，买后面几天面包）',
+      how: '现烤面包，原表写在 DAY3 早餐。大约 17:00 关，闭园后想买要先去；来不及明早 Oktoberfest 后再买。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Edelweiss%20Rusutsu%20Resort' }],
+    },
+  ],
+}
+
 const day2DinnerGuide: TimelineMaterial = {
   title: '园区晚餐备选 · 顺手订明早',
   body: '1～3 为晚饭可选餐厅；第 4 项为必要问询任务：务必预订 DAY3 早餐 Oktoberfest。',
@@ -977,6 +1041,12 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
       '【回家】开车约1小时 → 翠葉 Rusutsu\n车上可先打开源べえ菜单；满座改焼肉牛牛／居酒屋 焚',
     '20:00~21:00': '【便利店采购】Seicomart Rusutsu\n买好 DAY2 游乐园补给（水、运动饮料、小食）',
   },
+  2: {
+    '11:00~12:00':
+      '【游乐园】【午餐】11:30~12:30\nBarbecue House（特别）／Country House（保底）',
+    '17:00~18:00':
+      '【逛】魔术博物馆（20:00 关）+ 南翼 1F 纪念品\nTiny Bear / Premier Neige / 黒船屋；顺手订明早 Oktoberfest',
+  },
   3: {
     '18:00~19:00': '【逛纪念品】+【晚饭可开始】\n首选 KARZZ；备选アペコロ / Fuji / 金城 / OMOYA',
   },
@@ -1026,8 +1096,9 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     '20:00~21:00': [day2OutingSnackGuide],
   },
   2: {
-    // 园区晚饭：首选 Kakashi，备选 Pub Cricket / Mokumokuya
-    '17:00~18:00': [day2DinnerGuide],
+    '11:00~12:00': [day2LunchGuide],
+    // 闭园后先逛博物馆和纪念品，晚饭菜单同时可看
+    '17:00~18:00': [day2BrowseShopsGuide, day2DinnerGuide],
     '18:00~19:00': [day2DinnerGuide],
   },
   3: {
@@ -1227,10 +1298,15 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
     },
   },
   2: {
+    '11:00~12:00': {
+      dad: '【午餐】Barbecue House 首选；排队或求快改 Country House',
+      mom: '【午餐】点餐照顾孩子；吃完再去羊蹄缆车',
+      kids: '【吃饭】乖乖吃饭，别乱跑项目',
+    },
     '17:00~18:00': {
-      dad: '【逛/晚饭准备】顺手确认并预订明早 Oktoberfest 早餐',
-      mom: '【带娃】提醒爸爸完成 Oktoberfest 早餐预订，避免明早吃不上',
-      kids: '【休息】跟大人逛园区，准备晚饭',
+      dad: '【逛】先带队去魔术博物馆；顺手预订明早 Oktoberfest',
+      mom: '【逛】博物馆后去南翼 Tiny Bear／Premier Neige；提醒爸爸订早餐',
+      kids: '【逛】看魔术道具，想买纪念品就举手',
     },
     '18:00~19:00': {
       dad: '【晚饭】Kakashi 首选；满了改 Pub Cricket / Mokumokuya。务必订好明早 Oktoberfest',
