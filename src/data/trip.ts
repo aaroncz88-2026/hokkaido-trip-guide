@@ -82,7 +82,7 @@ const dayMeta: DayMeta[] = [
     accent: '#6b4d78',
     cover: coverUrl('day1-shikotsu.jpg'),
     coverLabel: '支笏湖',
-    highlights: ['机场取车', '支笏湖观光船', '山线铁桥', 'Seicomart 采购'],
+    highlights: ['机场取车', '支笏湖观光船', '商业街小店', 'Seicomart 采购'],
     navigation: [
       { label: '新千岁机场 B 停车场', query: '新千歳空港B駐車場' },
       { label: '支笏湖收费停车场', query: 'Lake Shikotsu paid parking lot' },
@@ -448,7 +448,7 @@ const parkingMeetupGuide: TimelineMaterial = {
 
 const airportFoodGuide: TimelineMaterial = {
   title: '机场午饭 / 采购菜单',
-  body: '取车期间按喜好点，不是任务。先吃再买明早，会合优先；支笏湖只当小吃，不把正餐押在湖边。',
+  body: '取车期间按喜好点，不是任务。先吃再买明早，会合优先；支笏湖只当小吃，不把正餐押在湖边。白色恋人、六花亭可在综合店顺手拿，伴手礼主力留 DAY8。',
   steps: [
     { id: 'kamaboko', field: 'かま栄', how: '鱼浆包面包后再油炸，咸香顶饿，适合当正餐主食。', kind: 'option' },
     { id: 'valleys', field: '十勝VALLEYs', how: '芝士包＋玉米可乐饼，带娃分着吃方便。', kind: 'option' },
@@ -464,6 +464,35 @@ const airportFoodGuide: TimelineMaterial = {
       field: '买早饭 · 超市补货',
       how: '鸡蛋、香肠、牛奶、酸奶、水果、芝士切片、水、方便面、即冲汤。不够再买，避免重复。',
       kind: 'option',
+    },
+  ],
+}
+
+/** 原表 DAY1 13:00 妈妈/孩子栏有店，午饭菜单里漏了 */
+const airportBrowseGuide: TimelineMaterial = {
+  title: '机场可逛 · 取车等候',
+  body: '只逛下面三家。时间紧就伊東屋；Hello Kitty 留给 DAY8。爸爸一发会合消息就收队。',
+  steps: [
+    {
+      id: 'itoya',
+      field: '伊東屋 新千歳空港店（优先）',
+      how: '文具、本子、机场限定；原表标 SSS，取车等候时最值得进。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E4%BC%8A%E6%9D%B1%E5%B1%8B%20%E6%96%B0%E5%8D%83%E6%AD%B3%E7%A9%BA%E6%B8%AF%E5%BA%97' }],
+    },
+    {
+      id: 'pokemon',
+      field: 'Pokémon Store',
+      how: '孩子优先看一眼；别买太多，行李第一天就要上车。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=Pok%C3%A9mon%20Store%20%E6%96%B0%E5%8D%83%E6%AD%B3%E7%A9%BA%E6%B8%AF' }],
+    },
+    {
+      id: 'royce-world',
+      field: 'ROYS 巧克力世界',
+      how: '可试吃／现做；想当伴手礼也可 DAY8 再补，不必第一天囤。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E3%83%AD%E3%82%A4%E3%82%BA%E3%83%81%E3%83%A7%E3%82%B3%E3%83%AC%E3%83%BC%E3%83%88%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%20%E6%96%B0%E5%8D%83%E6%AD%B3%E7%A9%BA%E6%B8%AF' }],
     },
   ],
 }
@@ -508,7 +537,42 @@ const shikotsuSnackGuide: TimelineMaterial = {
   steps: [
     { id: 'hekisu', field: '北のうまいもん店 碧水', how: '扇贝玉米烧、烤鱿鱼，热食小吃。', kind: 'option' },
     { id: 'showa', field: '昭和物産', how: '炸物、炭火烤，和碧水二选一或各买一点即可。', kind: 'option' },
-    { id: 'patissier', field: 'スイーツショップ パティシエ・ラボ（买早饭）', how: '甜点店，可顺手买明早甜品/面包类带走。', kind: 'option' },
+    {
+      id: 'patissier',
+      field: 'スイーツショップ パティシエ・ラボ（买早饭）',
+      how: '在水の謌酒店内；夏季约 17:00 关门，顺手买明早甜品带走。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E3%83%91%E3%83%86%E3%82%A3%E3%82%B7%E3%82%A8%E3%83%BB%E3%83%A9%E3%83%9C%20%E6%94%AF%E7%AC%9D%E6%B9%96' }],
+    },
+  ],
+}
+
+/** 原表 17:00 妈妈栏有店，资料里只留了小吃 */
+const shikotsuBrowseShopsGuide: TimelineMaterial = {
+  title: '商业街可逛 · 支笏湖',
+  body: '船优先；17:00 前尽量进店。山線鉄橋是散步拍照，不是店。',
+  steps: [
+    {
+      id: 'yamato',
+      field: '支笏湖大和（优先）',
+      how: '昭和杂货、木雕熊、当地扭蛋、453 号线贴纸。约 17:00 关门，周二周三休；8/23 周日开。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E6%94%AF%E7%AC%9D%E6%B9%96%E5%A4%A7%E5%92%8C' }],
+    },
+    {
+      id: 'yamasen-station',
+      field: '山線湖畔驛 · 博物馆',
+      how: '游客中心内的铁路小馆；店里有山线周边和木工小物。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E7%8E%8B%E5%AD%90%E8%BB%BD%E4%BE%BF%E9%89%84%E9%81%93%E3%83%9F%E3%83%A5%E3%83%BC%E3%82%B8%E3%82%A2%E3%83%A0%20%E5%B1%B1%E7%B7%9A%E6%B9%96%E7%95%94%E9%A9%9B' }],
+    },
+    {
+      id: 'visitor-center',
+      field: '支笏湖游客中心',
+      how: '免费看展、问路、买明信片；和湖畔驛在同一栋。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E6%94%AF%E7%AC%9D%E6%B9%96%E3%83%93%E3%82%B8%E3%82%BF%E3%83%BC%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC' }],
+    },
   ],
 }
 
@@ -564,7 +628,7 @@ const gajaReservationLink = {
 
 const day1DinnerGuide: TimelineMaterial = {
   title: '留寿都晚餐菜单 · 源べえ',
-  body: '开车回酒店时就可打开对照，提前想好点什么。今晚首选源べえ。',
+  body: '开车回酒店时就可打开对照，提前想好点什么。今晚首选源べえ；满座再改下面两家。8/23 周日，两家备选都开。',
   steps: [
     {
       id: 'genbee',
@@ -578,6 +642,20 @@ const day1DinnerGuide: TimelineMaterial = {
           url: 'https://maps.google.com/?q=%E6%BA%90%E3%81%B9%E3%81%88%20%E7%95%99%E5%AF%BF%E9%83%BD%E5%BA%97',
         },
       ],
+    },
+    {
+      id: 'gyugyu',
+      field: '2 Grill Gyu Gyu · 焼肉牛牛（备选）',
+      how: '喜茂别相川，开车约 7 分钟。17:00–21:00，最后点餐 20:00；周一到周四休。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E7%84%BC%E8%82%89%E7%89%9B%E7%89%9B%20%E5%96%9C%E8%8C%82%E5%88%A5' }],
+    },
+    {
+      id: 'taki',
+      field: '3 居酒屋 焚（备选）',
+      how: '喜茂别市区本地居酒屋，不是度假村内。约 17:00 起；周一休。',
+      kind: 'option',
+      links: [{ label: '地图', url: 'https://maps.google.com/?q=%E5%B1%85%E9%85%92%E5%B1%8B%20%E7%84%9A%20%E5%96%9C%E8%8C%82%E5%88%A5' }],
     },
   ],
 }
@@ -886,15 +964,17 @@ const finalTimelineCorrections: Record<number, Record<string, string>> = {
     '12:00~13:00':
       '【抵达】+【过关】+【取行李】+【接驳取车】\n12:30左右抵达→直奔关口→取行李→J-Net接驳→B停车场汇合',
     '13:00~14:00':
-      '【租车】+【机场午饭菜单】\n按喜好选：かま栄 / 十勝VALLEYs / きのとや / Calbee+ / 北菓楼 / 牛乳カステラ / Snow Cheese / LeTAO；早饭买 Pasco',
+      '【租车】+【机场午饭+可逛】\n先吃かま栄 / 十勝 / きのとや / Calbee+；早饭买 Pasco\n可逛：伊東屋（优先）/ Pokémon / ROYS；Hello Kitty 留 DAY8',
     '14:00~15:00':
       '【会合】+【出发】→支笏湖\n约30公里 / 35分钟\n停车点：Lake Shikotsu paid parking lot',
     '15:00~16:00':
       '【景点2·支笏湖】\n争取15:00抵达；观光船末班17:00，晚到改天鹅船或湖边走走\n【观光船＋天鹅船】',
     '16:00~17:00':
-      '【观光船＋天鹅船】+【商业街】\n观光船末班17:00，先问下一班再逛',
+      '【观光船＋天鹅船】+【商业街】\n观光船末班17:00；17:00前尽量进支笏湖大和、山線湖畔驛、パティシエ・ラボ',
+    '17:00~18:00':
+      '【商业街】+【山線鉄橋】\n大和约17:00关门，晚到改游客中心／铁桥散步拍照后回家',
     '18:00~19:00':
-      '【回家】开车约1小时 → 翠葉 Rusutsu\n车上可先打开源べえ菜单，到店直接点',
+      '【回家】开车约1小时 → 翠葉 Rusutsu\n车上可先打开源べえ菜单；满座改焼肉牛牛／居酒屋 焚',
     '20:00~21:00': '【便利店采购】Seicomart Rusutsu\n买好 DAY2 游乐园补给（水、运动饮料、小食）',
   },
   3: {
@@ -934,10 +1014,11 @@ const materialCorrections: Record<number, Record<string, TimelineMaterial[]>> = 
     // 机上无网：入境卡自行按护照/住宿地址填写，不挂对照表与外链资料
     '8:00~12:00': [],
     '12:00~13:00': [arrivalCustomsGuide, jnetShuttleGuide, parkingMeetupGuide],
-    '13:00~14:00': [airportFoodGuide],
+    '13:00~14:00': [airportFoodGuide, airportBrowseGuide],
     // 湖边：先看末班船，小吃当菜单
-    '15:00~16:00': [shikotsuBoatGuide, shikotsuSnackGuide],
-    '16:00~17:00': [shikotsuBoatGuide, shikotsuSnackGuide],
+    '15:00~16:00': [shikotsuBoatGuide, shikotsuSnackGuide, shikotsuBrowseShopsGuide],
+    '16:00~17:00': [shikotsuBoatGuide, shikotsuSnackGuide, shikotsuBrowseShopsGuide],
+    '17:00~18:00': [shikotsuBrowseShopsGuide, shikotsuSnackGuide],
     // 晚饭菜单挂在回程车上，方便提前看
     '18:00~19:00': [day1DinnerGuide],
     '19:00~20:00': [day1DinnerGuide],
@@ -1126,13 +1207,23 @@ const roleCorrections: Record<number, Record<string, Partial<Pick<TimelineItem, 
     },
     '13:00~14:00': {
       dad: '【取车】在营业所办手续；随时回报进度，家人按清单买午饭',
-      mom: '【机场午饭+采购】按门牌逛；先吃かま栄/十勝/きのとや，再买 Pasco 明早，顺手北菓楼、牛乳カステラ、Snow Cheese、LeTAO',
+      mom: '【机场午饭+采购】先吃かま栄/十勝/きのとや；可逛伊東屋（优先），再买 Pasco 明早；北菓楼、牛乳カステラ、Snow Cheese、LeTAO 顺手即可',
       kids: '【逛+吃】Pokémon Store、Calbee+ 薯条、ROYS；累了坐着等爸爸会合',
     },
     '14:00~15:00': {
       dad: '【开车】按上方停车导航去 Lake Shikotsu paid parking lot',
       mom: '【车上休息】看孩子休息即可，不用盯导航',
       kids: '【车上休息】系好安全带，跟妈妈休息，预计约 35 分钟到湖边',
+    },
+    '16:00~17:00': {
+      dad: '【船+商业街】先问下一班观光船；17:00 前带队进支笏湖大和',
+      mom: '【逛】支笏湖大和、山線湖畔驛；顺手パティシエ・ラボ买明早甜点',
+      kids: '【逛+吃】湖边小吃、扭蛋；跟大人走，别自己钻店',
+    },
+    '17:00~18:00': {
+      dad: '【铁桥】带队去山線鉄橋散步拍照，看回家时间',
+      mom: '【逛】大和若已关就改游客中心；带娃别走散',
+      kids: '【散步】跟大人走铁桥，想拍照就举手',
     },
   },
   2: {
